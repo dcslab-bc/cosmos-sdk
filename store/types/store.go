@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"io"
 
+	oststrings "github.com/Finschia/ostracon/libs/strings"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmkv "github.com/tendermint/tendermint/libs/kv"
 	dbm "github.com/tendermint/tm-db"
+
+	snapshottypes "github.com/Finschia/finschia-sdk/snapshots/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
-type Store interface { //nolint
+type Store interface {
 	GetStoreType() StoreType
 	CacheWrapper
 }
@@ -18,7 +21,9 @@ type Store interface { //nolint
 type Committer interface {
 	Commit() CommitID
 	LastCommitID() CommitID
+
 	SetPruning(PruningOptions)
+	GetPruning() PruningOptions
 }
 
 // Stores of MultiStore must implement CommitStore.
@@ -40,8 +45,16 @@ type Queryable interface {
 
 // StoreUpgrades defines a series of transformations to apply the multistore db upon load
 type StoreUpgrades struct {
+	Added   []string      `json:"added"`
 	Renamed []StoreRename `json:"renamed"`
 	Deleted []string      `json:"deleted"`
+}
+
+// UpgradeInfo defines height and name of the upgrade
+// to ensure multistore upgrades happen only at matching height.
+type UpgradeInfo struct {
+	Name   string `json:"name"`
+	Height int64  `json:"height"`
 }
 
 // StoreRename defines a name change of a sub-store.
@@ -50,6 +63,14 @@ type StoreUpgrades struct {
 type StoreRename struct {
 	OldKey string `json:"old_key"`
 	NewKey string `json:"new_key"`
+}
+
+// IsDeleted returns true if the given key should be added
+func (s *StoreUpgrades) IsAdded(key string) bool {
+	if s == nil {
+		return false
+	}
+	return oststrings.StringInSlice(key, s.Added)
 }
 
 // IsDeleted returns true if the given key should be deleted
@@ -77,18 +98,17 @@ func (s *StoreUpgrades) RenamedFrom(key string) string {
 		}
 	}
 	return ""
-
 }
 
-type MultiStore interface { //nolint
+type MultiStore interface {
 	Store
 
-	// Cache wrap MultiStore.
+	// Branches MultiStore into a cached storage object.
 	// NOTE: Caller should probably not call .Write() on each, but
 	// call CacheMultiStore.Write().
 	CacheMultiStore() CacheMultiStore
 
-	// CacheMultiStoreWithVersion cache-wraps the underlying MultiStore where
+	// CacheMultiStoreWithVersion branches the underlying MultiStore where
 	// each stored is loaded at a specific version (height).
 	CacheMultiStoreWithVersion(version int64) (CacheMultiStore, error)
 
@@ -109,6 +129,13 @@ type MultiStore interface { //nolint
 	// implied that the caller should update the context when necessary between
 	// tracing operations. The modified MultiStore is returned.
 	SetTracingContext(TraceContext) MultiStore
+
+	// ListeningEnabled returns if listening is enabled for the KVStore belonging the provided StoreKey
+	ListeningEnabled(key StoreKey) bool
+
+	// AddListeners adds WriteListeners for the KVStore belonging to the provided StoreKey
+	// It appends the listeners to a current set, if one already exists
+	AddListeners(key StoreKey, listeners []WriteListener)
 }
 
 // From MultiStore.CacheMultiStore()....
@@ -117,10 +144,11 @@ type CacheMultiStore interface {
 	Write() // Writes operations to underlying KVStore
 }
 
-// A non-cache MultiStore.
+// CommitMultiStore is an interface for a MultiStore without cache capabilities.
 type CommitMultiStore interface {
 	Committer
 	MultiStore
+	snapshottypes.Snapshotter
 
 	// Mount a store of type using the given db.
 	// If db == nil, the new store will use the CommitMultiStore db.
@@ -155,6 +183,19 @@ type CommitMultiStore interface {
 	// Set an inter-block (persistent) cache that maintains a mapping from
 	// StoreKeys to CommitKVStores.
 	SetInterBlockCache(MultiStorePersistentCache)
+
+	// SetInitialVersion sets the initial version of the IAVL tree. It is used when
+	// starting a new chain at an arbitrary height.
+	SetInitialVersion(version int64) error
+
+	// SetIAVLCacheSize sets the cache size of the IAVL tree.
+	SetIAVLCacheSize(size int)
+
+	// SetIAVLDisableFastNode enables/disables fastnode feature on iavl.
+	SetIAVLDisableFastNode(disable bool)
+
+	// RollbackToVersion rollback the db to specific version(height).
+	RollbackToVersion(version int64) error
 }
 
 //---------subsp-------------------------------
@@ -164,7 +205,7 @@ type CommitMultiStore interface {
 type KVStore interface {
 	Store
 
-	// Get returns nil iff key doesn't exist. Panics on nil key.
+	// Get returns nil if key doesn't exist. Panics on nil key.
 	Get(key []byte) []byte
 
 	// Has checks if a key exists. Panics on nil key.
@@ -192,12 +233,12 @@ type KVStore interface {
 	ReverseIterator(start, end []byte) Iterator
 }
 
-// Alias iterator to db's Iterator for convenience.
+// Iterator is an alias db's Iterator for convenience.
 type Iterator = dbm.Iterator
 
-// CacheKVStore cache-wraps a KVStore.  After calling .Write() on
-// the CacheKVStore, all previously created CacheKVStores on the
-// object expire.
+// CacheKVStore branches a KVStore and provides read cache functionality.
+// After calling .Write() on the CacheKVStore, all previously created
+// CacheKVStores on the object expire.
 type CacheKVStore interface {
 	KVStore
 
@@ -205,7 +246,7 @@ type CacheKVStore interface {
 	Write()
 }
 
-// Stores of MultiStore must implement CommitStore.
+// CommitKVStore is an interface for MultiStore.
 type CommitKVStore interface {
 	Committer
 	KVStore
@@ -214,9 +255,9 @@ type CommitKVStore interface {
 //----------------------------------------
 // CacheWrap
 
-// CacheWrap makes the most appropriate cache-wrap. For example,
-// IAVLStore.CacheWrap() returns a CacheKVStore. CacheWrap should not return
-// a Committer, since Commit cache-wraps make no sense. It can return KVStore,
+// CacheWrap is the most appropriate interface for store ephemeral branching and cache.
+// For example, IAVLStore.CacheWrap() returns a CacheKVStore. CacheWrap should not return
+// a Committer, since Commit ephemeral store make no sense. It can return KVStore,
 // HeapStore, SpaceStore, etc.
 type CacheWrap interface {
 	// Write syncs with the underlying store.
@@ -227,26 +268,23 @@ type CacheWrap interface {
 
 	// CacheWrapWithTrace recursively wraps again with tracing enabled.
 	CacheWrapWithTrace(w io.Writer, tc TraceContext) CacheWrap
+
+	// CacheWrapWithListeners recursively wraps again with listening enabled
+	CacheWrapWithListeners(storeKey StoreKey, listeners []WriteListener) CacheWrap
 }
 
-type CacheWrapper interface { //nolint
-	// CacheWrap cache wraps.
+type CacheWrapper interface {
+	// CacheWrap branches a store.
 	CacheWrap() CacheWrap
 
-	// CacheWrapWithTrace cache wraps with tracing enabled.
+	// CacheWrapWithTrace branches a store with tracing enabled.
 	CacheWrapWithTrace(w io.Writer, tc TraceContext) CacheWrap
+
+	// CacheWrapWithListeners recursively wraps again with listening enabled
+	CacheWrapWithListeners(storeKey StoreKey, listeners []WriteListener) CacheWrap
 }
 
-//----------------------------------------
-// CommitID
-
-// CommitID contains the tree version number and its merkle root.
-type CommitID struct {
-	Version int64
-	Hash    []byte
-}
-
-func (cid CommitID) IsZero() bool { //nolint
+func (cid CommitID) IsZero() bool {
 	return cid.Version == 0 && len(cid.Hash) == 0
 }
 
@@ -261,12 +299,33 @@ func (cid CommitID) String() string {
 type StoreType int
 
 const (
-	//nolint
 	StoreTypeMulti StoreType = iota
 	StoreTypeDB
 	StoreTypeIAVL
 	StoreTypeTransient
+	StoreTypeMemory
 )
+
+func (st StoreType) String() string {
+	switch st {
+	case StoreTypeMulti:
+		return "StoreTypeMulti"
+
+	case StoreTypeDB:
+		return "StoreTypeDB"
+
+	case StoreTypeIAVL:
+		return "StoreTypeIAVL"
+
+	case StoreTypeTransient:
+		return "StoreTypeTransient"
+
+	case StoreTypeMemory:
+		return "StoreTypeMemory"
+	}
+
+	return "unknown store type"
+}
 
 //----------------------------------------
 // Keys for accessing substores
@@ -277,6 +336,10 @@ type StoreKey interface {
 	String() string
 }
 
+// CapabilityKey represent the Cosmos SDK keys for object-capability
+// generation in the IBC protocol as defined in https://github.com/cosmos/ics/tree/master/spec/ics-005-port-allocation#data-structures
+type CapabilityKey StoreKey
+
 // KVStoreKey is used for accessing substores.
 // Only the pointer value should ever be used - it functions as a capabilities key.
 type KVStoreKey struct {
@@ -286,6 +349,9 @@ type KVStoreKey struct {
 // NewKVStoreKey returns a new pointer to a KVStoreKey.
 // Use a pointer so keys don't collide.
 func NewKVStoreKey(name string) *KVStoreKey {
+	if name == "" {
+		panic("empty key name not allowed")
+	}
 	return &KVStoreKey{
 		name: name,
 	}
@@ -322,10 +388,29 @@ func (key *TransientStoreKey) String() string {
 	return fmt.Sprintf("TransientStoreKey{%p, %s}", key, key.name)
 }
 
+// MemoryStoreKey defines a typed key to be used with an in-memory KVStore.
+type MemoryStoreKey struct {
+	name string
+}
+
+func NewMemoryStoreKey(name string) *MemoryStoreKey {
+	return &MemoryStoreKey{name: name}
+}
+
+// Name returns the name of the MemoryStoreKey.
+func (key *MemoryStoreKey) Name() string {
+	return key.name
+}
+
+// String returns a stringified representation of the MemoryStoreKey.
+func (key *MemoryStoreKey) String() string {
+	return fmt.Sprintf("MemoryStoreKey{%p, %s}", key, key.name)
+}
+
 //----------------------------------------
 
 // key-value result for iterator queries
-type KVPair tmkv.Pair
+type KVPair kv.Pair
 
 //----------------------------------------
 
@@ -345,4 +430,12 @@ type MultiStorePersistentCache interface {
 
 	// Reset the entire set of internal caches.
 	Reset()
+}
+
+// StoreWithInitialVersion is a store that can have an arbitrary initial
+// version.
+type StoreWithInitialVersion interface {
+	// SetInitialVersion sets the initial version of the IAVL tree. It is used when
+	// starting a new chain at an arbitrary height.
+	SetInitialVersion(version int64)
 }

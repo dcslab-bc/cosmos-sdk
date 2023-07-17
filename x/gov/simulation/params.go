@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"math/rand"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/simulation"
 )
 
 const (
@@ -23,8 +24,8 @@ const (
 
 // ParamChanges defines the parameters that can be modified by param change proposals
 // on the simulation
-func ParamChanges(r *rand.Rand) []simulation.ParamChange {
-	return []simulation.ParamChange{
+func ParamChanges(r *rand.Rand) []simtypes.ParamChange {
+	return []simtypes.ParamChange{
 		simulation.NewSimParamChange(types.ModuleName, keyVotingParams,
 			func(r *rand.Rand) string {
 				return fmt.Sprintf(`{"voting_period": "%d"}`, GenVotingParamsVotingPeriod(r))
@@ -47,7 +48,7 @@ func ParamChanges(r *rand.Rand) []simulation.ParamChange {
 				}
 
 				pc := make(map[string]string)
-				numChanges := simulation.RandIntBetween(r, 1, len(changes))
+				numChanges := simtypes.RandIntBetween(r, 1, len(changes))
 				for i := 0; i < numChanges; i++ {
 					c := changes[r.Intn(len(changes))]
 

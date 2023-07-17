@@ -1,11 +1,18 @@
 package crisis
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"time"
+
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/crisis/keeper"
+	"github.com/Finschia/finschia-sdk/x/crisis/types"
 )
 
 // check all registered invariants
-func EndBlocker(ctx sdk.Context, k Keeper) {
+func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
+
 	if k.InvCheckPeriod() == 0 || ctx.BlockHeight()%int64(k.InvCheckPeriod()) != 0 {
 		// skip running the invariant check
 		return

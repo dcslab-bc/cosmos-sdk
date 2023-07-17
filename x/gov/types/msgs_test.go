@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 	coinsZero  = sdk.NewCoins()
 	coinsMulti = sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, 1000), sdk.NewInt64Coin("foo", 10000))
 	addrs      = []sdk.AccAddress{
-		sdk.AccAddress("test1"),
-		sdk.AccAddress("test2"),
+		sdk.AccAddress([]byte("               test1")),
+		sdk.AccAddress([]byte("               test2")),
 	}
 )
 
@@ -43,11 +43,13 @@ func TestMsgSubmitProposal(t *testing.T) {
 	}
 
 	for i, tc := range tests {
-		msg := NewMsgSubmitProposal(
+		msg, err := NewMsgSubmitProposal(
 			ContentFromProposalType(tc.title, tc.description, tc.proposalType),
 			tc.initialDeposit,
 			tc.proposerAddr,
 		)
+
+		require.NoError(t, err)
 
 		if tc.expectPass {
 			require.NoError(t, msg.ValidateBasic(), "test: %v", i)
@@ -62,7 +64,7 @@ func TestMsgDepositGetSignBytes(t *testing.T) {
 	msg := NewMsgDeposit(addr, 0, coinsPos)
 	res := msg.GetSignBytes()
 
-	expected := `{"type":"cosmos-sdk/MsgDeposit","value":{"amount":[{"amount":"1000","denom":"stake"}],"depositor":"cosmos1v9jxgu33kfsgr5","proposal_id":"0"}}`
+	expected := `{"type":"cosmos-sdk/MsgDeposit","value":{"amount":[{"amount":"1000","denom":"stake"}],"depositor":"link1v9jxgu33p9vj2k","proposal_id":"0"}}`
 	require.Equal(t, expected, string(res))
 }
 
@@ -90,7 +92,7 @@ func TestMsgDeposit(t *testing.T) {
 	}
 }
 
-// test ValidateBasic for MsgDeposit
+// test ValidateBasic for MsgVote
 func TestMsgVote(t *testing.T) {
 	tests := []struct {
 		proposalID uint64
@@ -114,4 +116,61 @@ func TestMsgVote(t *testing.T) {
 			require.NotNil(t, msg.ValidateBasic(), "test: %v", i)
 		}
 	}
+}
+
+// test ValidateBasic for MsgVoteWeighted
+func TestMsgVoteWeighted(t *testing.T) {
+	tests := []struct {
+		proposalID uint64
+		voterAddr  sdk.AccAddress
+		options    WeightedVoteOptions
+		expectPass bool
+	}{
+		{0, addrs[0], NewNonSplitVoteOption(OptionYes), true},
+		{0, sdk.AccAddress{}, NewNonSplitVoteOption(OptionYes), false},
+		{0, addrs[0], NewNonSplitVoteOption(OptionNo), true},
+		{0, addrs[0], NewNonSplitVoteOption(OptionNoWithVeto), true},
+		{0, addrs[0], NewNonSplitVoteOption(OptionAbstain), true},
+		{0, addrs[0], WeightedVoteOptions{ // weight sum > 1
+			WeightedVoteOption{Option: OptionYes, Weight: sdk.NewDec(1)},
+			WeightedVoteOption{Option: OptionAbstain, Weight: sdk.NewDec(1)},
+		}, false},
+		{0, addrs[0], WeightedVoteOptions{ // duplicate option
+			WeightedVoteOption{Option: OptionYes, Weight: sdk.NewDecWithPrec(5, 1)},
+			WeightedVoteOption{Option: OptionYes, Weight: sdk.NewDecWithPrec(5, 1)},
+		}, false},
+		{0, addrs[0], WeightedVoteOptions{ // zero weight
+			WeightedVoteOption{Option: OptionYes, Weight: sdk.NewDec(0)},
+		}, false},
+		{0, addrs[0], WeightedVoteOptions{ // negative weight
+			WeightedVoteOption{Option: OptionYes, Weight: sdk.NewDec(-1)},
+		}, false},
+		{0, addrs[0], WeightedVoteOptions{}, false},
+		{0, addrs[0], NewNonSplitVoteOption(VoteOption(0x13)), false},
+		{0, addrs[0], WeightedVoteOptions{ // weight sum <1
+			WeightedVoteOption{Option: OptionYes, Weight: sdk.NewDecWithPrec(5, 1)},
+		}, false},
+	}
+
+	for i, tc := range tests {
+		msg := NewMsgVoteWeighted(tc.voterAddr, tc.proposalID, tc.options)
+		if tc.expectPass {
+			require.Nil(t, msg.ValidateBasic(), "test: %v", i)
+		} else {
+			require.NotNil(t, msg.ValidateBasic(), "test: %v", i)
+		}
+	}
+}
+
+// this tests that Amino JSON MsgSubmitProposal.GetSignBytes() still works with Content as Any using the ModuleCdc
+func TestMsgSubmitProposal_GetSignBytes(t *testing.T) {
+	msg, err := NewMsgSubmitProposal(NewTextProposal("test", "abcd"), sdk.NewCoins(), sdk.AccAddress{})
+	require.NoError(t, err)
+	var bz []byte
+	require.NotPanics(t, func() {
+		bz = msg.GetSignBytes()
+	})
+	require.Equal(t,
+		`{"type":"cosmos-sdk/MsgSubmitProposal","value":{"content":{"type":"cosmos-sdk/TextProposal","value":{"description":"abcd","title":"test"}},"initial_deposit":[]}}`,
+		string(bz))
 }

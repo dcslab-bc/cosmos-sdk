@@ -1,43 +1,49 @@
-package slashing
+package slashing_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-
 	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/internal/keeper"
-	"github.com/cosmos/cosmos-sdk/x/staking"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/slashing"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func TestBeginBlocker(t *testing.T) {
-	ctx, ck, sk, _, keeper := slashingkeeper.CreateTestInput(t, DefaultParams())
-	power := int64(100)
-	amt := sdk.TokensFromConsensusPower(power)
-	addr, pk := slashingkeeper.Addrs[2], slashingkeeper.Pks[2]
+	app := simapp.Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+
+	pks := simapp.CreateTestPubKeys(1)
+	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, app.StakingKeeper.TokensFromConsensusPower(ctx, 200))
+	addr, pk := sdk.ValAddress(pks[0].Address()), pks[0]
+	tstaking := teststaking.NewHelper(t, ctx, app.StakingKeeper)
 
 	// bond the validator
-	res, err := staking.NewHandler(sk)(ctx, slashingkeeper.NewTestMsgCreateValidator(addr, pk, amt))
-	require.NoError(t, err)
-	require.NotNil(t, res)
-
-	staking.EndBlocker(ctx, sk)
+	power := int64(100)
+	amt := tstaking.CreateValidatorWithValPower(addr, pk, power, true)
+	staking.EndBlocker(ctx, app.StakingKeeper)
 	require.Equal(
-		t, ck.GetCoins(ctx, sdk.AccAddress(addr)),
-		sdk.NewCoins(sdk.NewCoin(sk.GetParams(ctx).BondDenom, slashingkeeper.InitTokens.Sub(amt))),
+		t, app.BankKeeper.GetAllBalances(ctx, sdk.AccAddress(addr)),
+		sdk.NewCoins(sdk.NewCoin(app.StakingKeeper.GetParams(ctx).BondDenom, InitTokens.Sub(amt))),
 	)
-	require.Equal(t, amt, sk.Validator(ctx, addr).GetBondedTokens())
+	require.Equal(t, amt, app.StakingKeeper.Validator(ctx, addr).GetBondedTokens())
 
 	val := abci.Validator{
 		Address: pk.Address(),
-		Power:   amt.Int64(),
+		Power:   power,
 	}
 
 	// mark the validator as having signed
-	req := abci.RequestBeginBlock{
+	req := ocabci.RequestBeginBlock{
 		LastCommitInfo: abci.LastCommitInfo{
 			Votes: []abci.VoteInfo{{
 				Validator:       val,
@@ -45,9 +51,10 @@ func TestBeginBlocker(t *testing.T) {
 			}},
 		},
 	}
-	BeginBlocker(ctx, req, keeper)
 
-	info, found := keeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(pk.Address()))
+	slashing.BeginBlocker(ctx, req, app.SlashingKeeper)
+
+	info, found := app.SlashingKeeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(pk.Address()))
 	require.True(t, found)
 	require.Equal(t, ctx.BlockHeight(), info.StartHeight)
 	require.Equal(t, int64(1), info.IndexOffset)
@@ -57,9 +64,9 @@ func TestBeginBlocker(t *testing.T) {
 	height := int64(0)
 
 	// for 1000 blocks, mark the validator as having signed
-	for ; height < keeper.SignedBlocksWindow(ctx); height++ {
+	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx); height++ {
 		ctx = ctx.WithBlockHeight(height)
-		req = abci.RequestBeginBlock{
+		req = ocabci.RequestBeginBlock{
 			LastCommitInfo: abci.LastCommitInfo{
 				Votes: []abci.VoteInfo{{
 					Validator:       val,
@@ -67,13 +74,14 @@ func TestBeginBlocker(t *testing.T) {
 				}},
 			},
 		}
-		BeginBlocker(ctx, req, keeper)
+
+		slashing.BeginBlocker(ctx, req, app.SlashingKeeper)
 	}
 
 	// for 500 blocks, mark the validator as having not signed
-	for ; height < ((keeper.SignedBlocksWindow(ctx) * 2) - keeper.MinSignedPerWindow(ctx) + 1); height++ {
+	for ; height < ((app.SlashingKeeper.SignedBlocksWindow(ctx) * 2) - app.SlashingKeeper.MinSignedPerWindow(ctx) + 1); height++ {
 		ctx = ctx.WithBlockHeight(height)
-		req = abci.RequestBeginBlock{
+		req = ocabci.RequestBeginBlock{
 			LastCommitInfo: abci.LastCommitInfo{
 				Votes: []abci.VoteInfo{{
 					Validator:       val,
@@ -81,14 +89,15 @@ func TestBeginBlocker(t *testing.T) {
 				}},
 			},
 		}
-		BeginBlocker(ctx, req, keeper)
+
+		slashing.BeginBlocker(ctx, req, app.SlashingKeeper)
 	}
 
 	// end block
-	staking.EndBlocker(ctx, sk)
+	staking.EndBlocker(ctx, app.StakingKeeper)
 
 	// validator should be jailed
-	validator, found := sk.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(pk))
+	validator, found := app.StakingKeeper.GetValidatorByConsAddr(ctx, sdk.GetConsAddress(pk))
 	require.True(t, found)
-	require.Equal(t, sdk.Unbonding, validator.GetStatus())
+	require.Equal(t, stakingtypes.Unbonding, validator.GetStatus())
 }

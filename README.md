@@ -1,45 +1,73 @@
-<!--
-parent:
-  order: false
--->
+The Finschia SDK is a framework for building blockchain applications in Golang.
+It is being used to build [`Finschia`](https://github.com/Finschia/finschia), the first implementation of the Finschia Mainnet.
+This is forked from [`cosmos-sdk`](https://github.com/cosmos/cosmos-sdk) at 2021-03-15.
 
-# Cosmos SDK
+**WARNING**: Breaking changes may occur because this repository is still in the pre-release development phase.
 
-![banner](docs/cosmos-sdk-image.jpg)
+**Note**: Requires [Go 1.18+](https://golang.org/dl/)
 
-[![version](https://img.shields.io/github/tag/cosmos/cosmos-sdk.svg)](https://github.com/cosmos/cosmos-sdk/releases/latest)
-[![CircleCI](https://circleci.com/gh/cosmos/cosmos-sdk/tree/master.svg?style=shield)](https://circleci.com/gh/cosmos/cosmos-sdk/tree/master)
-[![codecov](https://codecov.io/gh/cosmos/cosmos-sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/cosmos/cosmos-sdk)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cosmos/cosmos-sdk)](https://goreportcard.com/report/github.com/cosmos/cosmos-sdk)
-[![license](https://img.shields.io/github/license/cosmos/cosmos-sdk.svg)](https://github.com/cosmos/cosmos-sdk/blob/master/LICENSE)
-[![LoC](https://tokei.rs/b1/github/cosmos/cosmos-sdk)](https://github.com/cosmos/cosmos-sdk)
-[![API Reference](https://godoc.org/github.com/cosmos/cosmos-sdk?status.svg)](https://godoc.org/github.com/cosmos/cosmos-sdk)
-[![riot.im](https://img.shields.io/badge/riot.im-JOIN%20CHAT-green.svg)](https://riot.im/app/#/room/#cosmos-sdk:matrix.org)
+## What is the Finschia SDK?
 
-The Cosmos-SDK is a framework for building blockchain applications in Golang.
-It is being used to build [`Gaia`](https://github.com/cosmos/gaia), the first implementation of the Cosmos Hub.
+The [Finschia SDK](https://github.com/Finschia/finschia-sdk) is an open-source framework for building multi-asset public Proof-of-Stake (PoS) <df value="blockchain">blockchains</df>, as well as permissioned Proof-Of-Authority (PoA) blockchains. Blockchains built with the Cosmos SDK are generally referred to as **application-specific blockchains**. 
 
-**WARNING**: The SDK has mostly stabilized, but we are still making some
-breaking changes.
+The purpose of `Finschia SDK` is to succeed to [the objectives of `Cosmos sdk`](https://github.com/cosmos/cosmos-sdk/blob/master/docs/intro/overview.md) while helping develop blockchains that require faster transaction processing to be applied to reality.
 
-**Note**: Requires [Go 1.13+](https://golang.org/dl/)
+## Why the Finschia SDK?
+
+Cosmos-sdk, which created the philosophy of application-specific blockchain, established its status as a framework for various application blockchain development. `Finschia SDK` inherited this `cosmos-sdk` philosophy, addressing slow transaction processing problem that was difficult for cosmos-sdk to apply in real financial system. Real financial systems require thousands of processing performance per second, with Finschia SDK adding many performance improvements to meet that demand.
+The following work was carried out to improve performance.
+
+- Concurrent checkTx, deliverTx
+- Use [fastcache](https://github.com/victoriametrics/fastcache) for inter block cache and nodedb cache of iavl
+- Lock granularity enhancement
+
+In addition, the following functions were added:
+
+- Virtual machine using `cosmwasm` that makes smart contracts possible to be executed 
+- Use [Ostracon](https://github.com/Finschia/ostracon) as consensus engine instead of `Tendermint`
+
+
+To learn about Cosmos SDK, please refer [Cosmos SDK Docs](https://github.com/cosmos/cosmos-sdk/blob/master/docs).
 
 ## Quick Start
 
-To learn how the SDK works from a high-level perspective, go to the [SDK Intro](./docs/intro/overview.md).
+**Build**
+```
+make build
+make install
 
-If you want to get started quickly and learn how to build on top of the SDK, please follow the [SDK Application Tutorial](https://tutorials.cosmos.network/nameservice/tutorial/00-intro.html). You can also fork the tutorial's repository to get started building your own Cosmos SDK application.
+# you can see the version!
+simd version
+```
 
-For more, please go to the [Cosmos SDK Docs](./docs/).
+&nbsp;
 
-## Cosmos Hub Mainnet
+**Configure**
+```
+zsh init_node.sh sim {N(number of nodes), default=1}
+```
 
-The Cosmos Hub application, `gaia`, has moved to its [own repository](https://github.com/cosmos/gaia). Go there to join the Cosmos Hub mainnet and more.
+&nbsp;
 
-## Scaffolding
+**Run**
+```
+# run a node
+simd start --home ~/.simapp/simapp0
 
-If you are starting a new app or a new module we provide a [scaffolding tool](https://github.com/cosmos/scaffold) to help you get started and speed up development. If you have any questions or find a bug, feel free to open an issue in the repo.
+# If N is larger than 1, run all node.
+# simapp0 has other nodes as persistant_peer. 
+simd start --home ~/.simapp/simapp0
+simd start --home ~/.simapp/simapp1
+...
+```
 
-## Disambiguation
+**Visit with your browser**
+* Node: http://localhost:26657/
+* REST: http://localhost:1317/swagger-ui/
 
-This Cosmos-SDK project is not related to the [React-Cosmos](https://github.com/react-cosmos/react-cosmos) project (yet). Many thanks to Evan Coury and Ovidiu (@skidding) for this Github organization name. As per our agreement, this disambiguation notice will stay here.
+&nbsp;
+
+## Follow Guide
+You can refer to the sample tx commands [here](docs/sample-tx.md). 
+Test different commands to get a broader understanding of Finschia
+

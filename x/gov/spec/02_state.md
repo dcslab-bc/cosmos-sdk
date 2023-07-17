@@ -11,26 +11,17 @@ be one active parameter set at any given time. If governance wants to change a
 parameter set, either to modify a value or add/remove a parameter field, a new
 parameter set has to be created and the previous one rendered inactive.
 
-```go
-type DepositParams struct {
-  MinDeposit        sdk.Coins  //  Minimum deposit for a proposal to enter voting period.
-  MaxDepositPeriod  time.Time  //  Maximum period for Atom holders to deposit on a proposal. Initial value: 2 months
-}
-```
+### DepositParams
 
-```go
-type VotingParams struct {
-  VotingPeriod      time.Time  //  Length of the voting period. Initial value: 2 weeks
-}
-```
++++ https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/gov/v1beta1/gov.proto#L127-L145
 
-```go
-type TallyParams struct {
-  Quorum            sdk.Dec  //  Minimum percentage of stake that needs to vote for a proposal to be considered valid
-  Threshold         sdk.Dec  //  Minimum proportion of Yes votes for proposal to pass. Initial value: 0.5
-  Veto              sdk.Dec  //  Minimum proportion of Veto votes to Total votes ratio for proposal to be vetoed. Initial value: 1/3
-}
-```
+### VotingParams
+
++++ https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/gov/v1beta1/gov.proto#L147-L156
+
+### TallyParams
+
++++ https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/gov/v1beta1/gov.proto#L158-L183
 
 Parameters are stored in a global `GlobalParams` KVStore.
 
@@ -68,12 +59,7 @@ const (
 
 ## Deposit
 
-```go
-  type Deposit struct {
-    Amount      sdk.Coins       //  Amount of coins deposited by depositor
-    Depositor   crypto.address  //  Address of depositor
-  }
-```
++++ https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/gov/v1beta1/gov.proto#L43-L53
 
 ## ValidatorGovInfo
 
@@ -92,22 +78,7 @@ This type is used in a temp map when tallying
 what this proposal is about, and other fields, which are the mutable state of
 the governance process.
 
-```go
-type Proposal struct {
-	Content  // Proposal content interface
-
-	ProposalID       uint64 
-	Status           ProposalStatus  // Status of the Proposal {Pending, Active, Passed, Rejected}
-	FinalTallyResult TallyResult     // Result of Tallies
-
-	SubmitTime     time.Time  // Time of the block where TxGovSubmitProposal was included
-	DepositEndTime time.Time  // Time that the Proposal would expire if deposit amount isn't met
-	TotalDeposit   sdk.Coins  // Current deposit on this proposal. Initial value is set at InitialDeposit
-
-	VotingStartTime time.Time  //  Time of the block where MinDeposit was reached. -1 if MinDeposit is not reached
-	VotingEndTime   time.Time  // Time that the VotingPeriod for this proposal will end and votes will be tallied
-}
-```
++++ https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/gov/v1beta1/gov.proto#L55-L77
 
 ```go
 type Content interface {
@@ -145,26 +116,26 @@ We also mention a method to update the tally for a given proposal:
 
 ## Stores
 
-*Stores are KVStores in the multi-store. The key to find the store is the first
-parameter in the list*`
+_Stores are KVStores in the multi-store. The key to find the store is the first
+parameter in the list_`
 
 We will use one KVStore `Governance` to store two mappings:
 
-* A mapping from `proposalID|'proposal'` to `Proposal`.
-* A mapping from `proposalID|'addresses'|address` to `Vote`. This mapping allows
-us to query all addresses that voted on the proposal along with their vote by
-doing a range query on `proposalID:addresses`.
-
+- A mapping from `proposalID|'proposal'` to `Proposal`.
+- A mapping from `proposalID|'addresses'|address` to `Vote`. This mapping allows
+  us to query all addresses that voted on the proposal along with their vote by
+  doing a range query on `proposalID:addresses`.
 
 For pseudocode purposes, here are the two function we will use to read or write in stores:
 
-* `load(StoreKey, Key)`: Retrieve item stored at key `Key` in store found at key `StoreKey` in the multistore
-* `store(StoreKey, Key, value)`: Write value `Value` at key `Key` in store found at key `StoreKey` in the multistore
+- `load(StoreKey, Key)`: Retrieve item stored at key `Key` in store found at key `StoreKey` in the multistore
+- `store(StoreKey, Key, value)`: Write value `Value` at key `Key` in store found at key `StoreKey` in the multistore
 
 ## Proposal Processing Queue
 
 **Store:**
-* `ProposalProcessingQueue`: A queue `queue[proposalID]` containing all the
+
+- `ProposalProcessingQueue`: A queue `queue[proposalID]` containing all the
   `ProposalIDs` of proposals that reached `MinDeposit`. During each `EndBlock`,
   all the proposals that have reached the end of their voting period are processed.
   To process a finished proposal, the application tallies the votes, computes the

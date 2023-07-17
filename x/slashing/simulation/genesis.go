@@ -3,16 +3,15 @@ package simulation
 // DONTCOVER
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/cosmos/cosmos-sdk/x/slashing/internal/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 // Simulation parameter constants
@@ -86,8 +85,12 @@ func RandomizedGenState(simState *module.SimulationState) {
 		slashFractionDoubleSign, slashFractionDowntime,
 	)
 
-	slashingGenesis := types.NewGenesisState(params, nil, nil)
+	slashingGenesis := types.NewGenesisState(params, []types.SigningInfo{}, []types.ValidatorMissedBlocks{})
 
-	fmt.Printf("Selected randomly generated slashing parameters:\n%s\n", codec.MustMarshalJSONIndent(simState.Cdc, slashingGenesis.Params))
+	bz, err := json.MarshalIndent(&slashingGenesis, "", " ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Selected randomly generated slashing parameters:\n%s\n", bz)
 	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(slashingGenesis)
 }

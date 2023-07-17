@@ -4,6 +4,9 @@ order: 1
 
 # State
 
-Presently, the bank module has no inherent state — it simply reads and writes accounts using the `AccountKeeper` from the `auth` module.
+The `x/bank` module keeps state of three primary objects, account balances, denom metadata and the
+total supply of all balances.
 
-This implementation choice is intended to minimize necessary state reads/writes, since we expect most transactions to involve coin amounts (for fees), so storing coin data in the account saves reading it separately.
+- Supply: `0x0 | byte(denom) -> byte(amount)`
+- Denom Metadata: `0x1 | byte(denom) -> ProtocolBuffer(Metadata)`
+- Balances: `0x2 | byte(address length) | []byte(address) | []byte(balance.Denom) -> ProtocolBuffer(balance)`

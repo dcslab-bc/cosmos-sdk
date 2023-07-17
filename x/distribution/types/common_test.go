@@ -1,10 +1,9 @@
 package types
 
 import (
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // nolint:deadcode,unused,varcheck
@@ -25,5 +24,5 @@ var (
 	valAddr3     = sdk.ValAddress(valPk3.Address())
 	emptyValAddr sdk.ValAddress
 
-	emptyPubkey crypto.PubKey
+	emptyPubkey cryptotypes.PubKey
 )

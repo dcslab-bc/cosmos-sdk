@@ -1,107 +1,158 @@
-package keeper
+package keeper_test
 
 import (
-	"sort"
 	"testing"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
-
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
+// IsValSetSorted reports whether valset is sorted.
+func IsValSetSorted(data []types.Validator, powerReduction sdk.Int) bool {
+	n := len(data)
+	for i := n - 1; i > 0; i-- {
+		if types.ValidatorsByVotingPower(data).Less(i, i-1, powerReduction) {
+			return false
+		}
+	}
+	return true
+}
+
 func TestHistoricalInfo(t *testing.T) {
-	ctx, _, keeper, _ := CreateTestInput(t, false, 10)
+	_, app, ctx := createTestInput()
+
+	addrDels := simapp.AddTestAddrsIncremental(app, ctx, 50, sdk.NewInt(0))
+	addrVals := simapp.ConvertAddrsToValAddrs(addrDels)
+
 	validators := make([]types.Validator, len(addrVals))
 
 	for i, valAddr := range addrVals {
-		validators[i] = types.NewValidator(valAddr, PKs[i], types.Description{})
+		validators[i] = teststaking.NewValidator(t, valAddr, PKs[i])
 	}
 
-	hi := types.NewHistoricalInfo(ctx.BlockHeader(), validators)
+	hi := types.NewHistoricalInfo(ctx.BlockHeader(), validators, app.StakingKeeper.PowerReduction(ctx))
+	app.StakingKeeper.SetHistoricalInfo(ctx, 2, &hi)
 
-	keeper.SetHistoricalInfo(ctx, 2, hi)
-
-	recv, found := keeper.GetHistoricalInfo(ctx, 2)
+	recv, found := app.StakingKeeper.GetHistoricalInfo(ctx, 2)
 	require.True(t, found, "HistoricalInfo not found after set")
 	require.Equal(t, hi, recv, "HistoricalInfo not equal")
-	require.True(t, sort.IsSorted(types.Validators(recv.ValSet)), "HistoricalInfo validators is not sorted")
+	require.True(t, IsValSetSorted(recv.Valset, app.StakingKeeper.PowerReduction(ctx)), "HistoricalInfo validators is not sorted")
 
-	keeper.DeleteHistoricalInfo(ctx, 2)
+	app.StakingKeeper.DeleteHistoricalInfo(ctx, 2)
 
-	recv, found = keeper.GetHistoricalInfo(ctx, 2)
+	recv, found = app.StakingKeeper.GetHistoricalInfo(ctx, 2)
 	require.False(t, found, "HistoricalInfo found after delete")
 	require.Equal(t, types.HistoricalInfo{}, recv, "HistoricalInfo is not empty")
 }
 
 func TestTrackHistoricalInfo(t *testing.T) {
-	ctx, _, k, _ := CreateTestInput(t, false, 10)
+	_, app, ctx := createTestInput()
+
+	addrDels := simapp.AddTestAddrsIncremental(app, ctx, 50, sdk.NewInt(0))
+	addrVals := simapp.ConvertAddrsToValAddrs(addrDels)
 
 	// set historical entries in params to 5
 	params := types.DefaultParams()
 	params.HistoricalEntries = 5
-	k.SetParams(ctx, params)
+	app.StakingKeeper.SetParams(ctx, params)
 
 	// set historical info at 5, 4 which should be pruned
 	// and check that it has been stored
-	h4 := abci.Header{
+	h4 := tmproto.Header{
 		ChainID: "HelloChain",
 		Height:  4,
 	}
-	h5 := abci.Header{
+	h5 := tmproto.Header{
 		ChainID: "HelloChain",
 		Height:  5,
 	}
 	valSet := []types.Validator{
-		types.NewValidator(sdk.ValAddress(Addrs[0]), PKs[0], types.Description{}),
-		types.NewValidator(sdk.ValAddress(Addrs[1]), PKs[1], types.Description{}),
+		teststaking.NewValidator(t, addrVals[0], PKs[0]),
+		teststaking.NewValidator(t, addrVals[1], PKs[1]),
 	}
-	hi4 := types.NewHistoricalInfo(h4, valSet)
-	hi5 := types.NewHistoricalInfo(h5, valSet)
-	k.SetHistoricalInfo(ctx, 4, hi4)
-	k.SetHistoricalInfo(ctx, 5, hi5)
-	recv, found := k.GetHistoricalInfo(ctx, 4)
+	hi4 := types.NewHistoricalInfo(h4, valSet, app.StakingKeeper.PowerReduction(ctx))
+	hi5 := types.NewHistoricalInfo(h5, valSet, app.StakingKeeper.PowerReduction(ctx))
+	app.StakingKeeper.SetHistoricalInfo(ctx, 4, &hi4)
+	app.StakingKeeper.SetHistoricalInfo(ctx, 5, &hi5)
+	recv, found := app.StakingKeeper.GetHistoricalInfo(ctx, 4)
 	require.True(t, found)
 	require.Equal(t, hi4, recv)
-	recv, found = k.GetHistoricalInfo(ctx, 5)
+	recv, found = app.StakingKeeper.GetHistoricalInfo(ctx, 5)
 	require.True(t, found)
 	require.Equal(t, hi5, recv)
 
-	// Set last validators in keeper
-	val1 := types.NewValidator(sdk.ValAddress(Addrs[2]), PKs[2], types.Description{})
-	k.SetValidator(ctx, val1)
-	k.SetLastValidatorPower(ctx, val1.OperatorAddress, 10)
-	val2 := types.NewValidator(sdk.ValAddress(Addrs[3]), PKs[3], types.Description{})
+	// Set bonded validators in keeper
+	val1 := teststaking.NewValidator(t, addrVals[2], PKs[2])
+	val1.Status = types.Bonded // when not bonded, consensus power is Zero
+	val1.Tokens = app.StakingKeeper.TokensFromConsensusPower(ctx, 10)
+	app.StakingKeeper.SetValidator(ctx, val1)
+	app.StakingKeeper.SetLastValidatorPower(ctx, val1.GetOperator(), 10)
+	val2 := teststaking.NewValidator(t, addrVals[3], PKs[3])
+	val1.Status = types.Bonded
+	val2.Tokens = app.StakingKeeper.TokensFromConsensusPower(ctx, 80)
+	app.StakingKeeper.SetValidator(ctx, val2)
+	app.StakingKeeper.SetLastValidatorPower(ctx, val2.GetOperator(), 80)
+
 	vals := []types.Validator{val1, val2}
-	sort.Sort(types.Validators(vals))
-	k.SetValidator(ctx, val2)
-	k.SetLastValidatorPower(ctx, val2.OperatorAddress, 8)
+	IsValSetSorted(vals, app.StakingKeeper.PowerReduction(ctx))
 
 	// Set Header for BeginBlock context
-	header := abci.Header{
+	header := tmproto.Header{
 		ChainID: "HelloChain",
 		Height:  10,
 	}
 	ctx = ctx.WithBlockHeader(header)
 
-	k.TrackHistoricalInfo(ctx)
+	app.StakingKeeper.TrackHistoricalInfo(ctx)
 
 	// Check HistoricalInfo at height 10 is persisted
 	expected := types.HistoricalInfo{
 		Header: header,
-		ValSet: vals,
+		Valset: vals,
 	}
-	recv, found = k.GetHistoricalInfo(ctx, 10)
+	recv, found = app.StakingKeeper.GetHistoricalInfo(ctx, 10)
 	require.True(t, found, "GetHistoricalInfo failed after BeginBlock")
-	require.Equal(t, expected, recv, "GetHistoricalInfo returned eunexpected result")
+	require.Equal(t, expected, recv, "GetHistoricalInfo returned unexpected result")
 
 	// Check HistoricalInfo at height 5, 4 is pruned
-	recv, found = k.GetHistoricalInfo(ctx, 4)
+	recv, found = app.StakingKeeper.GetHistoricalInfo(ctx, 4)
 	require.False(t, found, "GetHistoricalInfo did not prune earlier height")
 	require.Equal(t, types.HistoricalInfo{}, recv, "GetHistoricalInfo at height 4 is not empty after prune")
-	recv, found = k.GetHistoricalInfo(ctx, 5)
+	recv, found = app.StakingKeeper.GetHistoricalInfo(ctx, 5)
 	require.False(t, found, "GetHistoricalInfo did not prune first prune height")
 	require.Equal(t, types.HistoricalInfo{}, recv, "GetHistoricalInfo at height 5 is not empty after prune")
+}
+
+func TestGetAllHistoricalInfo(t *testing.T) {
+	_, app, ctx := createTestInput()
+
+	addrDels := simapp.AddTestAddrsIncremental(app, ctx, 50, sdk.NewInt(0))
+	addrVals := simapp.ConvertAddrsToValAddrs(addrDels)
+
+	valSet := []types.Validator{
+		teststaking.NewValidator(t, addrVals[0], PKs[0]),
+		teststaking.NewValidator(t, addrVals[1], PKs[1]),
+	}
+
+	header1 := tmproto.Header{ChainID: "HelloChain", Height: 10}
+	header2 := tmproto.Header{ChainID: "HelloChain", Height: 11}
+	header3 := tmproto.Header{ChainID: "HelloChain", Height: 12}
+
+	hist1 := types.HistoricalInfo{Header: header1, Valset: valSet}
+	hist2 := types.HistoricalInfo{Header: header2, Valset: valSet}
+	hist3 := types.HistoricalInfo{Header: header3, Valset: valSet}
+
+	expHistInfos := []types.HistoricalInfo{hist1, hist2, hist3}
+
+	for i, hi := range expHistInfos {
+		app.StakingKeeper.SetHistoricalInfo(ctx, int64(10+i), &hi)
+	}
+
+	infos := app.StakingKeeper.GetAllHistoricalInfo(ctx)
+	require.Equal(t, expHistInfos, infos)
 }

@@ -1,15 +1,18 @@
 package keys
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
 )
 
+// TODO: remove this file https://github.com/cosmos/cosmos-sdk/issues/8047
+
 // KeysCdc defines codec to be used with key operations
-var KeysCdc *codec.Codec
+var KeysCdc *codec.LegacyAmino
 
 func init() {
-	KeysCdc = codec.New()
-	codec.RegisterCrypto(KeysCdc)
+	KeysCdc = codec.NewLegacyAmino()
+	cryptocodec.RegisterCrypto(KeysCdc)
 	KeysCdc.Seal()
 }
 

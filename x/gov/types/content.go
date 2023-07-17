@@ -3,13 +3,13 @@ package types
 import (
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // Constants pertaining to a Content object
 const (
-	MaxDescriptionLength int = 5000
+	MaxDescriptionLength int = 10000
 	MaxTitleLength       int = 140
 )
 
@@ -17,6 +17,8 @@ const (
 // information such as the title and description along with the type and routing
 // information for the appropriate handler to process the proposal. Content can
 // have additional fields, which will handled by a proposal's Handler.
+// TODO Try to unify this interface with types/module/simulation
+// https://github.com/cosmos/cosmos-sdk/issues/5853
 type Content interface {
 	GetTitle() string
 	GetDescription() string

@@ -1,16 +1,16 @@
-// nolint noalias
 package types
 
 import (
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // NewTestMsg generates a test message
-func NewTestMsg(addrs ...sdk.AccAddress) *sdk.TestMsg {
-	return sdk.NewTestMsg(addrs...)
+func NewTestMsg(addrs ...sdk.AccAddress) *testdata.TestMsg {
+	return testdata.NewTestMsg(addrs...)
 }
 
 // NewTestCoins coins to more than cover the fee
@@ -21,7 +21,7 @@ func NewTestCoins() sdk.Coins {
 }
 
 // KeyTestPubAddr generates a test key pair
-func KeyTestPubAddr() (crypto.PrivKey, crypto.PubKey, sdk.AccAddress) {
+func KeyTestPubAddr() (cryptotypes.PrivKey, cryptotypes.PubKey, sdk.AccAddress) {
 	key := secp256k1.GenPrivKey()
 	pub := key.PubKey()
 	addr := sdk.AccAddress(pub.Address())

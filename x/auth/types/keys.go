@@ -1,7 +1,7 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 const (
@@ -14,15 +14,15 @@ const (
 	// FeeCollectorName the root string for the fee collector account address
 	FeeCollectorName = "fee_collector"
 
-	// QuerierRoute is the querier route for acc
-	QuerierRoute = StoreKey
+	// QuerierRoute is the querier route for auth
+	QuerierRoute = ModuleName
 )
 
 var (
 	// AddressStoreKeyPrefix prefix for account-by-address store
 	AddressStoreKeyPrefix = []byte{0x01}
 
-	// param key for global account number
+	// GlobalAccountNumberKey is param key for global account number
 	GlobalAccountNumberKey = []byte("globalAccountNumber")
 )
 

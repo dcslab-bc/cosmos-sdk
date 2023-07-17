@@ -3,14 +3,13 @@ package simulation
 // DONTCOVER
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 // Simulation parameter constants
@@ -77,6 +76,10 @@ func RandomizedGenState(simState *module.SimulationState) {
 		},
 	}
 
-	fmt.Printf("Selected randomly generated distribution parameters:\n%s\n", codec.MustMarshalJSONIndent(simState.Cdc, distrGenesis))
-	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(distrGenesis)
+	bz, err := json.MarshalIndent(&distrGenesis, "", " ")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Selected randomly generated distribution parameters:\n%s\n", bz)
+	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&distrGenesis)
 }

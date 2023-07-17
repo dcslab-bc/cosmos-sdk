@@ -1,17 +1,18 @@
-package simulation
+package simulation_test
 
 import (
 	"fmt"
 	"testing"
 
+	gogotypes "github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	tmkv "github.com/tendermint/tendermint/libs/kv"
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/x/auth/simulation"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 var (
@@ -19,23 +20,32 @@ var (
 	delAddr1 = sdk.AccAddress(delPk1.Address())
 )
 
-func makeTestCodec() (cdc *codec.Codec) {
-	cdc = codec.New()
-	sdk.RegisterCodec(cdc)
-	codec.RegisterCrypto(cdc)
-	types.RegisterCodec(cdc)
-	return
-}
-
 func TestDecodeStore(t *testing.T) {
-	cdc := makeTestCodec()
+	app := simapp.Setup(false)
+	cdc := simapp.MakeTestEncodingConfig().Marshaler
 	acc := types.NewBaseAccountWithAddress(delAddr1)
-	globalAccNumber := uint64(10)
+	dec := simulation.NewDecodeStore(app.AccountKeeper)
 
-	kvPairs := tmkv.Pairs{
-		tmkv.Pair{Key: types.AddressStoreKey(delAddr1), Value: cdc.MustMarshalBinaryBare(acc)},
-		tmkv.Pair{Key: types.GlobalAccountNumberKey, Value: cdc.MustMarshalBinaryLengthPrefixed(globalAccNumber)},
-		tmkv.Pair{Key: []byte{0x99}, Value: []byte{0x99}},
+	accBz, err := app.AccountKeeper.MarshalAccount(acc)
+	require.NoError(t, err)
+
+	globalAccNumber := gogotypes.UInt64Value{Value: 10}
+
+	kvPairs := kv.Pairs{
+		Pairs: []kv.Pair{
+			{
+				Key:   types.AddressStoreKey(delAddr1),
+				Value: accBz,
+			},
+			{
+				Key:   types.GlobalAccountNumberKey,
+				Value: cdc.MustMarshal(&globalAccNumber),
+			},
+			{
+				Key:   []byte{0x99},
+				Value: []byte{0x99},
+			},
+		},
 	}
 	tests := []struct {
 		name        string
@@ -51,9 +61,9 @@ func TestDecodeStore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			switch i {
 			case len(tests) - 1:
-				require.Panics(t, func() { DecodeStore(cdc, kvPairs[i], kvPairs[i]) }, tt.name)
+				require.Panics(t, func() { dec(kvPairs.Pairs[i], kvPairs.Pairs[i]) }, tt.name)
 			default:
-				require.Equal(t, tt.expectedLog, DecodeStore(cdc, kvPairs[i], kvPairs[i]), tt.name)
+				require.Equal(t, tt.expectedLog, dec(kvPairs.Pairs[i], kvPairs.Pairs[i]), tt.name)
 			}
 		})
 	}

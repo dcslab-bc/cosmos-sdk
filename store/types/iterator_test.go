@@ -6,13 +6,15 @@ import (
 	"github.com/stretchr/testify/require"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/iavl"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store/iavl"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 func newMemTestKVStore(t *testing.T) types.KVStore {
 	db := dbm.NewMemDB()
-	store, err := iavl.LoadStore(db, types.CommitID{}, types.PruneNothing, false)
+	store, err := iavl.LoadStore(db, log.NewNopLogger(), types.NewKVStoreKey("test"), types.CommitID{}, false, iavl.DefaultIAVLCacheSize, false)
 	require.NoError(t, err)
 	return store
 }

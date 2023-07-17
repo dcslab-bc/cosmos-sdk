@@ -1,11 +1,12 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	ocabci "github.com/Finschia/ostracon/abci/types"
 )
 
 const (
@@ -18,8 +19,6 @@ const (
 	// detailed error string.
 	internalABCICodespace        = UndefinedCodespace
 	internalABCICode      uint32 = 1
-	internalABCILog       string = "internal error"
-	// multiErrorABCICode uint32 = 1000
 )
 
 // ABCIInfo returns the ABCI error information as consumed by the tendermint
@@ -44,9 +43,9 @@ func ABCIInfo(err error, debug bool) (codespace string, code uint32, log string)
 
 // ResponseCheckTx returns an ABCI ResponseCheckTx object with fields filled in
 // from the given error and gas values.
-func ResponseCheckTx(err error, gw, gu uint64) abci.ResponseCheckTx {
-	space, code, log := ABCIInfo(err, false)
-	return abci.ResponseCheckTx{
+func ResponseCheckTx(err error, gw, gu uint64, debug bool) ocabci.ResponseCheckTx {
+	space, code, log := ABCIInfo(err, debug)
+	return ocabci.ResponseCheckTx{
 		Codespace: space,
 		Code:      code,
 		Log:       log,
@@ -55,16 +54,44 @@ func ResponseCheckTx(err error, gw, gu uint64) abci.ResponseCheckTx {
 	}
 }
 
+// ResponseCheckTxWithEvents returns an ABCI ResponseCheckTx object with fields filled in
+// from the given error, gas values and events.
+func ResponseCheckTxWithEvents(err error, gw, gu uint64, events []abci.Event, debug bool) ocabci.ResponseCheckTx {
+	space, code, log := ABCIInfo(err, debug)
+	return ocabci.ResponseCheckTx{
+		Codespace: space,
+		Code:      code,
+		Log:       log,
+		GasWanted: int64(gw),
+		GasUsed:   int64(gu),
+		Events:    events,
+	}
+}
+
 // ResponseDeliverTx returns an ABCI ResponseDeliverTx object with fields filled in
 // from the given error and gas values.
-func ResponseDeliverTx(err error, gw, gu uint64) abci.ResponseDeliverTx {
-	space, code, log := ABCIInfo(err, false)
+func ResponseDeliverTx(err error, gw, gu uint64, debug bool) abci.ResponseDeliverTx {
+	space, code, log := ABCIInfo(err, debug)
 	return abci.ResponseDeliverTx{
 		Codespace: space,
 		Code:      code,
 		Log:       log,
 		GasWanted: int64(gw),
 		GasUsed:   int64(gu),
+	}
+}
+
+// ResponseDeliverTxWithEvents returns an ABCI ResponseDeliverTx object with fields filled in
+// from the given error, gas values and events.
+func ResponseDeliverTxWithEvents(err error, gw, gu uint64, events []abci.Event, debug bool) abci.ResponseDeliverTx {
+	space, code, log := ABCIInfo(err, debug)
+	return abci.ResponseDeliverTx{
+		Codespace: space,
+		Code:      code,
+		Log:       log,
+		GasWanted: int64(gw),
+		GasUsed:   int64(gu),
+		Events:    events,
 	}
 }
 
@@ -79,21 +106,32 @@ func QueryResult(err error) abci.ResponseQuery {
 	}
 }
 
+// QueryResultWithDebug returns a ResponseQuery from an error. It will try to parse ABCI
+// info from the error. It will use debugErrEncoder if debug parameter is true.
+// Starting from v0.46, this function will be removed, and be replaced by `QueryResult`.
+func QueryResultWithDebug(err error, debug bool) abci.ResponseQuery {
+	space, code, log := ABCIInfo(err, debug)
+	return abci.ResponseQuery{
+		Codespace: space,
+		Code:      code,
+		Log:       log,
+	}
+}
+
 // The debugErrEncoder encodes the error with a stacktrace.
 func debugErrEncoder(err error) string {
 	return fmt.Sprintf("%+v", err)
 }
 
-// The defaultErrEncoder applies Redact on the error before encoding it with its internal error message.
 func defaultErrEncoder(err error) string {
-	return Redact(err).Error()
+	return err.Error()
 }
 
 type coder interface {
 	ABCICode() uint32
 }
 
-// abciCode test if given error contains an ABCI code and returns the value of
+// abciCode tests if given error contains an ABCI code and returns the value of
 // it if available. This function is testing for the causer interface as well
 // and unwraps the error.
 func abciCode(err error) uint32 {
@@ -152,18 +190,4 @@ func errIsNil(err error) bool {
 		return val.IsNil()
 	}
 	return false
-}
-
-// Redact replace all errors that do not initialize with a weave error with a
-// generic internal error instance. This function is supposed to hide
-// implementation details errors and leave only those that weave framework
-// originates.
-func Redact(err error) error {
-	if ErrPanic.Is(err) {
-		return errors.New(internalABCILog)
-	}
-	if abciCode(err) == internalABCICode {
-		return errors.New(internalABCILog)
-	}
-	return err
 }

@@ -10,19 +10,31 @@ import (
 	"testing"
 )
 
+var _ CustomProtobufType = (*Dec)(nil)
+
 // NOTE: never use new(Dec) or else we will panic unmarshalling into the
 // nil embedded big.Int
 type Dec struct {
-	*big.Int `json:"int"`
+	i *big.Int
 }
 
-// number of decimal places
 const (
+	// number of decimal places
 	Precision = 18
 
-	// bytes required to represent the above precision
-	// Ceiling[Log2[999 999 999 999 999 999]]
+	// bits required to represent the above precision
+	// Ceiling[Log2[10^Precision - 1]]
 	DecimalPrecisionBits = 60
+
+	// decimalTruncateBits is the minimum number of bits removed
+	// by a truncate operation. It is equal to
+	// Floor[Log2[10^Precision - 1]].
+	decimalTruncateBits = DecimalPrecisionBits - 1
+
+	maxDecBitLen = maxBitLen + decimalTruncateBits
+
+	// max number of iterations in ApproxRoot function
+	maxApproxRootIterations = 100
 )
 
 var (
@@ -75,8 +87,6 @@ func precisionMultiplier(prec int64) *big.Int {
 	return precisionMultipliers[prec]
 }
 
-//______________________________________________________________________________________________
-
 // create a new Dec from integer assuming whole number
 func NewDec(i int64) Dec {
 	return NewDecWithPrec(i, 0)
@@ -120,12 +130,15 @@ func NewDecFromIntWithPrec(i Int, prec int64) Dec {
 
 // create a decimal from an input decimal string.
 // valid must come in the form:
-//   (-) whole integers (.) decimal integers
+//
+//	(-) whole integers (.) decimal integers
+//
 // examples of acceptable input include:
-//   -123.456
-//   456.7890
-//   345
-//   -456789
+//
+//	-123.456
+//	456.7890
+//	345
+//	-456789
 //
 // NOTE - An error will return if more decimal places
 // are provided in the string than the constant Precision.
@@ -133,7 +146,7 @@ func NewDecFromIntWithPrec(i Int, prec int64) Dec {
 // CONTRACT - This function does not mutate the input str.
 func NewDecFromStr(str string) (Dec, error) {
 	if len(str) == 0 {
-		return Dec{}, ErrEmptyDecimalStr
+		return Dec{}, fmt.Errorf("%s: %w", str, ErrEmptyDecimalStr)
 	}
 
 	// first extract any negative symbol
@@ -144,7 +157,7 @@ func NewDecFromStr(str string) (Dec, error) {
 	}
 
 	if len(str) == 0 {
-		return Dec{}, ErrEmptyDecimalStr
+		return Dec{}, fmt.Errorf("%s: %w", str, ErrEmptyDecimalStr)
 	}
 
 	strs := strings.Split(str, ".")
@@ -157,13 +170,12 @@ func NewDecFromStr(str string) (Dec, error) {
 			return Dec{}, ErrInvalidDecimalLength
 		}
 		combinedStr += strs[1]
-
 	} else if len(strs) > 2 {
 		return Dec{}, ErrInvalidDecimalStr
 	}
 
 	if lenDecs > Precision {
-		return Dec{}, fmt.Errorf("invalid precision; max: %d, got: %d", Precision, lenDecs)
+		return Dec{}, fmt.Errorf("value '%s' exceeds max precision by %d decimal places: max precision %d", str, Precision-lenDecs, Precision)
 	}
 
 	// add some extra zero's to correct to the Precision factor
@@ -173,7 +185,10 @@ func NewDecFromStr(str string) (Dec, error) {
 
 	combined, ok := new(big.Int).SetString(combinedStr, 10) // base 10
 	if !ok {
-		return Dec{}, fmt.Errorf("failed to set decimal string: %s", combinedStr)
+		return Dec{}, fmt.Errorf("failed to set decimal string with base 10: %s", combinedStr)
+	}
+	if combined.BitLen() > maxDecBitLen {
+		return Dec{}, fmt.Errorf("decimal '%s' out of range; bitLen: got %d, max %d", str, combined.BitLen(), maxDecBitLen)
 	}
 	if neg {
 		combined = new(big.Int).Neg(combined)
@@ -191,25 +206,33 @@ func MustNewDecFromStr(s string) Dec {
 	return dec
 }
 
-//______________________________________________________________________________________________
-//nolint
-func (d Dec) IsNil() bool       { return d.Int == nil }                 // is decimal nil
-func (d Dec) IsZero() bool      { return (d.Int).Sign() == 0 }          // is equal to zero
-func (d Dec) IsNegative() bool  { return (d.Int).Sign() == -1 }         // is negative
-func (d Dec) IsPositive() bool  { return (d.Int).Sign() == 1 }          // is positive
-func (d Dec) Equal(d2 Dec) bool { return (d.Int).Cmp(d2.Int) == 0 }     // equal decimals
-func (d Dec) GT(d2 Dec) bool    { return (d.Int).Cmp(d2.Int) > 0 }      // greater than
-func (d Dec) GTE(d2 Dec) bool   { return (d.Int).Cmp(d2.Int) >= 0 }     // greater than or equal
-func (d Dec) LT(d2 Dec) bool    { return (d.Int).Cmp(d2.Int) < 0 }      // less than
-func (d Dec) LTE(d2 Dec) bool   { return (d.Int).Cmp(d2.Int) <= 0 }     // less than or equal
-func (d Dec) Neg() Dec          { return Dec{new(big.Int).Neg(d.Int)} } // reverse the decimal sign
-func (d Dec) Abs() Dec          { return Dec{new(big.Int).Abs(d.Int)} } // absolute value
+func (d Dec) IsNil() bool       { return d.i == nil }                 // is decimal nil
+func (d Dec) IsZero() bool      { return (d.i).Sign() == 0 }          // is equal to zero
+func (d Dec) IsNegative() bool  { return (d.i).Sign() == -1 }         // is negative
+func (d Dec) IsPositive() bool  { return (d.i).Sign() == 1 }          // is positive
+func (d Dec) Equal(d2 Dec) bool { return (d.i).Cmp(d2.i) == 0 }       // equal decimals
+func (d Dec) GT(d2 Dec) bool    { return (d.i).Cmp(d2.i) > 0 }        // greater than
+func (d Dec) GTE(d2 Dec) bool   { return (d.i).Cmp(d2.i) >= 0 }       // greater than or equal
+func (d Dec) LT(d2 Dec) bool    { return (d.i).Cmp(d2.i) < 0 }        // less than
+func (d Dec) LTE(d2 Dec) bool   { return (d.i).Cmp(d2.i) <= 0 }       // less than or equal
+func (d Dec) Neg() Dec          { return Dec{new(big.Int).Neg(d.i)} } // reverse the decimal sign
+func (d Dec) Abs() Dec          { return Dec{new(big.Int).Abs(d.i)} } // absolute value
+
+// BigInt returns a copy of the underlying big.Int.
+func (d Dec) BigInt() *big.Int {
+	if d.IsNil() {
+		return nil
+	}
+
+	cp := new(big.Int)
+	return cp.Set(d.i)
+}
 
 // addition
 func (d Dec) Add(d2 Dec) Dec {
-	res := new(big.Int).Add(d.Int, d2.Int)
+	res := new(big.Int).Add(d.i, d2.i)
 
-	if res.BitLen() > 255+DecimalPrecisionBits {
+	if res.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{res}
@@ -217,9 +240,9 @@ func (d Dec) Add(d2 Dec) Dec {
 
 // subtraction
 func (d Dec) Sub(d2 Dec) Dec {
-	res := new(big.Int).Sub(d.Int, d2.Int)
+	res := new(big.Int).Sub(d.i, d2.i)
 
-	if res.BitLen() > 255+DecimalPrecisionBits {
+	if res.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{res}
@@ -227,10 +250,10 @@ func (d Dec) Sub(d2 Dec) Dec {
 
 // multiplication
 func (d Dec) Mul(d2 Dec) Dec {
-	mul := new(big.Int).Mul(d.Int, d2.Int)
+	mul := new(big.Int).Mul(d.i, d2.i)
 	chopped := chopPrecisionAndRound(mul)
 
-	if chopped.BitLen() > 255+DecimalPrecisionBits {
+	if chopped.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{chopped}
@@ -238,10 +261,10 @@ func (d Dec) Mul(d2 Dec) Dec {
 
 // multiplication truncate
 func (d Dec) MulTruncate(d2 Dec) Dec {
-	mul := new(big.Int).Mul(d.Int, d2.Int)
+	mul := new(big.Int).Mul(d.i, d2.i)
 	chopped := chopPrecisionAndTruncate(mul)
 
-	if chopped.BitLen() > 255+DecimalPrecisionBits {
+	if chopped.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{chopped}
@@ -249,9 +272,9 @@ func (d Dec) MulTruncate(d2 Dec) Dec {
 
 // multiplication
 func (d Dec) MulInt(i Int) Dec {
-	mul := new(big.Int).Mul(d.Int, i.i)
+	mul := new(big.Int).Mul(d.i, i.i)
 
-	if mul.BitLen() > 255+DecimalPrecisionBits {
+	if mul.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{mul}
@@ -259,9 +282,9 @@ func (d Dec) MulInt(i Int) Dec {
 
 // MulInt64 - multiplication with int64
 func (d Dec) MulInt64(i int64) Dec {
-	mul := new(big.Int).Mul(d.Int, big.NewInt(i))
+	mul := new(big.Int).Mul(d.i, big.NewInt(i))
 
-	if mul.BitLen() > 255+DecimalPrecisionBits {
+	if mul.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{mul}
@@ -270,13 +293,13 @@ func (d Dec) MulInt64(i int64) Dec {
 // quotient
 func (d Dec) Quo(d2 Dec) Dec {
 	// multiply precision twice
-	mul := new(big.Int).Mul(d.Int, precisionReuse)
+	mul := new(big.Int).Mul(d.i, precisionReuse)
 	mul.Mul(mul, precisionReuse)
 
-	quo := new(big.Int).Quo(mul, d2.Int)
+	quo := new(big.Int).Quo(mul, d2.i)
 	chopped := chopPrecisionAndRound(quo)
 
-	if chopped.BitLen() > 255+DecimalPrecisionBits {
+	if chopped.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{chopped}
@@ -284,15 +307,14 @@ func (d Dec) Quo(d2 Dec) Dec {
 
 // quotient truncate
 func (d Dec) QuoTruncate(d2 Dec) Dec {
-
 	// multiply precision twice
-	mul := new(big.Int).Mul(d.Int, precisionReuse)
+	mul := new(big.Int).Mul(d.i, precisionReuse)
 	mul.Mul(mul, precisionReuse)
 
-	quo := new(big.Int).Quo(mul, d2.Int)
+	quo := mul.Quo(mul, d2.i)
 	chopped := chopPrecisionAndTruncate(quo)
 
-	if chopped.BitLen() > 255+DecimalPrecisionBits {
+	if chopped.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{chopped}
@@ -301,13 +323,13 @@ func (d Dec) QuoTruncate(d2 Dec) Dec {
 // quotient, round up
 func (d Dec) QuoRoundUp(d2 Dec) Dec {
 	// multiply precision twice
-	mul := new(big.Int).Mul(d.Int, precisionReuse)
+	mul := new(big.Int).Mul(d.i, precisionReuse)
 	mul.Mul(mul, precisionReuse)
 
-	quo := new(big.Int).Quo(mul, d2.Int)
+	quo := new(big.Int).Quo(mul, d2.i)
 	chopped := chopPrecisionAndRoundUp(quo)
 
-	if chopped.BitLen() > 255+DecimalPrecisionBits {
+	if chopped.BitLen() > maxDecBitLen {
 		panic("Int overflow")
 	}
 	return Dec{chopped}
@@ -315,13 +337,13 @@ func (d Dec) QuoRoundUp(d2 Dec) Dec {
 
 // quotient
 func (d Dec) QuoInt(i Int) Dec {
-	mul := new(big.Int).Quo(d.Int, i.i)
+	mul := new(big.Int).Quo(d.i, i.i)
 	return Dec{mul}
 }
 
 // QuoInt64 - quotient with int64
 func (d Dec) QuoInt64(i int64) Dec {
-	mul := new(big.Int).Quo(d.Int, big.NewInt(i))
+	mul := new(big.Int).Quo(d.i, big.NewInt(i))
 	return Dec{mul}
 }
 
@@ -329,6 +351,8 @@ func (d Dec) QuoInt64(i int64) Dec {
 // using Newton's method (where n is positive). The algorithm starts with some guess and
 // computes the sequence of improved guesses until an answer converges to an
 // approximate answer.  It returns `|d|.ApproxRoot() * -1` if input is negative.
+// A maximum number of 100 iterations is used a backup boundary condition for
+// cases where the answer never converges enough to satisfy the main condition.
 func (d Dec) ApproxRoot(root uint64) (guess Dec, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -356,7 +380,7 @@ func (d Dec) ApproxRoot(root uint64) (guess Dec, err error) {
 	rootInt := NewIntFromUint64(root)
 	guess, delta := OneDec(), OneDec()
 
-	for delta.Abs().GT(SmallestDec()) {
+	for iter := 0; delta.Abs().GT(SmallestDec()) && iter < maxApproxRootIterations; iter++ {
 		prev := guess.Power(root - 1)
 		if prev.IsZero() {
 			prev = SmallestDec()
@@ -377,15 +401,15 @@ func (d Dec) Power(power uint64) Dec {
 		return OneDec()
 	}
 	tmp := OneDec()
+
 	for i := power; i > 1; {
-		if i%2 == 0 {
-			i /= 2
-		} else {
+		if i%2 != 0 {
 			tmp = tmp.Mul(d)
-			i = (i - 1) / 2
 		}
+		i /= 2
 		d = d.Mul(d)
 	}
+
 	return d.Mul(tmp)
 }
 
@@ -397,7 +421,7 @@ func (d Dec) ApproxSqrt() (Dec, error) {
 
 // is integer, e.g. decimals are zero
 func (d Dec) IsInteger() bool {
-	return new(big.Int).Rem(d.Int, precisionReuse).Sign() == 0
+	return new(big.Int).Rem(d.i, precisionReuse).Sign() == 0
 }
 
 // format decimal state
@@ -409,16 +433,17 @@ func (d Dec) Format(s fmt.State, verb rune) {
 }
 
 func (d Dec) String() string {
-	if d.Int == nil {
-		return d.Int.String()
+	if d.i == nil {
+		return d.i.String()
 	}
 
 	isNeg := d.IsNegative()
-	if d.IsNegative() {
+
+	if isNeg {
 		d = d.Neg()
 	}
 
-	bzInt, err := d.Int.MarshalText()
+	bzInt, err := d.i.MarshalText()
 	if err != nil {
 		return ""
 	}
@@ -442,9 +467,7 @@ func (d Dec) String() string {
 
 		// set final digits
 		copy(bzStr[2+(Precision-inputSize):], bzInt)
-
 	} else {
-
 		// inputSize + 1 to account for the decimal point that is being added
 		bzStr = make([]byte, inputSize+1)
 		decPointPlace := inputSize - Precision
@@ -461,6 +484,22 @@ func (d Dec) String() string {
 	return string(bzStr)
 }
 
+// Float64 returns the float64 representation of a Dec.
+// Will return the error if the conversion failed.
+func (d Dec) Float64() (float64, error) {
+	return strconv.ParseFloat(d.String(), 64)
+}
+
+// MustFloat64 returns the float64 representation of a Dec.
+// Would panic if the conversion failed.
+func (d Dec) MustFloat64() float64 {
+	if value, err := strconv.ParseFloat(d.String(), 64); err != nil {
+		panic(err)
+	} else {
+		return value
+	}
+}
+
 //     ____
 //  __|    |__   "chop 'em
 //       ` \     round!"
@@ -475,7 +514,6 @@ func (d Dec) String() string {
 //
 // Mutates the input. Use the non-mutative version if that is undesired
 func chopPrecisionAndRound(d *big.Int) *big.Int {
-
 	// remove the negative and add it back when returning
 	if d.Sign() == -1 {
 		// make d positive, compute chopped value, and then un-mutate d
@@ -508,7 +546,6 @@ func chopPrecisionAndRound(d *big.Int) *big.Int {
 }
 
 func chopPrecisionAndRoundUp(d *big.Int) *big.Int {
-
 	// remove the negative and add it back when returning
 	if d.Sign() == -1 {
 		// make d positive, compute chopped value, and then un-mutate d
@@ -537,7 +574,7 @@ func chopPrecisionAndRoundNonMutative(d *big.Int) *big.Int {
 
 // RoundInt64 rounds the decimal using bankers rounding
 func (d Dec) RoundInt64() int64 {
-	chopped := chopPrecisionAndRoundNonMutative(d.Int)
+	chopped := chopPrecisionAndRoundNonMutative(d.i)
 	if !chopped.IsInt64() {
 		panic("Int64() out of bound")
 	}
@@ -546,24 +583,18 @@ func (d Dec) RoundInt64() int64 {
 
 // RoundInt round the decimal using bankers rounding
 func (d Dec) RoundInt() Int {
-	return NewIntFromBigInt(chopPrecisionAndRoundNonMutative(d.Int))
+	return NewIntFromBigInt(chopPrecisionAndRoundNonMutative(d.i))
 }
 
-//___________________________________________________________________________________
-
-// similar to chopPrecisionAndRound, but always rounds down
+// chopPrecisionAndTruncate is similar to chopPrecisionAndRound,
+// but always rounds down. It does not mutate the input.
 func chopPrecisionAndTruncate(d *big.Int) *big.Int {
-	return d.Quo(d, precisionReuse)
-}
-
-func chopPrecisionAndTruncateNonMutative(d *big.Int) *big.Int {
-	tmp := new(big.Int).Set(d)
-	return chopPrecisionAndTruncate(tmp)
+	return new(big.Int).Quo(d, precisionReuse)
 }
 
 // TruncateInt64 truncates the decimals from the number and returns an int64
 func (d Dec) TruncateInt64() int64 {
-	chopped := chopPrecisionAndTruncateNonMutative(d.Int)
+	chopped := chopPrecisionAndTruncate(d.i)
 	if !chopped.IsInt64() {
 		panic("Int64() out of bound")
 	}
@@ -572,18 +603,18 @@ func (d Dec) TruncateInt64() int64 {
 
 // TruncateInt truncates the decimals from the number and returns an Int
 func (d Dec) TruncateInt() Int {
-	return NewIntFromBigInt(chopPrecisionAndTruncateNonMutative(d.Int))
+	return NewIntFromBigInt(chopPrecisionAndTruncate(d.i))
 }
 
 // TruncateDec truncates the decimals from the number and returns a Dec
 func (d Dec) TruncateDec() Dec {
-	return NewDecFromBigInt(chopPrecisionAndTruncateNonMutative(d.Int))
+	return NewDecFromBigInt(chopPrecisionAndTruncate(d.i))
 }
 
 // Ceil returns the smallest interger value (as a decimal) that is greater than
 // or equal to the given decimal.
 func (d Dec) Ceil() Dec {
-	tmp := new(big.Int).Set(d.Int)
+	tmp := new(big.Int).Set(d.i)
 
 	quo, rem := tmp, big.NewInt(0)
 	quo, rem = quo.QuoRem(tmp, precisionReuse, rem)
@@ -599,8 +630,6 @@ func (d Dec) Ceil() Dec {
 
 	return NewDecFromBigInt(quo.Add(quo, oneInt))
 }
-
-//___________________________________________________________________________________
 
 // MaxSortableDec is the largest Dec that can be passed into SortableDecBytes()
 // Its negative form is the least Dec that can be passed in.
@@ -636,61 +665,27 @@ func SortableDecBytes(dec Dec) []byte {
 	return []byte(fmt.Sprintf(fmt.Sprintf("%%0%ds", Precision*2+1), dec.String()))
 }
 
-//___________________________________________________________________________________
-
 // reuse nil values
-var (
-	nilAmino string
-	nilJSON  []byte
-)
+var nilJSON []byte
 
 func init() {
 	empty := new(big.Int)
-	bz, err := empty.MarshalText()
-	if err != nil {
-		panic("bad nil amino init")
-	}
-	nilAmino = string(bz)
-
-	nilJSON, err = json.Marshal(string(bz))
-	if err != nil {
-		panic("bad nil json init")
-	}
-}
-
-// wraps d.MarshalText()
-func (d Dec) MarshalAmino() (string, error) {
-	if d.Int == nil {
-		return nilAmino, nil
-	}
-	bz, err := d.Int.MarshalText()
-	return string(bz), err
-}
-
-// requires a valid JSON string - strings quotes and calls UnmarshalText
-func (d *Dec) UnmarshalAmino(text string) (err error) {
-	tempInt := new(big.Int)
-	err = tempInt.UnmarshalText([]byte(text))
-	if err != nil {
-		return err
-	}
-	d.Int = tempInt
-	return nil
+	bz, _ := empty.MarshalText()
+	nilJSON, _ = json.Marshal(string(bz))
 }
 
 // MarshalJSON marshals the decimal
 func (d Dec) MarshalJSON() ([]byte, error) {
-	if d.Int == nil {
+	if d.i == nil {
 		return nilJSON, nil
 	}
-
 	return json.Marshal(d.String())
 }
 
 // UnmarshalJSON defines custom decoding scheme
 func (d *Dec) UnmarshalJSON(bz []byte) error {
-	if d.Int == nil {
-		d.Int = new(big.Int)
+	if d.i == nil {
+		d.i = new(big.Int)
 	}
 
 	var text string
@@ -698,19 +693,86 @@ func (d *Dec) UnmarshalJSON(bz []byte) error {
 	if err != nil {
 		return err
 	}
+
 	// TODO: Reuse dec allocation
 	newDec, err := NewDecFromStr(text)
 	if err != nil {
 		return err
 	}
-	d.Int = newDec.Int
+
+	d.i = newDec.i
 	return nil
 }
 
-// MarshalYAML returns Ythe AML representation.
-func (d Dec) MarshalYAML() (interface{}, error) { return d.String(), nil }
+// MarshalYAML returns the YAML representation.
+func (d Dec) MarshalYAML() (interface{}, error) {
+	return d.String(), nil
+}
 
-//___________________________________________________________________________________
+// Marshal implements the gogo proto custom type interface.
+func (d Dec) Marshal() ([]byte, error) {
+	if d.i == nil {
+		d.i = new(big.Int)
+	}
+	return d.i.MarshalText()
+}
+
+// MarshalTo implements the gogo proto custom type interface.
+func (d *Dec) MarshalTo(data []byte) (n int, err error) {
+	if d.i == nil {
+		d.i = new(big.Int)
+	}
+
+	if d.i.Cmp(zeroInt) == 0 {
+		copy(data, []byte{0x30})
+		return 1, nil
+	}
+
+	bz, err := d.Marshal()
+	if err != nil {
+		return 0, err
+	}
+
+	copy(data, bz)
+	return len(bz), nil
+}
+
+// Unmarshal implements the gogo proto custom type interface.
+func (d *Dec) Unmarshal(data []byte) error {
+	if len(data) == 0 {
+		d = nil
+		return nil
+	}
+
+	if d.i == nil {
+		d.i = new(big.Int)
+	}
+
+	if err := d.i.UnmarshalText(data); err != nil {
+		return err
+	}
+
+	if d.i.BitLen() > maxDecBitLen {
+		return fmt.Errorf("decimal out of range; got: %d, max: %d", d.i.BitLen(), maxDecBitLen)
+	}
+
+	return nil
+}
+
+// Size implements the gogo proto custom type interface.
+func (d *Dec) Size() int {
+	bz, _ := d.Marshal()
+	return len(bz)
+}
+
+// Override Amino binary serialization by proxying to protobuf.
+func (d Dec) MarshalAmino() ([]byte, error)   { return d.Marshal() }
+func (d *Dec) UnmarshalAmino(bz []byte) error { return d.Unmarshal(bz) }
+
+func (dp DecProto) String() string {
+	return dp.Dec.String()
+}
+
 // helpers
 
 // test if two decimal arrays are equal

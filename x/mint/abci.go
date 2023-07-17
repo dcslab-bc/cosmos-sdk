@@ -1,12 +1,18 @@
 package mint
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/mint/internal/types"
+	"time"
+
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/mint/keeper"
+	"github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 // BeginBlocker mints new tokens for the previous block.
-func BeginBlocker(ctx sdk.Context, k Keeper) {
+func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
+
 	// fetch stored minter & params
 	minter := k.GetMinter(ctx)
 	params := k.GetParams(ctx)
@@ -31,6 +37,10 @@ func BeginBlocker(ctx sdk.Context, k Keeper) {
 	err = k.AddCollectedFees(ctx, mintedCoins)
 	if err != nil {
 		panic(err)
+	}
+
+	if mintedCoin.Amount.IsInt64() {
+		defer telemetry.ModuleSetGauge(types.ModuleName, float32(mintedCoin.Amount.Int64()), "minted_tokens")
 	}
 
 	ctx.EventManager().EmitEvent(

@@ -1,32 +1,47 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/msgservice"
+	authzcodec "github.com/Finschia/finschia-sdk/x/authz/codec"
+	fdncodec "github.com/Finschia/finschia-sdk/x/foundation/codec"
+	govcodec "github.com/Finschia/finschia-sdk/x/gov/codec"
 )
 
-// module codec
-var ModuleCdc = codec.New()
-
-// RegisterCodec registers all the necessary types and interfaces for
-// governance.
-func RegisterCodec(cdc *codec.Codec) {
+// RegisterLegacyAminoCodec registers all the necessary types and interfaces for the
+// governance module.
+func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterInterface((*Content)(nil), nil)
-
-	cdc.RegisterConcrete(MsgSubmitProposal{}, "cosmos-sdk/MsgSubmitProposal", nil)
-	cdc.RegisterConcrete(MsgDeposit{}, "cosmos-sdk/MsgDeposit", nil)
-	cdc.RegisterConcrete(MsgVote{}, "cosmos-sdk/MsgVote", nil)
-
-	cdc.RegisterConcrete(TextProposal{}, "cosmos-sdk/TextProposal", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgSubmitProposal{}, "cosmos-sdk/MsgSubmitProposal")
+	legacy.RegisterAminoMsg(cdc, &MsgDeposit{}, "cosmos-sdk/MsgDeposit")
+	legacy.RegisterAminoMsg(cdc, &MsgVote{}, "cosmos-sdk/MsgVote")
+	legacy.RegisterAminoMsg(cdc, &MsgVoteWeighted{}, "cosmos-sdk/MsgVoteWeighted")
+	cdc.RegisterConcrete(&TextProposal{}, "cosmos-sdk/TextProposal", nil)
 }
 
-// RegisterProposalTypeCodec registers an external proposal content type defined
-// in another module for the internal ModuleCdc. This allows the MsgSubmitProposal
-// to be correctly Amino encoded and decoded.
-func RegisterProposalTypeCodec(o interface{}, name string) {
-	ModuleCdc.RegisterConcrete(o, name, nil)
+func RegisterInterfaces(registry types.InterfaceRegistry) {
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgSubmitProposal{},
+		&MsgVote{},
+		&MsgVoteWeighted{},
+		&MsgDeposit{},
+	)
+	registry.RegisterInterface(
+		"cosmos.gov.v1beta1.Content",
+		(*Content)(nil),
+		&TextProposal{},
+	)
+
+	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
 
-// TODO determine a good place to seal this codec
 func init() {
-	RegisterCodec(ModuleCdc)
+	// Register all Amino interfaces and concrete types on the authz  and gov Amino codec so that this can later be
+	// used to properly serialize MsgGrant, MsgExec and MsgSubmitProposal instances
+	RegisterLegacyAminoCodec(authzcodec.Amino)
+	RegisterLegacyAminoCodec(govcodec.Amino)
+	RegisterLegacyAminoCodec(fdncodec.Amino)
 }

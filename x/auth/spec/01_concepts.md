@@ -4,6 +4,13 @@ order: 1
 
 # Concepts
 
+**Note:** The auth module is different from the [authz module](../modules/authz/).
+
+The differences are:
+
+* `auth` - authentication of accounts and transactions for Cosmos SDK applications and is responsible for specifying the base transaction and account types.
+* `authz` - authorization for accounts to perform actions on behalf of other accounts and enables a granter to grant authorizations to a grantee that allows the grantee to execute messages on behalf of the granter.
+
 ## Gas & Fees
 
 Fees serve two purposes for an operator of the network.
@@ -19,7 +26,7 @@ signature verification, as well as costs proportional to the tx size. Operators
 should set minimum gas prices when starting their nodes. They must set the unit
 costs of gas in each token denomination they wish to support:
 
-`gaiad start ... --minimum-gas-prices=0.00001stake;0.05photinos`
+`simd start ... --minimum-gas-prices=0.00001stake;0.05photinos`
 
 When adding transactions to mempool or gossipping transactions, validators check
 if the transaction's gas prices, which are determined by the provided fees, meet

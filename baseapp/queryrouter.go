@@ -2,8 +2,9 @@ package baseapp
 
 import (
 	"fmt"
+	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 type QueryRouter struct {
@@ -21,15 +22,23 @@ func NewQueryRouter() *QueryRouter {
 
 // AddRoute adds a query path to the router with a given Querier. It will panic
 // if a duplicate route is given. The route must be alphanumeric.
-func (qrt *QueryRouter) AddRoute(path string, q sdk.Querier) sdk.QueryRouter {
-	if !isAlphaNumeric(path) {
+func (qrt *QueryRouter) AddRoute(route string, q sdk.Querier) sdk.QueryRouter {
+	if !sdk.IsAlphaNumeric(route) {
 		panic("route expressions can only contain alphanumeric characters")
 	}
-	if qrt.routes[path] != nil {
-		panic(fmt.Sprintf("route %s has already been initialized", path))
+
+	// paths are only the final extensions!
+	// Needed to ensure erroneous queries don't get into the state machine.
+	if strings.Contains(route, "/") {
+		panic("route's don't contain '/'")
 	}
 
-	qrt.routes[path] = q
+	if qrt.routes[route] != nil {
+		panic(fmt.Sprintf("route %s has already been initialized", route))
+	}
+
+	qrt.routes[route] = q
+
 	return qrt
 }
 

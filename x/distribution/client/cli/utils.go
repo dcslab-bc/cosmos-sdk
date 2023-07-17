@@ -1,33 +1,24 @@
 package cli
 
 import (
-	"io/ioutil"
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/internal/os"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
-type (
-	// CommunityPoolSpendProposalJSON defines a CommunityPoolSpendProposal with a deposit
-	CommunityPoolSpendProposalJSON struct {
-		Title       string         `json:"title" yaml:"title"`
-		Description string         `json:"description" yaml:"description"`
-		Recipient   sdk.AccAddress `json:"recipient" yaml:"recipient"`
-		Amount      sdk.Coins      `json:"amount" yaml:"amount"`
-		Deposit     sdk.Coins      `json:"deposit" yaml:"deposit"`
-	}
-)
+// ParseCommunityPoolSpendProposalWithDeposit reads and parses a CommunityPoolSpendProposalWithDeposit from a file.
+func ParseCommunityPoolSpendProposalWithDeposit(cdc codec.JSONCodec, proposalFile string) (types.CommunityPoolSpendProposalWithDeposit, error) {
+	proposal := types.CommunityPoolSpendProposalWithDeposit{}
 
-// ParseCommunityPoolSpendProposalJSON reads and parses a CommunityPoolSpendProposalJSON from a file.
-func ParseCommunityPoolSpendProposalJSON(cdc *codec.Codec, proposalFile string) (CommunityPoolSpendProposalJSON, error) {
-	proposal := CommunityPoolSpendProposalJSON{}
-
-	contents, err := ioutil.ReadFile(proposalFile)
+	// 2M size limit is enough for a proposal.
+	// Check the proposals:
+	// https://hubble.figment.io/cosmos/chains/cosmoshub-4/governance
+	contents, err := os.ReadFileWithSizeLimit(proposalFile, 2*1024*1024)
 	if err != nil {
 		return proposal, err
 	}
 
-	if err := cdc.UnmarshalJSON(contents, &proposal); err != nil {
+	if err = cdc.UnmarshalJSON(contents, &proposal); err != nil {
 		return proposal, err
 	}
 

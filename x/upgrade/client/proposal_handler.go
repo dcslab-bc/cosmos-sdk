@@ -1,9 +1,11 @@
 package client
 
 import (
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/client/rest"
+	govclient "github.com/Finschia/finschia-sdk/x/gov/client"
+	"github.com/Finschia/finschia-sdk/x/upgrade/client/cli"
 )
 
-var ProposalHandler = govclient.NewProposalHandler(cli.GetCmdSubmitUpgradeProposal, rest.ProposalRESTHandler)
+var (
+	ProposalHandler       = govclient.NewProposalHandler(cli.NewCmdSubmitUpgradeProposal)
+	CancelProposalHandler = govclient.NewProposalHandler(cli.NewCmdSubmitCancelUpgradeProposal)
+)

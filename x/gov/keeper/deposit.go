@@ -3,9 +3,9 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 // GetDeposit gets the deposit of a specific depositor on a specific proposal
@@ -16,15 +16,18 @@ func (keeper Keeper) GetDeposit(ctx sdk.Context, proposalID uint64, depositorAdd
 		return deposit, false
 	}
 
-	keeper.cdc.MustUnmarshalBinaryLengthPrefixed(bz, &deposit)
+	keeper.cdc.MustUnmarshal(bz, &deposit)
+
 	return deposit, true
 }
 
 // SetDeposit sets a Deposit to the gov store
 func (keeper Keeper) SetDeposit(ctx sdk.Context, deposit types.Deposit) {
 	store := ctx.KVStore(keeper.storeKey)
-	bz := keeper.cdc.MustMarshalBinaryLengthPrefixed(deposit)
-	store.Set(types.DepositKey(deposit.ProposalID, deposit.Depositor), bz)
+	bz := keeper.cdc.MustMarshal(&deposit)
+	depositor := sdk.MustAccAddressFromBech32(deposit.Depositor)
+
+	store.Set(types.DepositKey(deposit.ProposalId, depositor), bz)
 }
 
 // GetAllDeposits returns all the deposits from the store
@@ -33,6 +36,7 @@ func (keeper Keeper) GetAllDeposits(ctx sdk.Context) (deposits types.Deposits) {
 		deposits = append(deposits, deposit)
 		return false
 	})
+
 	return
 }
 
@@ -42,6 +46,7 @@ func (keeper Keeper) GetDeposits(ctx sdk.Context, proposalID uint64) (deposits t
 		deposits = append(deposits, deposit)
 		return false
 	})
+
 	return
 }
 
@@ -50,12 +55,14 @@ func (keeper Keeper) DeleteDeposits(ctx sdk.Context, proposalID uint64) {
 	store := ctx.KVStore(keeper.storeKey)
 
 	keeper.IterateDeposits(ctx, proposalID, func(deposit types.Deposit) bool {
-		err := keeper.supplyKeeper.BurnCoins(ctx, types.ModuleName, deposit.Amount)
+		err := keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, deposit.Amount)
 		if err != nil {
 			panic(err)
 		}
 
-		store.Delete(types.DepositKey(proposalID, deposit.Depositor))
+		depositor := sdk.MustAccAddressFromBech32(deposit.Depositor)
+
+		store.Delete(types.DepositKey(proposalID, depositor))
 		return false
 	})
 }
@@ -66,9 +73,11 @@ func (keeper Keeper) IterateAllDeposits(ctx sdk.Context, cb func(deposit types.D
 	iterator := sdk.KVStorePrefixIterator(store, types.DepositsKeyPrefix)
 
 	defer iterator.Close()
+
 	for ; iterator.Valid(); iterator.Next() {
 		var deposit types.Deposit
-		keeper.cdc.MustUnmarshalBinaryLengthPrefixed(iterator.Value(), &deposit)
+
+		keeper.cdc.MustUnmarshal(iterator.Value(), &deposit)
 
 		if cb(deposit) {
 			break
@@ -82,9 +91,11 @@ func (keeper Keeper) IterateDeposits(ctx sdk.Context, proposalID uint64, cb func
 	iterator := sdk.KVStorePrefixIterator(store, types.DepositsKey(proposalID))
 
 	defer iterator.Close()
+
 	for ; iterator.Valid(); iterator.Next() {
 		var deposit types.Deposit
-		keeper.cdc.MustUnmarshalBinaryLengthPrefixed(iterator.Value(), &deposit)
+
+		keeper.cdc.MustUnmarshal(iterator.Value(), &deposit)
 
 		if cb(deposit) {
 			break
@@ -107,7 +118,7 @@ func (keeper Keeper) AddDeposit(ctx sdk.Context, proposalID uint64, depositorAdd
 	}
 
 	// update the governance module's account coins pool
-	err := keeper.supplyKeeper.SendCoinsFromAccountToModule(ctx, depositorAddr, types.ModuleName, depositAmount)
+	err := keeper.bankKeeper.SendCoinsFromAccountToModule(ctx, depositorAddr, types.ModuleName, depositAmount)
 	if err != nil {
 		return false, err
 	}
@@ -118,18 +129,24 @@ func (keeper Keeper) AddDeposit(ctx sdk.Context, proposalID uint64, depositorAdd
 
 	// Check if deposit has provided sufficient total funds to transition the proposal into the voting period
 	activatedVotingPeriod := false
+
 	if proposal.Status == types.StatusDepositPeriod && proposal.TotalDeposit.IsAllGTE(keeper.GetDepositParams(ctx).MinDeposit) {
-		keeper.activateVotingPeriod(ctx, proposal)
+		keeper.ActivateVotingPeriod(ctx, proposal)
+
 		activatedVotingPeriod = true
 	}
 
 	// Add or update deposit object
 	deposit, found := keeper.GetDeposit(ctx, proposalID, depositorAddr)
+
 	if found {
 		deposit.Amount = deposit.Amount.Add(depositAmount...)
 	} else {
 		deposit = types.NewDeposit(proposalID, depositorAddr, depositAmount)
 	}
+
+	// called when deposit has been added to a proposal, however the proposal may not be active
+	keeper.AfterProposalDeposit(ctx, proposalID, depositorAddr)
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -140,6 +157,7 @@ func (keeper Keeper) AddDeposit(ctx sdk.Context, proposalID uint64, depositorAdd
 	)
 
 	keeper.SetDeposit(ctx, deposit)
+
 	return activatedVotingPeriod, nil
 }
 
@@ -148,12 +166,14 @@ func (keeper Keeper) RefundDeposits(ctx sdk.Context, proposalID uint64) {
 	store := ctx.KVStore(keeper.storeKey)
 
 	keeper.IterateDeposits(ctx, proposalID, func(deposit types.Deposit) bool {
-		err := keeper.supplyKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, deposit.Depositor, deposit.Amount)
+		depositor := sdk.MustAccAddressFromBech32(deposit.Depositor)
+
+		err := keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, depositor, deposit.Amount)
 		if err != nil {
 			panic(err)
 		}
 
-		store.Delete(types.DepositKey(proposalID, deposit.Depositor))
+		store.Delete(types.DepositKey(proposalID, depositor))
 		return false
 	})
 }

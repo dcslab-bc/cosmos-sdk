@@ -4,23 +4,22 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/store/dbadapter"
-	"github.com/cosmos/cosmos-sdk/store/gaskv"
-	"github.com/cosmos/cosmos-sdk/store/iavl"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/stretchr/testify/require"
 
-	tiavl "github.com/tendermint/iavl"
+	liavl "github.com/cosmos/iavl"
+	"github.com/Finschia/finschia-sdk/store/cachekv"
 	dbm "github.com/tendermint/tm-db"
+
+	"github.com/Finschia/finschia-sdk/store/dbadapter"
+	"github.com/Finschia/finschia-sdk/store/gaskv"
+	"github.com/Finschia/finschia-sdk/store/iavl"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // copied from iavl/store_test.go
 var (
-	cacheSize        = 100
-	numRecent  int64 = 5
-	storeEvery int64 = 3
+	cacheSize = 100
 )
 
 func bz(s string) []byte { return []byte(s) }
@@ -35,9 +34,11 @@ func genRandomKVPairs(t *testing.T) []kvpair {
 
 	for i := 0; i < 20; i++ {
 		kvps[i].key = make([]byte, 32)
-		rand.Read(kvps[i].key)
+		_, err := rand.Read(kvps[i].key)
+		require.NoError(t, err)
 		kvps[i].value = make([]byte, 32)
-		rand.Read(kvps[i].value)
+		_, err = rand.Read(kvps[i].value)
+		require.NoError(t, err)
 	}
 
 	return kvps
@@ -88,9 +89,9 @@ func testPrefixStore(t *testing.T, baseStore types.KVStore, prefix []byte) {
 
 func TestIAVLStorePrefix(t *testing.T) {
 	db := dbm.NewMemDB()
-	tree, err := tiavl.NewMutableTree(db, cacheSize)
+	tree, err := liavl.NewMutableTree(db, cacheSize, false)
 	require.NoError(t, err)
-	iavlStore := iavl.UnsafeNewStore(tree, types.PruneNothing)
+	iavlStore := iavl.UnsafeNewStore(tree)
 
 	testPrefixStore(t, iavlStore, []byte("test"))
 }
@@ -246,7 +247,6 @@ func mockStoreWithStuff() types.KVStore {
 	store.Set(bz("key2"), bz("value2"))
 	store.Set(bz("key3"), bz("value3"))
 	store.Set(bz("something"), bz("else"))
-	store.Set(bz(""), bz(""))
 	store.Set(bz("k"), bz(sdk.PrefixValidator))
 	store.Set(bz("ke"), bz("valu"))
 	store.Set(bz("kee"), bz("valuu"))
@@ -426,4 +426,18 @@ func TestPrefixDBReverseIterator4(t *testing.T) {
 	itr := pstore.ReverseIterator(bz(""), bz(""))
 	checkInvalid(t, itr)
 	itr.Close()
+}
+
+func TestCacheWraps(t *testing.T) {
+	db := dbm.NewMemDB()
+	store := dbadapter.Store{DB: db}
+
+	cacheWrapper := store.CacheWrap()
+	require.IsType(t, &cachekv.Store{}, cacheWrapper)
+
+	cacheWrappedWithTrace := store.CacheWrapWithTrace(nil, nil)
+	require.IsType(t, &cachekv.Store{}, cacheWrappedWithTrace)
+
+	cacheWrappedWithListeners := store.CacheWrapWithListeners(nil, nil)
+	require.IsType(t, &cachekv.Store{}, cacheWrappedWithListeners)
 }

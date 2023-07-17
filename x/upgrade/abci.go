@@ -2,10 +2,14 @@ package upgrade
 
 import (
 	"fmt"
+	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 // BeginBlock will check if there is a scheduled plan and if it is ready to be executed.
@@ -16,8 +20,26 @@ import (
 // The purpose is to ensure the binary is switched EXACTLY at the desired block, and to allow
 // a migration to be executed if needed upon this switch (migration defined in the new binary)
 // skipUpgradeHeightArray is a set of block heights for which the upgrade must be skipped
-func BeginBlocker(k Keeper, ctx sdk.Context, _ abci.RequestBeginBlock) {
+func BeginBlocker(k keeper.Keeper, ctx sdk.Context, _ ocabci.RequestBeginBlock) {
+	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
+
 	plan, found := k.GetUpgradePlan(ctx)
+
+	if !k.DowngradeVerified() {
+		k.SetDowngradeVerified(true)
+		lastAppliedPlan, _ := k.GetLastCompletedUpgrade(ctx)
+		// This check will make sure that we are using a valid binary.
+		// It'll panic in these cases if there is no upgrade handler registered for the last applied upgrade.
+		// 1. If there is no scheduled upgrade.
+		// 2. If the plan is not ready.
+		// 3. If the plan is ready and skip upgrade height is set for current height.
+		if !found || !plan.ShouldExecute(ctx) || (plan.ShouldExecute(ctx) && k.IsSkipHeight(ctx.BlockHeight())) {
+			if lastAppliedPlan != "" && !k.HasHandler(lastAppliedPlan) {
+				panic(fmt.Sprintf("Wrong app version %d, upgrade handler is missing for %s upgrade plan", ctx.ConsensusParams().Version.AppVersion, lastAppliedPlan))
+			}
+		}
+	}
+
 	if !found {
 		return
 	}
@@ -35,9 +57,17 @@ func BeginBlocker(k Keeper, ctx sdk.Context, _ abci.RequestBeginBlock) {
 		}
 
 		if !k.HasHandler(plan.Name) {
-			upgradeMsg := fmt.Sprintf("UPGRADE \"%s\" NEEDED at %s: %s", plan.Name, plan.DueAt(), plan.Info)
+			// Write the upgrade info to disk. The UpgradeStoreLoader uses this info to perform or skip
+			// store migrations.
+			err := k.DumpUpgradeInfoWithInfoToDisk(ctx.BlockHeight(), plan.Name, plan.Info) //nolint:staticcheck
+			if err != nil {
+				panic(fmt.Errorf("unable to write upgrade info to filesystem: %s", err.Error()))
+			}
+
+			upgradeMsg := BuildUpgradeNeededMsg(plan)
 			// We don't have an upgrade handler for this upgrade name, meaning this software is out of date so shutdown
 			ctx.Logger().Error(upgradeMsg)
+
 			panic(upgradeMsg)
 		}
 		// We have an upgrade handler for this upgrade name, so apply the upgrade
@@ -54,4 +84,9 @@ func BeginBlocker(k Keeper, ctx sdk.Context, _ abci.RequestBeginBlock) {
 		ctx.Logger().Error(downgradeMsg)
 		panic(downgradeMsg)
 	}
+}
+
+// BuildUpgradeNeededMsg prints the message that notifies that an upgrade is needed.
+func BuildUpgradeNeededMsg(plan types.Plan) string {
+	return fmt.Sprintf("UPGRADE \"%s\" NEEDED at %s: %s", plan.Name, plan.DueAt(), plan.Info)
 }

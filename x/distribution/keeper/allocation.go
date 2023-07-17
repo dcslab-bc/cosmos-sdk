@@ -5,28 +5,29 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/exported"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // AllocateTokens handles distribution of the collected fees
+// bondedVotes is a list of (validator address, validator voted on last block flag) for all
+// validators in the bonded set.
 func (k Keeper) AllocateTokens(
 	ctx sdk.Context, sumPreviousPrecommitPower, totalPreviousPower int64,
-	previousProposer sdk.ConsAddress, previousVotes []abci.VoteInfo,
+	previousProposer sdk.ConsAddress, bondedVotes []abci.VoteInfo,
 ) {
-
 	logger := k.Logger(ctx)
 
 	// fetch and clear the collected fees for distribution, since this is
 	// called in BeginBlock, collected fees will be from the previous block
 	// (and distributed to the previous proposer)
-	feeCollector := k.supplyKeeper.GetModuleAccount(ctx, k.feeCollectorName)
-	feesCollectedInt := feeCollector.GetCoins()
+	feeCollector := k.authKeeper.GetModuleAccount(ctx, k.feeCollectorName)
+	feesCollectedInt := k.bankKeeper.GetAllBalances(ctx, feeCollector.GetAddress())
 	feesCollected := sdk.NewDecCoinsFromCoins(feesCollectedInt...)
 
 	// transfer collected fees to the distribution module account
-	err := k.supplyKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName, types.ModuleName, feesCollectedInt)
+	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, k.feeCollectorName, types.ModuleName, feesCollectedInt)
 	if err != nil {
 		panic(err)
 	}
@@ -80,16 +81,22 @@ func (k Keeper) AllocateTokens(
 	// calculate fraction allocated to validators
 	communityTax := k.GetCommunityTax(ctx)
 	voteMultiplier := sdk.OneDec().Sub(proposerMultiplier).Sub(communityTax)
+	feeMultiplier := feesCollected.MulDecTruncate(voteMultiplier)
 
 	// allocate tokens proportionally to voting power
-	// TODO consider parallelizing later, ref https://github.com/cosmos/cosmos-sdk/pull/3099#discussion_r246276376
-	for _, vote := range previousVotes {
+	//
+	// TODO: Consider parallelizing later
+	//
+	// Ref: https://github.com/cosmos/cosmos-sdk/pull/3099#discussion_r246276376
+	for _, vote := range bondedVotes {
 		validator := k.stakingKeeper.ValidatorByConsAddr(ctx, vote.Validator.Address)
 
-		// TODO consider microslashing for missing votes.
-		// ref https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
+		// TODO: Consider micro-slashing for missing votes.
+		//
+		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
 		powerFraction := sdk.NewDec(vote.Validator.Power).QuoTruncate(sdk.NewDec(totalPreviousPower))
-		reward := feesCollected.MulDecTruncate(voteMultiplier).MulDecTruncate(powerFraction)
+		reward := feeMultiplier.MulDecTruncate(powerFraction)
+
 		k.AllocateTokensToValidator(ctx, validator, reward)
 		remaining = remaining.Sub(reward)
 	}
@@ -99,8 +106,9 @@ func (k Keeper) AllocateTokens(
 	k.SetFeePool(ctx, feePool)
 }
 
-// AllocateTokensToValidator allocate tokens to a particular validator, splitting according to commission
-func (k Keeper) AllocateTokensToValidator(ctx sdk.Context, val exported.ValidatorI, tokens sdk.DecCoins) {
+// AllocateTokensToValidator allocate tokens to a particular validator,
+// splitting according to commission.
+func (k Keeper) AllocateTokensToValidator(ctx sdk.Context, val stakingtypes.ValidatorI, tokens sdk.DecCoins) {
 	// split tokens between validator and delegators according to commission
 	commission := tokens.MulDec(val.GetCommission())
 	shared := tokens.Sub(commission)
@@ -114,7 +122,7 @@ func (k Keeper) AllocateTokensToValidator(ctx sdk.Context, val exported.Validato
 		),
 	)
 	currentCommission := k.GetValidatorAccumulatedCommission(ctx, val.GetOperator())
-	currentCommission = currentCommission.Add(commission...)
+	currentCommission.Commission = currentCommission.Commission.Add(commission...)
 	k.SetValidatorAccumulatedCommission(ctx, val.GetOperator(), currentCommission)
 
 	// update current rewards
@@ -130,7 +138,8 @@ func (k Keeper) AllocateTokensToValidator(ctx sdk.Context, val exported.Validato
 			sdk.NewAttribute(types.AttributeKeyValidator, val.GetOperator().String()),
 		),
 	)
+
 	outstanding := k.GetValidatorOutstandingRewards(ctx, val.GetOperator())
-	outstanding = outstanding.Add(tokens...)
+	outstanding.Rewards = outstanding.Rewards.Add(tokens...)
 	k.SetValidatorOutstandingRewards(ctx, val.GetOperator(), outstanding)
 }

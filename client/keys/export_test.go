@@ -1,47 +1,113 @@
 package keys
 
 import (
+	"bufio"
+	"context"
+	"fmt"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keys"
-	"github.com/cosmos/cosmos-sdk/tests"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func Test_runExportCmd(t *testing.T) {
-	runningUnattended := isRunningUnattended()
-	exportKeyCommand := ExportKeyCommand()
-	mockIn, _, _ := tests.ApplyMockIO(exportKeyCommand)
-
-	// Now add a temporary keybase
-	kbHome, cleanUp := tests.NewTestCaseDir(t)
-	defer cleanUp()
-	viper.Set(flags.FlagHome, kbHome)
-
-	// create a key
-	kb, err := keys.NewKeyring(sdk.KeyringServiceName(), viper.GetString(flags.FlagKeyringBackend), viper.GetString(flags.FlagHome), mockIn)
-	require.NoError(t, err)
-	if !runningUnattended {
-		defer func() {
-			kb.Delete("keyname1", "", false)
-		}()
+	testCases := []struct {
+		name           string
+		keyringBackend string
+		extraArgs      []string
+		userInput      string
+		mustFail       bool
+		expectedOutput string
+	}{
+		{
+			name:           "--unsafe only must fail",
+			keyringBackend: keyring.BackendTest,
+			extraArgs:      []string{"--unsafe"},
+			mustFail:       true,
+		},
+		{
+			name:           "--unarmored-hex must fail",
+			keyringBackend: keyring.BackendTest,
+			extraArgs:      []string{"--unarmored-hex"},
+			mustFail:       true,
+		},
+		{
+			name:           "--unsafe --unarmored-hex fail with no user confirmation",
+			keyringBackend: keyring.BackendTest,
+			extraArgs:      []string{"--unsafe", "--unarmored-hex"},
+			userInput:      "",
+			mustFail:       true,
+			expectedOutput: "",
+		},
+		{
+			name:           "--unsafe --unarmored-hex succeed",
+			keyringBackend: keyring.BackendTest,
+			extraArgs:      []string{"--unsafe", "--unarmored-hex"},
+			userInput:      "y\n",
+			mustFail:       false,
+			expectedOutput: "d4bd5d54ee1b75abc6f5bab08e2e9d3a4b6dfbe6b50e2d6cf2426f3215633a1f\n",
+		},
+		{
+			name:           "file keyring backend properly read password and user confirmation",
+			keyringBackend: keyring.BackendFile,
+			extraArgs:      []string{"--unsafe", "--unarmored-hex"},
+			// first 2 pass for creating the key, then unsafe export confirmation, then unlock keyring pass
+			userInput:      "12345678\n12345678\ny\n12345678\n",
+			mustFail:       false,
+			expectedOutput: "d4bd5d54ee1b75abc6f5bab08e2e9d3a4b6dfbe6b50e2d6cf2426f3215633a1f\n",
+		},
 	}
 
-	if runningUnattended {
-		mockIn.Reset("testpass1\ntestpass1\n")
-	}
-	_, err = kb.CreateAccount("keyname1", tests.TestMnemonic, "", "123456789", "", keys.Secp256k1)
-	require.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			kbHome := t.TempDir()
+			defaultArgs := []string{
+				"keyname1",
+				fmt.Sprintf("--%s=%s", flags.FlagHome, kbHome),
+				fmt.Sprintf("--%s=%s", flags.FlagKeyringBackend, tc.keyringBackend),
+			}
 
-	// Now enter password
-	if runningUnattended {
-		mockIn.Reset("123456789\n123456789\ntestpass1\n")
-	} else {
-		mockIn.Reset("123456789\n123456789\n")
+			cmd := ExportKeyCommand()
+			cmd.Flags().AddFlagSet(Commands("home").PersistentFlags())
+
+			cmd.SetArgs(append(defaultArgs, tc.extraArgs...))
+			mockIn, mockOut := testutil.ApplyMockIO(cmd)
+
+			mockIn.Reset(tc.userInput)
+			mockInBuf := bufio.NewReader(mockIn)
+
+			// create a key
+			kb, err := keyring.New(sdk.KeyringServiceName(), tc.keyringBackend, kbHome, bufio.NewReader(mockInBuf))
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				kb.Delete("keyname1") // nolint:errcheck
+			})
+
+			path := sdk.GetConfig().GetFullBIP44Path()
+			_, err = kb.NewAccount("keyname1", testdata.TestMnemonic, "", path, hd.Secp256k1)
+			require.NoError(t, err)
+
+			clientCtx := client.Context{}.
+				WithKeyringDir(kbHome).
+				WithKeyring(kb).
+				WithInput(mockInBuf)
+			ctx := context.WithValue(context.Background(), client.ClientContextKey, &clientCtx)
+
+			err = cmd.ExecuteContext(ctx)
+			if tc.mustFail {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedOutput, mockOut.String())
+			}
+		})
 	}
-	require.NoError(t, runExportCmd(exportKeyCommand, []string{"keyname1"}))
 }

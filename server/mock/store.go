@@ -3,10 +3,12 @@ package mock
 import (
 	"io"
 
+	protoio "github.com/gogo/protobuf/io"
 	dbm "github.com/tendermint/tm-db"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	snapshottypes "github.com/Finschia/finschia-sdk/snapshots/types"
+	store "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var _ sdk.MultiStore = multiStore{}
@@ -31,6 +33,10 @@ func (ms multiStore) CacheWrapWithTrace(_ io.Writer, _ sdk.TraceContext) sdk.Cac
 	panic("not implemented")
 }
 
+func (ms multiStore) CacheWrapWithListeners(_ store.StoreKey, _ []store.WriteListener) store.CacheWrap {
+	panic("not implemented")
+}
+
 func (ms multiStore) TracingEnabled() bool {
 	panic("not implemented")
 }
@@ -43,6 +49,14 @@ func (ms multiStore) SetTracer(w io.Writer) sdk.MultiStore {
 	panic("not implemented")
 }
 
+func (ms multiStore) AddListeners(key store.StoreKey, listeners []store.WriteListener) {
+	panic("not implemented")
+}
+
+func (ms multiStore) ListeningEnabled(key store.StoreKey) bool {
+	panic("not implemented")
+}
+
 func (ms multiStore) Commit() sdk.CommitID {
 	panic("not implemented")
 }
@@ -52,6 +66,10 @@ func (ms multiStore) LastCommitID() sdk.CommitID {
 }
 
 func (ms multiStore) SetPruning(opts sdk.PruningOptions) {
+	panic("not implemented")
+}
+
+func (ms multiStore) GetPruning() sdk.PruningOptions {
 	panic("not implemented")
 }
 
@@ -99,6 +117,32 @@ func (ms multiStore) SetInterBlockCache(_ sdk.MultiStorePersistentCache) {
 	panic("not implemented")
 }
 
+func (ms multiStore) SetIAVLCacheSize(size int) {
+	panic("not implemented")
+}
+
+func (ms multiStore) SetIAVLDisableFastNode(disable bool) {
+	panic("not implemented")
+}
+
+func (ms multiStore) SetInitialVersion(version int64) error {
+	panic("not implemented")
+}
+
+func (ms multiStore) Snapshot(height uint64, protoWriter protoio.Writer) error {
+	panic("not implemented")
+}
+
+func (ms multiStore) Restore(
+	height uint64, format uint32, protoReader protoio.Reader,
+) (snapshottypes.SnapshotItem, error) {
+	panic("not implemented")
+}
+
+func (ms multiStore) RollbackToVersion(version int64) error {
+	panic("not implemented")
+}
+
 var _ sdk.KVStore = kvStore{}
 
 type kvStore struct {
@@ -110,6 +154,10 @@ func (kv kvStore) CacheWrap() sdk.CacheWrap {
 }
 
 func (kv kvStore) CacheWrapWithTrace(w io.Writer, tc sdk.TraceContext) sdk.CacheWrap {
+	panic("not implemented")
+}
+
+func (kv kvStore) CacheWrapWithListeners(_ store.StoreKey, _ []store.WriteListener) store.CacheWrap {
 	panic("not implemented")
 }
 
@@ -131,6 +179,7 @@ func (kv kvStore) Has(key []byte) bool {
 }
 
 func (kv kvStore) Set(key, value []byte) {
+	store.AssertValidKey(key)
 	kv.store[string(key)] = value
 }
 

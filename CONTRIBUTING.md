@@ -1,12 +1,12 @@
 # Contributing
 
 - [Contributing](#contributing)
-  - [Architecture Decision Records (ADR)](#architecture-decision-records-adr)
   - [Pull Requests](#pull-requests)
     - [Process for reviewing PRs](#process-for-reviewing-prs)
     - [Updating Documentation](#updating-documentation)
   - [Forking](#forking)
   - [Dependencies](#dependencies)
+  - [Protobuf](#protobuf)
   - [Testing](#testing)
   - [Branching Model and Release](#branching-model-and-release)
     - [PR Targeting](#pr-targeting)
@@ -14,16 +14,17 @@
     - [Pull Merge Procedure](#pull-merge-procedure)
     - [Release Procedure](#release-procedure)
     - [Point Release Procedure](#point-release-procedure)
+  - [Code Owner Membership](#code-owner-membership)
 
-Thank you for considering making contributions to Cosmos-SDK and related
+Thank you for considering making contributions to finschia-sdk and related
 repositories!
 
-Contributing to this repo can mean many things such as participated in
+Contributing to this repo can mean many things such as participating in
 discussion or proposing code changes. To ensure a smooth workflow for all
 contributors, the general procedure for contributing has been established:
 
-1. Either [open](https://github.com/cosmos/cosmos-sdk/issues/new/choose) or
-   [find](https://github.com/cosmos/cosmos-sdk/issues) an issue you'd like to help with
+1. Either [open](https://github.com/Finschia/finschia-sdk/issues/new/choose) or
+   [find](https://github.com/Finschia/finschia-sdk/issues) an issue you'd like to help with
 2. Participate in thoughtful discussion on that issue
 3. If you would like to contribute:
    1. If the issue is a proposal, ensure that the proposal has been accepted
@@ -33,10 +34,10 @@ contributors, the general procedure for contributing has been established:
       make a comment on the issue to inform the community of your intentions
       to begin work
    4. Follow standard Github best practices: fork the repo, branch from the
-      HEAD of `master`, make some commits, and submit a PR to `master`
-      - For core developers working within the cosmos-sdk repo, to ensure a clear
-      ownership of branches, branches must be named with the convention
-      `{moniker}/{issue#}-branch-name`
+      HEAD of `main`, make some commits, and submit a PR to `main`
+      - For core developers working within the finschia-sdk repo, to ensure a clear
+        ownership of branches, branches must be named with the convention
+        `{moniker}/{issue#}-branch-name`
    5. Be sure to submit the PR in `Draft` mode submit your PR early, even if
       it's incomplete as this indicates to the community you're working on
       something and allows them to provide comments early in the development process
@@ -49,23 +50,27 @@ not required to an open issue to submit a PR, but be aware that for more complex
 problems/features, if a PR is opened before an adequate design discussion has
 taken place in a github issue, that PR runs a high likelihood of being rejected.
 
-Take a peek at our [coding repo](https://github.com/tendermint/coding) for
-overall information on repository workflow and standards. Note, we use `make tools` for installing the linting tools.
-
 Other notes:
 
-- Looking for a good place to start contributing? How about checking out some
-  [good first issues](https://github.com/cosmos/cosmos-sdk/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-- Please make sure to use `gofmt` before every commit - the easiest way to do
-  this is have your editor run it for you upon saving a file. Additionally
-  please ensure that your code is lint compliant by running `make lint`
+- Please make sure to run `make format` before every commit - the easiest way
+  to do this is have your editor run it for you upon saving a file. Additionally
+  please ensure that your code is lint compliant by running `golangci-lint run`.
+  A convenience git `pre-commit` hook that runs the formatters automatically
+  before each commit is available in the `contrib/githooks/` directory.
 
-## Architecture Decision Records (ADR)
-
-When proposing an architecture decision for the SDK, please create an [ADR](./docs/architecture/README.md)
-so further discussions can be made. We are following this process so all involved parties are in
-agreement before any party begins coding the proposed implementation. If you would like to see some examples
-of how these are written refer to [Tendermint ADRs](https://github.com/tendermint/tendermint/tree/master/docs/architecture)
+## Commit Convention
+All commits pushed to `finschia-sdk` are classified according to the rules below.
+Therefore, it cannot be included in the release notes unless you properly assign the prefix to the commit. For example, you can write commit message like `feat: this is new feature`. However, if you want to clarify the scope of the commit, you can write it as follows `feat(x/token): this is new feature`.
+- `chore` : a commit of the type chore makes trivial changes. If you don't want to include specific commit in the release note, add this prefix.
+- `feat` : a commit of the type feat introduces a new feature to the codebase
+- `fix` : a commit of the type fix patches a bug in your codebase
+- `refactor` : A code change that neither fixes a bug nor adds a feature
+- `BREAKING CHANGE` : a commit of the type breaking changes to the codebase. This changes breaks down the backward compatibility
+- `perf` : A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `docs`: Documentation only changes
+- `build`: Changes that affect the build system or external dependencies
+- `ci`: Changes to our CI configuration files and scripts
 
 ## Pull Requests
 
@@ -90,58 +95,82 @@ All PRs require two Reviews before merge (except docs changes, or variable name-
 
 ### Updating Documentation
 
-If you open a PR on the Cosmos SDK, it is mandatory to update the relevant documentation in /docs.
+If you open a PR on the LBM SDK, it is mandatory to update the relevant documentation in /docs.
 
 - If your change relates to the core SDK (baseapp, store, ...), please update the `docs/basics/`, `docs/core/` and/or `docs/building-modules/` folders.
-- If your changes relate to the core of the CLI or Light-client (not specifically to module's CLI/Rest), please modify the `docs/interfaces/` folder.
+- If your changes relate to the core of the CLI (not specifically to module's CLI/Rest), please modify the `docs/run-node/` folder.
 - If your changes relate to a module, please update the module's spec in `x/moduleName/docs/spec/`.
 
 ## Forking
 
 Please note that Go requires code to live under absolute paths, which complicates forking.
-While my fork lives at `https://github.com/rigeyrigerige/cosmos-sdk`,
-the code should never exist at `$GOPATH/src/github.com/rigeyrigerige/cosmos-sdk`.
+While my fork lives at `https://github.com/someone/finschia-sdk`,
+the code should never exist at `$GOPATH/src/github.com/someone/finschia-sdk`.
 Instead, we use `git remote` to add the fork as a new remote for the original repo,
-`$GOPATH/src/github.com/cosmos/cosmos-sdk`, and do all the work there.
+`$GOPATH/src/github.com/Finschia/finschia-sdk`, and do all the work there.
 
 For instance, to create a fork and work on a branch of it, I would:
 
 - Create the fork on github, using the fork button.
-- Go to the original repo checked out locally (i.e. `$GOPATH/src/github.com/cosmos/cosmos-sdk`)
+- Go to the original repo checked out locally (i.e. `$GOPATH/src/github.com/Finschia/finschia-sdk`)
 - `git remote rename origin upstream`
-- `git remote add origin git@github.com:rigeyrigerige/cosmos-sdk.git`
+- `git remote add origin git@github.com:someone/finschia-sdk.git`
 
-Now `origin` refers to my fork and `upstream` refers to the Cosmos-SDK version.
-So I can `git push -u origin master` to update my fork, and make pull requests to Cosmos-SDK from there.
-Of course, replace `rigeyrigerige` with your git handle.
+Now `origin` refers to my fork and `upstream` refers to the finschia-sdk version.
+So I can `git push -u origin main` to update my fork, and make pull requests to finschia-sdk from there.
+Of course, replace `someone` with your git handle.
 
 To pull in updates from the origin repo, run
 
 - `git fetch upstream`
-- `git rebase upstream/master` (or whatever branch you want)
+- `git rebase upstream/main` (or whatever branch you want)
 
-Please don't make Pull Requests from `master`.
+Please don't make Pull Requests from `main`.
 
 ## Dependencies
 
-We use [Go 1.11 Modules](https://github.com/golang/go/wiki/Modules) to manage
+We use [Go 1.18 Modules](https://github.com/golang/go/wiki/Modules) to manage
 dependency versions.
 
-The master branch of every Cosmos repository should just build with `go get`,
+The `main` branch of every LBM repository should just build with `go get`,
 which means they should be kept up-to-date with their dependencies, so we can
 get away with telling people they can just `go get` our software.
 
 Since some dependencies are not under our control, a third party may break our
 build, in which case we can fall back on `go mod tidy -v`.
 
+## Protobuf
+
+We use [Protocol Buffers](https://developers.google.com/protocol-buffers) along with [gogoproto](https://github.com/gogo/protobuf) to generate code for use in finschia-sdk.
+
+For determinstic behavior around Protobuf tooling, everything is containerized using Docker. Make sure to have Docker installed on your machine, or head to [Docker's website](https://docs.docker.com/get-docker/) to install it.
+
+For formatting code in `.proto` files, you can run `make proto-format` command.
+
+For linting and checking breaking changes, we use [buf](https://buf.build/). You can use the commands `make proto-lint` and `make proto-check-breaking` to respectively lint your proto files and check for breaking changes.
+
+To generate the protobuf stubs, you can run `make proto-gen`.
+
+We also added the `make proto-all` command to run all the above commands sequentially.
+
+In order for imports to properly compile in your IDE, you may need to manually set your protobuf path in your IDE's workspace settings/config.
+
+For example, in vscode your `.vscode/settings.json` should look like:
+
+```
+{
+    "protoc": {
+        "options": [
+        "--proto_path=${workspaceRoot}/proto",
+        "--proto_path=${workspaceRoot}/third_party/proto"
+        ]
+    }
+}
+```
+
 ## Testing
 
-All repos should be hooked up to [CircleCI](https://circleci.com/).
-
-If they have `.go` files in the root directory, they will be automatically
-tested by circle using `go test -v -race ./...`. If not, they will need a
-`circle.yml`. Ideally, every repo has a `Makefile` that defines `make test` and
-includes its continuous integration status using a badge in the `README.md`.
+Tests can be ran by running `make test` at the top level of the SDK repository. 
 
 We expect tests to use `require` or `assert` rather than `t.Skip` or `t.Fail`,
 unless there is a reason to do otherwise.
@@ -176,88 +205,42 @@ The SDK utilizes [semantic versioning](https://semver.org/).
 
 ### PR Targeting
 
-Ensure that you base and target your PR on the `master` branch.
+Ensure that you base and target your PR on the `main` branch.
 
-All feature additions should be targeted against `master`. Bug fixes for an outstanding release candidate
-should be targeted against the release candidate branch. Release candidate branches themselves should be the
-only pull requests targeted directly against master.
+All feature additions should be targeted against `main`. Bug fixes for an outstanding release candidate
+should be targeted against the release candidate branch.
 
 ### Development Procedure
 
-- the latest state of development is on `master`
-- `master` must never fail `make test` or `make test_cli`
-- `master` should not fail `make lint`
-- no `--force` onto `master` (except when reverting a broken commit, which should seldom happen)
-- create a development branch either on github.com/cosmos/cosmos-sdk, or your fork (using `git remote add origin`)
-- before submitting a pull request, begin `git rebase` on top of `master`
+- the latest state of development is on `main`
+- `main` must never fail `make lint test test-race`
+- `main` should not fail `make lint`
+- no `--force` onto `main` (except when reverting a broken commit, which should seldom happen)
+- create a development branch either on github.com/Finschia/finschia-sdk, or your fork (using `git remote add origin`)
+- before submitting a pull request, begin `git rebase` on top of `main`
 
 ### Pull Merge Procedure
 
-- ensure pull branch is rebased on `master`
-- run `make test` and `make test_cli` to ensure that all tests pass
-- merge pull request
+- ensure pull branch is rebased on `main`
+- run `make test` to ensure that all tests pass
+- merge pull request (We are using `squash and merge` for small features)
 
 ### Release Procedure
 
-- Start on `master`
+- Start on `main`
 - Create the release candidate branch `rc/v*` (going forward known as **RC**)
   and ensure it's protected against pushing from anyone except the release
   manager/coordinator
   - **no PRs targeting this branch should be merged unless exceptional circumstances arise**
 - On the `RC` branch, prepare a new version section in the `CHANGELOG.md`
   - All links must be link-ified: `$ python ./scripts/linkify_changelog.py CHANGELOG.md`
+  - Copy the entries into a `RELEASE_CHANGELOG.md`, this is needed so the bot knows which entries to add to the release page on github.
 - Kick off a large round of simulation testing (e.g. 400 seeds for 2k blocks)
-- If errors are found during the simulation testing, commit the fixes to `master`
+- If errors are found during the simulation testing, commit the fixes to `main`
   and create a new `RC` branch (making sure to increment the `rcN`)
 - After simulation has successfully completed, create the release branch
   (`release/vX.XX.X`) from the `RC` branch
-- Create a PR to `master` to incorporate the `CHANGELOG.md` updates
+- Create a PR to `main` to incorporate the `CHANGELOG.md` updates
+- Tag the release (use `git tag -a`) and create a release in Github
 - Delete the `RC` branches
-
-### Point Release Procedure
-
-At the moment, only a single major release will be supported, so all point
-releases will be based off of that release.
-
-- start on `vX.XX.X`
-- checkout a new branch `pre-rc/vX.X.X`
-- cherry pick the desired changes from `master`
-  - these changes should be small and NON-BREAKING (both API and state machine)
-- add entries to CHANGELOG.md and remove corresponding pending log entries
-- checkout a new branch `rc/vX.X.X` based off of `vX.XX.X`
-- create a PR merging `pre-rc/vX.X.X` into `rc/vX.X.X`
-- run tests and simulations (noted in [Release Procedure](#release-procedure))
-- after tests and simulation have successfully completed, create the release branch `release/vX.XX.X` from the `RC` branch
-- delete the `pre-rc/vX.X.X` and `RC` branches
-- create a PR into `master` containing ONLY the CHANGELOG.md updates
-- tag and release `release/vX.XX.X`
-
-## Code Owner Membership 
-
-In the ethos of open source projects, and out of necessity to keep the code
-alive, the core contributor team will strive to permit special repo privileges
-to developers who show an aptitude towards developing with this code base. 
-
-Several different kinds of privileges may be granted however most common
-privileges to be granted are merge rights to either part of, or the entire the
-code base (though the github `CODEOWNERS` file). The on-boarding process for
-new code owners is as follows: On a bi-monthly basis (or more frequently if
-agreeable) all the existing code owners will privately convene to discuss
-potential new candidates as well as the potential for existing code-owners to
-exit or "pass on the torch". This private meeting is to be a held as a
-phone/video meeting. Subsequently at the end of the meeting, one of the existing
-code owners should open a PR modifying the `CODEOWNERS` file. The other code
-owners should then all approve this PR to publicly display their support. 
-
-Only if unanimous consensus is reached among all the existing code-owners will
-an invitation be extended to a new potential-member. Likewise, when an existing
-member is suggested to be removed/or have their privileges reduced, the member
-in question must agree on the decision for their removal or else no action
-should be taken. If however, a code-owner is verifiably shown to intentionally
-have had acted maliciously or grossly negligent, code-owner privileges may be
-stripped with no prior warning or consent from the member in question. 
-
-Earning this privilege should be considered to be no small feat and is by no
-means guaranteed by any quantifiable metric. It is a symbol of great trust of
-the community of this project.  
 

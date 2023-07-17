@@ -2,13 +2,13 @@ package module
 
 import (
 	"encoding/json"
-
 	"math/rand"
+	"sort"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/simulation"
 )
 
 // AppModuleSimulation defines the standard functions that every module should expose
@@ -47,10 +47,42 @@ func NewSimulationManager(modules ...AppModuleSimulation) *SimulationManager {
 	}
 }
 
+// NewSimulationManagerFromAppModules creates a new SimulationManager object.
+//
+// First it sets any SimulationModule provided by overrideModules, and ignores any AppModule
+// with the same moduleName.
+// Then it attempts to cast every provided AppModule into an AppModuleSimulation.
+// If the cast succeeds, its included, otherwise it is excluded.
+func NewSimulationManagerFromAppModules(modules map[string]AppModule, overrideModules map[string]AppModuleSimulation) *SimulationManager {
+	simModules := []AppModuleSimulation{}
+	appModuleNamesSorted := make([]string, 0, len(modules))
+	for moduleName := range modules {
+		appModuleNamesSorted = append(appModuleNamesSorted, moduleName)
+	}
+
+	sort.Strings(appModuleNamesSorted)
+
+	for _, moduleName := range appModuleNamesSorted {
+		// for every module, see if we override it. If so, use override.
+		// Else, if we can cast the app module into a simulation module add it.
+		// otherwise no simulation module.
+		if simModule, ok := overrideModules[moduleName]; ok {
+			simModules = append(simModules, simModule)
+		} else {
+			appModule := modules[moduleName]
+			if simModule, ok := appModule.(AppModuleSimulation); ok {
+				simModules = append(simModules, simModule)
+			}
+			// cannot cast, so we continue
+		}
+	}
+	return NewSimulationManager(simModules...)
+}
+
 // GetProposalContents returns each module's proposal content generator function
 // with their default operation weight and key.
 func (sm *SimulationManager) GetProposalContents(simState SimulationState) []simulation.WeightedProposalContent {
-	var wContents []simulation.WeightedProposalContent
+	wContents := make([]simulation.WeightedProposalContent, 0, len(sm.Modules))
 	for _, module := range sm.Modules {
 		wContents = append(wContents, module.ProposalContents(simState)...)
 	}
@@ -87,7 +119,7 @@ func (sm *SimulationManager) GenerateParamChanges(seed int64) (paramChanges []si
 
 // WeightedOperations returns all the modules' weighted operations of an application
 func (sm *SimulationManager) WeightedOperations(simState SimulationState) []simulation.WeightedOperation {
-	var wOps []simulation.WeightedOperation
+	wOps := make([]simulation.WeightedOperation, 0, len(sm.Modules))
 	for _, module := range sm.Modules {
 		wOps = append(wOps, module.WeightedOperations(simState)...)
 	}
@@ -99,7 +131,7 @@ func (sm *SimulationManager) WeightedOperations(simState SimulationState) []simu
 // GenesisState generator function
 type SimulationState struct {
 	AppParams    simulation.AppParams
-	Cdc          *codec.Codec                         // application codec
+	Cdc          codec.JSONCodec                      // application codec
 	Rand         *rand.Rand                           // random number
 	GenState     map[string]json.RawMessage           // genesis state
 	Accounts     []simulation.Account                 // simulation accounts
