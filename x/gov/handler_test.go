@@ -4,15 +4,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-
-	"github.com/stretchr/testify/require"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/gov"
+	"github.com/Finschia/finschia-sdk/x/gov/keeper"
 )
 
 func TestInvalidMsg(t *testing.T) {

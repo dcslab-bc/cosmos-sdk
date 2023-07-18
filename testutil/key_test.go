@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/types"
 )
 
 func TestGenerateCoinKey(t *testing.T) {

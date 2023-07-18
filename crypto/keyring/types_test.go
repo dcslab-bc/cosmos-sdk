@@ -7,9 +7,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func Test_writeReadLedgerInfo(t *testing.T) {
@@ -24,7 +24,7 @@ func Test_writeReadLedgerInfo(t *testing.T) {
 
 	path, err := lInfo.GetPath()
 	require.NoError(t, err)
-	require.Equal(t, "m/44'/118'/5'/0/1", path.String())
+	require.Equal(t, "m/44'/438'/5'/0/1", path.String())
 	require.Equal(t,
 		fmt.Sprintf("PubKeySecp256k1{%s}", hexPK),
 		lInfo.GetPubKey().String())

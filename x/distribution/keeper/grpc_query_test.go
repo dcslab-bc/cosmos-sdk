@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 type KeeperTestSuite struct {
@@ -623,7 +623,7 @@ func (suite *KeeperTestSuite) TestGRPCCommunityPool() {
 			"valid request",
 			func() {
 				amount := sdk.NewCoins(sdk.NewInt64Coin("stake", 100))
-				suite.Require().NoError(simapp.FundAccount(app.BankKeeper, ctx, addrs[0], amount))
+				suite.Require().NoError(simapp.FundAccount(app, ctx, addrs[0], amount))
 
 				err := app.DistrKeeper.FundCommunityPool(ctx, amount, addrs[0])
 				suite.Require().Nil(err)

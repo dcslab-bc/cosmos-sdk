@@ -1,12 +1,12 @@
 package v043
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	v040auth "github.com/cosmos/cosmos-sdk/x/auth/legacy/v040"
-	v040bank "github.com/cosmos/cosmos-sdk/x/bank/legacy/v040"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	v040auth "github.com/Finschia/finschia-sdk/x/auth/legacy/v040"
+	v040bank "github.com/Finschia/finschia-sdk/x/bank/legacy/v040"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 // migrateSupply migrates the supply to be stored by denom key instead in a

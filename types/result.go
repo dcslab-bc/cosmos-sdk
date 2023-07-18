@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
+
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 	abci "github.com/tendermint/tendermint/abci/types"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
 )
-
-var cdc = codec.NewLegacyAmino()
 
 func (gi GasInfo) String() string {
 	bz, _ := codec.MarshalYAML(codec.NewProtoCodec(nil), &gi)
@@ -36,6 +35,8 @@ func (r Result) GetEvents() Events {
 }
 
 // ABCIMessageLogs represents a slice of ABCIMessageLog.
+//
+//easyjson:json
 type ABCIMessageLogs []ABCIMessageLog
 
 func NewABCIMessageLog(i uint32, log string, events Events) ABCIMessageLog {
@@ -47,18 +48,18 @@ func NewABCIMessageLog(i uint32, log string, events Events) ABCIMessageLog {
 }
 
 // String implements the fmt.Stringer interface for the ABCIMessageLogs type.
-func (logs ABCIMessageLogs) String() (str string) {
+func (logs ABCIMessageLogs) String() string {
 	if logs != nil {
-		raw, err := cdc.MarshalJSON(logs)
-		if err == nil {
-			str = string(raw)
+		res, err := logs.MarshalJSON()
+		if err != nil {
+			panic(err)
 		}
+		return string(res)
 	}
-
-	return str
+	return ""
 }
 
-// NewResponseResultTx returns a TxResponse given a ResultTx from tendermint
+// NewResponseResultTx returns a TxResponse given a ResultTx from ostracon
 func NewResponseResultTx(res *ctypes.ResultTx, anyTx *codectypes.Any, timestamp string) *TxResponse {
 	if res == nil {
 		return nil
@@ -84,7 +85,7 @@ func NewResponseResultTx(res *ctypes.ResultTx, anyTx *codectypes.Any, timestamp 
 }
 
 // NewResponseFormatBroadcastTxCommit returns a TxResponse given a
-// ResultBroadcastTxCommit from tendermint.
+// ResultBroadcastTxCommit from ostracon.
 func NewResponseFormatBroadcastTxCommit(res *ctypes.ResultBroadcastTxCommit) *TxResponse {
 	if res == nil {
 		return nil
@@ -151,7 +152,7 @@ func newTxResponseDeliverTx(res *ctypes.ResultBroadcastTxCommit) *TxResponse {
 	}
 }
 
-// NewResponseFormatBroadcastTx returns a TxResponse given a ResultBroadcastTx from tendermint
+// NewResponseFormatBroadcastTx returns a TxResponse given a ResultBroadcastTx from ostracon
 func NewResponseFormatBroadcastTx(res *ctypes.ResultBroadcastTx) *TxResponse {
 	if res == nil {
 		return nil

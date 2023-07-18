@@ -7,20 +7,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	"github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	"github.com/cosmos/cosmos-sdk/x/authz/simulation"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/x/authz/keeper"
+	"github.com/Finschia/finschia-sdk/x/authz/simulation"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 func TestDecodeStore(t *testing.T) {
 	cdc := simapp.MakeTestEncodingConfig().Marshaler
 	dec := simulation.NewDecodeStore(cdc)
 
-	grant, _ := authz.NewGrant(banktypes.NewSendAuthorization(sdk.NewCoins(sdk.NewInt64Coin("foo", 123))), time.Now().UTC())
+	now := time.Now().UTC()
+	grant, _ := authz.NewGrant(now, banktypes.NewSendAuthorization(sdk.NewCoins(sdk.NewInt64Coin("foo", 123))), now.Add(1))
 	grantBz, err := cdc.Marshal(&grant)
 	require.NoError(t, err)
 	kvPairs := kv.Pairs{

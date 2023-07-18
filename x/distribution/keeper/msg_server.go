@@ -5,9 +5,9 @@ import (
 
 	"github.com/armon/go-metrics"
 
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 type msgServer struct {

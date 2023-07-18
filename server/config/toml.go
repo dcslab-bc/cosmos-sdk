@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"text/template"
 
+	ostos "github.com/Finschia/ostracon/libs/os"
 	"github.com/spf13/viper"
-	tmos "github.com/tendermint/tendermint/libs/os"
 )
 
 const DefaultConfigTemplate = `# This is a TOML config file.
@@ -63,6 +63,18 @@ min-retain-blocks = {{ .BaseConfig.MinRetainBlocks }}
 # InterBlockCache enables inter-block caching.
 inter-block-cache = {{ .BaseConfig.InterBlockCache }}
 
+# InterBlockCacheSize is the maximum bytes size of the inter-block cache.
+inter-block-cache-size = {{ .BaseConfig.InterBlockCacheSize }}
+
+# IAVLCacheSize is the maximum units size of iavl node cache (1 unit is 128 bytes)
+# This iavl cache size is just one store cache size, and the store exists for each modules.
+# So be careful that all iavl cache size are difference from this iavl cache size value.
+iavl-cache-size = {{ .BaseConfig.IAVLCacheSize }}
+
+# IAVLDisableFastNode enables or disables the fast node feature of IAVL. 
+# Default is true.
+iavl-disable-fastnode = {{ .BaseConfig.IAVLDisableFastNode }}
+
 # IndexEvents defines the set of events in the form {eventType}.{attributeKey},
 # which informs Tendermint what to index. If empty, all events will be indexed.
 #
@@ -70,13 +82,13 @@ inter-block-cache = {{ .BaseConfig.InterBlockCache }}
 # ["message.sender", "message.recipient"]
 index-events = {{ .BaseConfig.IndexEvents }}
 
-# IavlCacheSize set the size of the iavl tree cache. 
-# Default cache size is 50mb.
-iavl-cache-size = {{ .BaseConfig.IAVLCacheSize }}
+# When true, Prometheus metrics are served under /metrics on prometheus_listen_addr in config.toml.
+# It works when tendermint's prometheus option (config.toml) is set to true.
+prometheus = {{ .BaseConfig.Prometheus }}
 
-# IAVLDisableFastNode enables or disables the fast node feature of IAVL. 
-# Default is true.
-iavl-disable-fastnode = {{ .BaseConfig.IAVLDisableFastNode }}
+# ChanCheckTxSize is the size of RequestCheckTxAsync of BaseApp.
+# ChanCheckTxSize should be equals to or greater than the mempool size set in config.toml of Ostracon.
+chan-check-tx-size = {{ .BaseConfig.ChanCheckTxSize }}
 
 ###############################################################################
 ###                         Telemetry Configuration                         ###
@@ -131,13 +143,16 @@ address = "{{ .API.Address }}"
 # MaxOpenConnections defines the number of maximum open connections.
 max-open-connections = {{ .API.MaxOpenConnections }}
 
-# RPCReadTimeout defines the Tendermint RPC read timeout (in seconds).
+# RPCReadTimeout defines the Ostracon RPC read timeout (in seconds).
 rpc-read-timeout = {{ .API.RPCReadTimeout }}
 
-# RPCWriteTimeout defines the Tendermint RPC write timeout (in seconds).
+# RPCWriteTimeout defines the Ostracon RPC write timeout (in seconds).
 rpc-write-timeout = {{ .API.RPCWriteTimeout }}
 
-# RPCMaxBodyBytes defines the Tendermint maximum response body (in bytes).
+# RPCIdleTimeout defines the Ostracon RPC idle timeout (in seconds).
+rpc-idle-timeout = {{ .API.RPCIdleTimeout }}
+
+# RPCMaxBodyBytes defines the Ostracon maximum response body (in bytes).
 rpc-max-body-bytes = {{ .API.RPCMaxBodyBytes }}
 
 # EnableUnsafeCORS defines if CORS should be enabled (unsafe - use it at your own risk).
@@ -253,5 +268,5 @@ func WriteConfigFile(configFilePath string, config interface{}) {
 		panic(err)
 	}
 
-	tmos.MustWriteFile(configFilePath, buffer.Bytes(), 0o644)
+	ostos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
 }

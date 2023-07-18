@@ -3,14 +3,14 @@ package keeper
 import (
 	"time"
 
-	"github.com/tendermint/tendermint/crypto"
+	"github.com/Finschia/ostracon/crypto"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 func (k Keeper) AfterValidatorBonded(ctx sdk.Context, address sdk.ConsAddress, _ sdk.ValAddress) {
-	// Update the signing info start height or create a new signing info
+	// Update the signing info voter set counter or create a new signing info
 	_, found := k.GetValidatorSigningInfo(ctx, address)
 	if !found {
 		signingInfo := types.NewValidatorSigningInfo(
@@ -32,7 +32,9 @@ func (k Keeper) AfterValidatorCreated(ctx sdk.Context, valAddr sdk.ValAddress) e
 	if err != nil {
 		return err
 	}
-	k.AddPubkey(ctx, consPk)
+	if err = k.AddPubkey(ctx, consPk); err != nil {
+		return err
+	}
 
 	return nil
 }

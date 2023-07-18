@@ -3,9 +3,9 @@ package types
 import (
 	"time"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 type (

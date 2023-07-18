@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"testing"
 
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	xauthsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 // TestAccount represents an account used in the tests in x/auth/ante.

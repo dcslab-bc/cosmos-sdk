@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	genutiltest "github.com/cosmos/cosmos-sdk/x/genutil/client/testutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
+
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/simapp"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	genutiltest "github.com/Finschia/finschia-sdk/x/genutil/client/testutil"
+	genutiltypes "github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 func Test_TestnetCmd(t *testing.T) {

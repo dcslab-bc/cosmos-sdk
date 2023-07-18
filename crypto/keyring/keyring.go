@@ -11,19 +11,19 @@ import (
 	"strings"
 
 	"github.com/99designs/keyring"
+	occrypto "github.com/Finschia/ostracon/crypto"
 	bip39 "github.com/cosmos/go-bip39"
 	"github.com/pkg/errors"
 	"github.com/tendermint/crypto/bcrypt"
-	tmcrypto "github.com/tendermint/tendermint/crypto"
 
-	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
-	"github.com/cosmos/cosmos-sdk/crypto"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/ledger"
-	"github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/client/input"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	"github.com/Finschia/finschia-sdk/crypto"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/ledger"
+	"github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // Backend options for Keyring
@@ -198,6 +198,9 @@ type keystore struct {
 	db      keyring.Keyring
 	options Options
 }
+
+func infoKey(name string) string   { return fmt.Sprintf("%s.%s", name, infoSuffix) }
+func infoKeyBz(name string) []byte { return []byte(infoKey(name)) }
 
 func newKeystore(kr keyring.Keyring, opts ...Option) keystore {
 	// Default options for keybase
@@ -745,7 +748,7 @@ func newRealPrompt(dir string, buf io.Reader) func(string) (string, error) {
 				continue
 			}
 
-			saltBytes := tmcrypto.CRandBytes(16)
+			saltBytes := occrypto.CRandBytes(16)
 			passwordHash, err := bcrypt.GenerateFromPassword(saltBytes, []byte(pass), 2)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)

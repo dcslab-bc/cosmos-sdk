@@ -1,9 +1,9 @@
 package testutil
 
 import (
-	"github.com/cosmos/cosmos-sdk/testutil"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	"github.com/Finschia/finschia-sdk/testutil"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/x/genutil/client/cli"
 )
 
 // An example exported genesis file from a 0.37 chain. Note that evidence
@@ -38,7 +38,7 @@ var v040Valid = `{
 			"votes": [
 			  {
 				"proposal_id": "5",
-				"voter": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+				"voter": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
 				"option": "VOTE_OPTION_YES"
 			  }
 			],

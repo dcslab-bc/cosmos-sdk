@@ -7,10 +7,10 @@ package mocks
 import (
 	reflect "reflect"
 
-	client "github.com/cosmos/cosmos-sdk/client"
-	types "github.com/cosmos/cosmos-sdk/crypto/types"
-	types0 "github.com/cosmos/cosmos-sdk/types"
 	gomock "github.com/golang/mock/gomock"
+	client "github.com/Finschia/finschia-sdk/client"
+	types "github.com/Finschia/finschia-sdk/crypto/types"
+	types0 "github.com/Finschia/finschia-sdk/types"
 )
 
 // MockAccount is a mock of Account interface.

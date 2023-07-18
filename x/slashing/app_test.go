@@ -5,17 +5,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (
@@ -75,7 +76,7 @@ func TestSlashingMsgs(t *testing.T) {
 	simapp.CheckBalance(t, app, addr1, sdk.Coins{genCoin.Sub(bondCoin)})
 
 	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	validator := checkValidator(t, app, addr1, true)
 	require.Equal(t, sdk.ValAddress(addr1).String(), validator.OperatorAddress)

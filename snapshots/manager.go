@@ -9,8 +9,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/cosmos/cosmos-sdk/snapshots/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/snapshots/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (

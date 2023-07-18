@@ -3,9 +3,9 @@
 package v040
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	v040auth "github.com/cosmos/cosmos-sdk/x/auth/legacy/v040"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	v040auth "github.com/Finschia/finschia-sdk/x/auth/legacy/v040"
 )
 
 const (

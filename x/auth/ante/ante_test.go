@@ -7,22 +7,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 // Test that simulate transaction accurately estimates gas cost
@@ -134,7 +132,7 @@ func (suite *AnteTestSuite) TestAnteHandlerSigErrors() {
 			},
 			false,
 			false,
-			sdkerrors.ErrUnknownAddress,
+			sdkerrors.ErrUnknownAddress, // unknown account may send tx, but he doesn't have enough balance to pay fee
 		},
 		{
 			"save the first account, but second is still unrecognized",
@@ -472,7 +470,7 @@ func (suite *AnteTestSuite) TestAnteHandlerFees() {
 		{
 			"signer does not have enough funds to pay the fee",
 			func() {
-				err := simapp.FundAccount(suite.app.BankKeeper, suite.ctx, addr0, sdk.NewCoins(sdk.NewInt64Coin("atom", 149)))
+				err := simapp.FundAccount(suite.app, suite.ctx, addr0, sdk.NewCoins(sdk.NewInt64Coin("atom", 149)))
 				suite.Require().NoError(err)
 			},
 			false,
@@ -483,13 +481,12 @@ func (suite *AnteTestSuite) TestAnteHandlerFees() {
 			"signer as enough funds, should pass",
 			func() {
 				accNums = []uint64{acc1.GetAccountNumber()}
-
 				modAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, types.FeeCollectorName)
 
 				suite.Require().True(suite.app.BankKeeper.GetAllBalances(suite.ctx, modAcc.GetAddress()).Empty())
 				require.True(sdk.IntEq(suite.T(), suite.app.BankKeeper.GetAllBalances(suite.ctx, addr0).AmountOf("atom"), sdk.NewInt(149)))
 
-				err := simapp.FundAccount(suite.app.BankKeeper, suite.ctx, addr0, sdk.NewCoins(sdk.NewInt64Coin("atom", 1)))
+				err := simapp.FundAccount(suite.app, suite.ctx, addr0, sdk.NewCoins(sdk.NewInt64Coin("atom", 1)))
 				suite.Require().NoError(err)
 			},
 			false,

@@ -9,23 +9,23 @@ import (
 	"os"
 	"path/filepath"
 
+	ostos "github.com/Finschia/ostracon/libs/os"
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/server"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/version"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/client/cli"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/server"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/version"
+	authclient "github.com/Finschia/finschia-sdk/x/auth/client"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/x/staking/client/cli"
 )
 
 // GenTxCmd builds the application's gentx command.
@@ -82,7 +82,7 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 				}
 			}
 
-			genDoc, err := tmtypes.GenesisDocFromFile(config.GenesisFile())
+			genDoc, err := octypes.GenesisDocFromFile(config.GenesisFile())
 			if err != nil {
 				return errors.Wrapf(err, "failed to read genesis doc file %s", config.GenesisFile())
 			}
@@ -214,7 +214,7 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 
 func makeOutputFilepath(rootDir, nodeID string) (string, error) {
 	writePath := filepath.Join(rootDir, "config", "gentx")
-	if err := tmos.EnsureDir(writePath, 0o700); err != nil {
+	if err := ostos.EnsureDir(writePath, 0700); err != nil {
 		return "", err
 	}
 

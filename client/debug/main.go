@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/Finschia/finschia-sdk/client"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
 )
 
 // Cmd creates a main CLI command
@@ -66,7 +66,7 @@ func AddrCmd() *cobra.Command {
 		Long: fmt.Sprintf(`Convert an address between hex encoding and bech32.
 
 Example:
-$ %s debug addr cosmos1e0jnq2sun3dzjh8p2xq95kk0expwmd7shwjpfg
+$ %s debug addr link19wgf6ymq2ur6r59st95e04e49m69z4al4fc982
 			`, version.AppName),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

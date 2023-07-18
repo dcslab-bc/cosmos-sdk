@@ -7,20 +7,21 @@ import (
 	"fmt"
 	"path/filepath"
 
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	"github.com/Finschia/ostracon/types"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/types"
 
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	bam "github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	storetypes "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // NewApp creates a simple mock kvstore app for testing. It should work
 // similar to a real app. Make sure rootDir is empty before running the test,
 // in order to guarantee consistent results
-func NewApp(rootDir string, logger log.Logger) (abci.Application, error) {
+func NewApp(rootDir string, logger log.Logger) (ocabci.Application, error) {
 	db, err := sdk.NewLevelDB("mock", filepath.Join(rootDir, "data"))
 	if err != nil {
 		return nil, err

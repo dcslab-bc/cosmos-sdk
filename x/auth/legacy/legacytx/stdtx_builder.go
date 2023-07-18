@@ -3,12 +3,12 @@ package legacytx
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	authsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
 )
 
 // StdTxBuilder wraps StdTx to implement to the context.TxBuilder interface.

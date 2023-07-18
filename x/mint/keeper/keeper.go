@@ -1,12 +1,12 @@
 package keeper
 
 import (
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/mint/types"
+	paramtypes "github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 // Keeper of the mint store
@@ -26,7 +26,7 @@ func NewKeeper(
 	feeCollectorName string,
 ) Keeper {
 	// ensure mint module account is set
-	if addr := ak.GetModuleAddress(types.ModuleName); addr == nil {
+	if addr := ak.GetModuleAddress(types.ModuleName); addr.Empty() {
 		panic("the mint module account has not been set")
 	}
 

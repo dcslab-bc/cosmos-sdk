@@ -3,20 +3,20 @@ package simulation
 import (
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/authz"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/authz/keeper"
 
-	banktype "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
+	banktype "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/simulation"
 )
 
 // authz message types
@@ -26,6 +26,7 @@ var (
 	TypeMsgExec   = sdk.MsgTypeURL(&authz.MsgExec{})
 )
 
+// nolint:gosec
 // Simulation operation weights constants
 //
 //nolint:gosec
@@ -264,9 +265,8 @@ func SimulateMsgExec(ak authz.AccountKeeper, bk authz.BankKeeper, k keeper.Keepe
 		if err != nil {
 			if sdkerrors.ErrInsufficientFunds.Is(err) {
 				return simtypes.NoOpMsg(authz.ModuleName, TypeMsgExec, err.Error()), nil, nil
-			} else {
-				return simtypes.NoOpMsg(authz.ModuleName, TypeMsgExec, err.Error()), nil, err
 			}
+			return simtypes.NoOpMsg(authz.ModuleName, TypeMsgExec, err.Error()), nil, err
 		}
 
 		msgExec := authz.NewMsgExec(granteeAddr, msg)

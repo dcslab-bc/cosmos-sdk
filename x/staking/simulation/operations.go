@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/simulation"
+	"github.com/Finschia/finschia-sdk/x/staking/keeper"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // Simulation operation weights constants
+// nolint:gosec
 const (
 	OpWeightMsgCreateValidator = "op_weight_msg_create_validator" //nolint:gosec
 	OpWeightMsgEditValidator   = "op_weight_msg_edit_validator"   //nolint:gosec

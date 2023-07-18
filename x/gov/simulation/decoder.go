@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 // NewDecodeStore returns a decoder function closure that unmarshals the KVPair's

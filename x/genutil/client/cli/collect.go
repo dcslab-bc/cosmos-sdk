@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"path/filepath"
 
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 const flagGenTxDir = "gentx-dir"
@@ -36,7 +36,7 @@ func CollectGenTxsCmd(genBalIterator types.GenesisBalancesIterator, defaultNodeH
 				return errors.Wrap(err, "failed to initialize node validator files")
 			}
 
-			genDoc, err := tmtypes.GenesisDocFromFile(config.GenesisFile())
+			genDoc, err := octypes.GenesisDocFromFile(config.GenesisFile())
 			if err != nil {
 				return errors.Wrap(err, "failed to read genesis doc from file")
 			}

@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	"github.com/cosmos/cosmos-sdk/internal/conv"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/internal/conv"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/address"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/x/authz"
 )
 
 // Keys for store prefixes

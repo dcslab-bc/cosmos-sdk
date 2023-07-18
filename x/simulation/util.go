@@ -6,12 +6,12 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
 )
 
 func getTestingMode(tb testing.TB) (testingMode bool, t *testing.T, b *testing.B) {

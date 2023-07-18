@@ -6,10 +6,13 @@ import (
 
 	"github.com/spf13/viper"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/store/cache"
+	"github.com/Finschia/finschia-sdk/store/iavl"
+
+	storetypes "github.com/Finschia/finschia-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
@@ -20,6 +23,9 @@ const (
 
 	// DefaultGRPCWebAddress defines the default address to bind the gRPC-web server to.
 	DefaultGRPCWebAddress = "0.0.0.0:9091"
+
+	// DefaultChanCheckTxSize defines the default size of channel check tx in Baseapp
+	DefaultChanCheckTxSize = 10000
 )
 
 // BaseConfig defines the server's basic configuration
@@ -70,11 +76,21 @@ type BaseConfig struct {
 	// which informs Tendermint what to index. If empty, all events will be indexed.
 	IndexEvents []string `mapstructure:"index-events"`
 
-	// IavlCacheSize set the size of the iavl tree cache.
+	// Interblock cache size; bytes size unit
+	InterBlockCacheSize int `mapstructure:"inter-block-cache-size"`
+
+	// IAVL cache size; bytes size unit
 	IAVLCacheSize uint64 `mapstructure:"iavl-cache-size"`
 
 	// IAVLDisableFastNode enables or disables the fast sync node.
 	IAVLDisableFastNode bool `mapstructure:"iavl-disable-fastnode"`
+
+	// When true, Prometheus metrics are served under /metrics on prometheus_listen_addr in config.toml.
+	// It works when tendermint's prometheus option (config.toml) is set to true.
+	Prometheus bool `mapstructure:"prometheus"`
+
+	// ChanCheckTxSize is the size of RequestCheckTxAsync of BaseApp
+	ChanCheckTxSize uint `mapstructure:"chan-check-tx-size"`
 }
 
 // APIConfig defines the API listener configuration.
@@ -94,13 +110,16 @@ type APIConfig struct {
 	// MaxOpenConnections defines the number of maximum open connections
 	MaxOpenConnections uint `mapstructure:"max-open-connections"`
 
-	// RPCReadTimeout defines the Tendermint RPC read timeout (in seconds)
+	// RPCReadTimeout defines the Ostracon RPC read timeout (in seconds)
 	RPCReadTimeout uint `mapstructure:"rpc-read-timeout"`
 
-	// RPCWriteTimeout defines the Tendermint RPC write timeout (in seconds)
+	// RPCWriteTimeout defines the Ostracon RPC write timeout (in seconds)
 	RPCWriteTimeout uint `mapstructure:"rpc-write-timeout"`
 
-	// RPCMaxBodyBytes defines the Tendermint maximum response body (in bytes)
+	// RPCIdleTimeout defines the Ostracon RPC idle timeout (in seconds)
+	RPCIdleTimeout uint `mapstructure:"rpc-idle-timeout"`
+
+	// RPCMaxBodyBytes defines the Ostracon maximum response body (in bytes)
 	RPCMaxBodyBytes uint `mapstructure:"rpc-max-body-bytes"`
 
 	// TODO: TLS/Proxy configuration.
@@ -215,8 +234,10 @@ func DefaultConfig() *Config {
 			PruningInterval:     "0",
 			MinRetainBlocks:     0,
 			IndexEvents:         make([]string, 0),
-			IAVLCacheSize:       781250, // 50 MB
+			InterBlockCacheSize: cache.DefaultCommitKVStoreCacheSize,
+			IAVLCacheSize:       iavl.DefaultIAVLCacheSize,
 			IAVLDisableFastNode: true,
+			ChanCheckTxSize:     DefaultChanCheckTxSize,
 		},
 		Telemetry: telemetry.Config{
 			Enabled:      false,
@@ -228,6 +249,8 @@ func DefaultConfig() *Config {
 			Address:            "tcp://0.0.0.0:1317",
 			MaxOpenConnections: 1000,
 			RPCReadTimeout:     10,
+			RPCWriteTimeout:    10,
+			RPCIdleTimeout:     60,
 			RPCMaxBodyBytes:    1000000,
 		},
 		GRPC: GRPCConfig{
@@ -283,8 +306,9 @@ func GetConfig(v *viper.Viper) (Config, error) {
 			HaltTime:            v.GetUint64("halt-time"),
 			IndexEvents:         v.GetStringSlice("index-events"),
 			MinRetainBlocks:     v.GetUint64("min-retain-blocks"),
-			IAVLCacheSize:       v.GetUint64("iavl-cache-size"),
 			IAVLDisableFastNode: v.GetBool("iavl-disable-fastnode"),
+			IAVLCacheSize:       v.GetUint64("iavl-cache-size"),
+			ChanCheckTxSize:     v.GetUint("chan-check-tx-size"),
 		},
 		Telemetry: telemetry.Config{
 			ServiceName:             v.GetString("telemetry.service-name"),
@@ -302,6 +326,7 @@ func GetConfig(v *viper.Viper) (Config, error) {
 			MaxOpenConnections: v.GetUint("api.max-open-connections"),
 			RPCReadTimeout:     v.GetUint("api.rpc-read-timeout"),
 			RPCWriteTimeout:    v.GetUint("api.rpc-write-timeout"),
+			RPCIdleTimeout:     v.GetUint("api.rpc-idle-timeout"),
 			RPCMaxBodyBytes:    v.GetUint("api.rpc-max-body-bytes"),
 			EnableUnsafeCORS:   v.GetBool("api.enabled-unsafe-cors"),
 		},

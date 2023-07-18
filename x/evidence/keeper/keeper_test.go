@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"time"
 
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
+	"github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
 )
 
 var (

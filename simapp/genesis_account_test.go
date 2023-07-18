@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
 
+	"github.com/Finschia/ostracon/crypto"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto"
 )
 
 func TestSimGenesisAccountValidate(t *testing.T) {

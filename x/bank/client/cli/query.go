@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 const (
@@ -105,6 +105,7 @@ Example:
 func GetCmdDenomsMetadata() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "denom-metadata",
+		Args:  cobra.NoArgs,
 		Short: "Query the client metadata for coin denominations",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query the client metadata for all the registered coin denominations
@@ -158,6 +159,7 @@ To query for the client metadata of a specific coin denomination use:
 func GetCmdQueryTotalSupply() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "total",
+		Args:  cobra.NoArgs,
 		Short: "Query the total supply of coins of the chain",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query total supply of coins that are held by accounts in the chain.

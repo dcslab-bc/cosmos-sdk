@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"math/rand"
 
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/simulation"
 )
 
 const (

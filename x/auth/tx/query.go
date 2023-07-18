@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/client"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // QueryTxsByEvents performs a search for transactions for a given set of events

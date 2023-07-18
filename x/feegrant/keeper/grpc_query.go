@@ -7,11 +7,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 var _ feegrant.QueryServer = Keeper{}

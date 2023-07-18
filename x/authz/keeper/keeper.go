@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/Finschia/ostracon/libs/log"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/authz"
 )
 
 type Keeper struct {
@@ -144,7 +145,7 @@ func (k Keeper) DispatchActions(ctx sdk.Context, grantee sdk.AccAddress, msgs []
 func (k Keeper) SaveGrant(ctx sdk.Context, grantee, granter sdk.AccAddress, authorization authz.Authorization, expiration time.Time) error {
 	store := ctx.KVStore(k.storeKey)
 
-	grant, err := authz.NewGrant(authorization, expiration)
+	grant, err := authz.NewGrant(ctx.BlockTime(), authorization, expiration)
 	if err != nil {
 		return err
 	}
@@ -245,6 +246,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *authz.GenesisState {
 // InitGenesis new authz genesis
 func (k Keeper) InitGenesis(ctx sdk.Context, data *authz.GenesisState) {
 	for _, entry := range data.Authorization {
+		if entry.Expiration.Before(ctx.BlockTime()) {
+			continue
+		}
+
 		grantee := sdk.MustAccAddressFromBech32(entry.Grantee)
 		granter := sdk.MustAccAddressFromBech32(entry.Granter)
 		a, ok := entry.Authorization.GetCachedValue().(authz.Authorization)

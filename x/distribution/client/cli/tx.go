@@ -7,13 +7,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 // Transaction flags for the x/distribution module
@@ -52,12 +52,12 @@ func newSplitAndApply(
 	genOrBroadcastFn newGenerateOrBroadcastFunc, clientCtx client.Context,
 	fs *pflag.FlagSet, msgs []sdk.Msg, chunkSize int,
 ) error {
-	if chunkSize == 0 {
+	totalMessages := len(msgs)
+	if chunkSize == 0 || totalMessages == 0 {
 		return genOrBroadcastFn(clientCtx, fs, msgs...)
 	}
 
 	// split messages into slices of length chunkSize
-	totalMessages := len(msgs)
 	for i := 0; i < len(msgs); i += chunkSize {
 
 		sliceEnd := i + chunkSize

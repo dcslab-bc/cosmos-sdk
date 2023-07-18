@@ -1,17 +1,19 @@
 package cli
 
 import (
-	"os"
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/internal/os"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 // ParseCommunityPoolSpendProposalWithDeposit reads and parses a CommunityPoolSpendProposalWithDeposit from a file.
 func ParseCommunityPoolSpendProposalWithDeposit(cdc codec.JSONCodec, proposalFile string) (types.CommunityPoolSpendProposalWithDeposit, error) {
 	proposal := types.CommunityPoolSpendProposalWithDeposit{}
 
-	contents, err := os.ReadFile(proposalFile)
+	// 2M size limit is enough for a proposal.
+	// Check the proposals:
+	// https://hubble.figment.io/cosmos/chains/cosmoshub-4/governance
+	contents, err := os.ReadFileWithSizeLimit(proposalFile, 2*1024*1024)
 	if err != nil {
 		return proposal, err
 	}

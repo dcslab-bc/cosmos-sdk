@@ -3,17 +3,19 @@ package server
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/spf13/cobra"
-	tmcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
+
+	ostcmd "github.com/Finschia/ostracon/cmd/ostracon/commands"
+
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server/types"
 )
 
 // NewRollbackCmd creates a command to rollback tendermint and multistore state by one height.
 func NewRollbackCmd(appCreator types.AppCreator, defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rollback",
-		Short: "rollback cosmos-sdk and tendermint state by one height",
+		Short: "rollback finschia-sdk and tendermint state by one height",
 		Long: `
 A state rollback is performed to recover from an incorrect application state transition,
 when Tendermint has persisted an incorrect app hash and is thus unable to make
@@ -32,7 +34,7 @@ application.
 			}
 			app := appCreator(ctx.Logger, db, nil, ctx.Viper)
 			// rollback tendermint state
-			height, hash, err := tmcmd.RollbackState(ctx.Config)
+			height, hash, err := ostcmd.RollbackState(ctx.Config)
 			if err != nil {
 				return fmt.Errorf("failed to rollback tendermint state: %w", err)
 			}

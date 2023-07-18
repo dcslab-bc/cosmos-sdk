@@ -4,18 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 var (
@@ -52,9 +51,6 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, txEncodingConfig cl
 
 	return types.ValidateGenesis(&data, txEncodingConfig.TxJSONDecoder())
 }
-
-// RegisterRESTRoutes registers the REST routes for the genutil module.
-func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the genutil module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {

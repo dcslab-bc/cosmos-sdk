@@ -3,13 +3,13 @@ package feegrant
 import (
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // TODO: Revisit this once we have propoer gas fee framework.
-// Tracking issues https://github.com/cosmos/cosmos-sdk/issues/9054, https://github.com/cosmos/cosmos-sdk/discussions/9072
+// Tracking issues https://github.com/cosmos/cosmos-sdk/issues/9054, https://github.com/Finschia/finschia-sdk/discussions/9072
 const (
 	gasCostPerIteration = uint64(10)
 )
@@ -52,6 +52,20 @@ func (a *AllowedMsgAllowance) GetAllowance() (FeeAllowanceI, error) {
 	return allowance, nil
 }
 
+// SetAllowance sets allowed fee allowance.
+func (a *AllowedMsgAllowance) SetAllowance(allowance FeeAllowanceI) error {
+	var err error
+	protoAllowance, ok := allowance.(proto.Message)
+	if !ok {
+		return sdkerrors.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", allowance)
+	}
+	a.Allowance, err = types.NewAnyWithValue(protoAllowance)
+	if err != nil {
+		return sdkerrors.Wrapf(sdkerrors.ErrPackAny, "cannot proto marshal %T", protoAllowance)
+	}
+	return nil
+}
+
 // Accept method checks for the filtered messages has valid expiry
 func (a *AllowedMsgAllowance) Accept(ctx sdk.Context, fee sdk.Coins, msgs []sdk.Msg) (bool, error) {
 	if !a.allMsgTypesAllowed(ctx, msgs) {
@@ -63,7 +77,13 @@ func (a *AllowedMsgAllowance) Accept(ctx sdk.Context, fee sdk.Coins, msgs []sdk.
 		return false, err
 	}
 
-	return allowance.Accept(ctx, fee, msgs)
+	remove, err := allowance.Accept(ctx, fee, msgs)
+	if err == nil && !remove {
+		if err = a.SetAllowance(allowance); err != nil {
+			return false, err
+		}
+	}
+	return remove, err
 }
 
 func (a *AllowedMsgAllowance) allowedMsgsToMap(ctx sdk.Context) map[string]bool {

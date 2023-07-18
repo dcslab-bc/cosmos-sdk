@@ -6,18 +6,19 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing/simulation"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	distrtypes "github.com/Finschia/finschia-sdk/x/distribution/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/x/slashing/simulation"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // TestWeightedOperations tests the weights of the operations.
@@ -86,7 +87,7 @@ func TestSimulateMsgUnjail(t *testing.T) {
 	app.DistrKeeper.SetDelegatorStartingInfo(ctx, validator0.GetOperator(), val0AccAddress.Bytes(), distrtypes.NewDelegatorStartingInfo(2, sdk.OneDec(), 200))
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgUnjail(app.AccountKeeper, app.BankKeeper, app.SlashingKeeper, app.StakingKeeper)
@@ -98,7 +99,7 @@ func TestSimulateMsgUnjail(t *testing.T) {
 
 	require.True(t, operationMsg.OK)
 	require.Equal(t, types.TypeMsgUnjail, msg.Type())
-	require.Equal(t, "cosmosvaloper1tnh2q55v8wyygtt9srz5safamzdengsn9dsd7z", msg.ValidatorAddr)
+	require.Equal(t, "linkvaloper1tnh2q55v8wyygtt9srz5safamzdengsn8rx882", msg.ValidatorAddr)
 	require.Len(t, futureOperations, 0)
 }
 
@@ -123,7 +124,7 @@ func getTestingAccounts(t *testing.T, r *rand.Rand, app *simapp.SimApp, ctx sdk.
 	for _, account := range accounts {
 		acc := app.AccountKeeper.NewAccountWithAddress(ctx, account.Address)
 		app.AccountKeeper.SetAccount(ctx, acc)
-		require.NoError(t, simapp.FundAccount(app.BankKeeper, ctx, account.Address, initCoins))
+		require.NoError(t, simapp.FundAccount(app, ctx, account.Address, initCoins))
 	}
 
 	return accounts

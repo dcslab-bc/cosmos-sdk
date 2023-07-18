@@ -8,11 +8,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (

@@ -10,16 +10,16 @@ import (
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (
@@ -66,7 +66,7 @@ func (suite *GenTxTestSuite) setAccountBalance(addr sdk.AccAddress, amount int64
 	acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
 
-	err := simapp.FundAccount(suite.app.BankKeeper, suite.ctx, addr, sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, amount)})
+	err := simapp.FundAccount(suite.app, suite.ctx, addr, sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, amount)})
 	suite.Require().NoError(err)
 
 	bankGenesisState := suite.app.BankKeeper.ExportGenesis(suite.ctx)

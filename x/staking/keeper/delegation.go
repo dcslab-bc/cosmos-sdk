@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // GetDelegation returns a specific delegation.

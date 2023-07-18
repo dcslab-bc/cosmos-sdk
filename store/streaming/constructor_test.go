@@ -3,13 +3,13 @@ package streaming
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/streaming/file"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	codecTypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/store/streaming/file"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 type fakeOptions struct{}

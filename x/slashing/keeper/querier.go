@@ -3,11 +3,11 @@ package keeper
 import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 // NewQuerier creates a new querier for slashing clients.
@@ -48,7 +48,13 @@ func querySigningInfo(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQu
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
-	signingInfo, found := k.GetValidatorSigningInfo(ctx, sdk.ConsAddress(params.ConsAddress))
+	// https://github.com/cosmos/cosmos-sdk/issues/12573
+	// Will be removed, but fix this
+	addr, err := sdk.ConsAddressFromBech32(params.ConsAddress)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, err.Error())
+	}
+	signingInfo, found := k.GetValidatorSigningInfo(ctx, addr)
 	if !found {
 		return nil, sdkerrors.Wrap(types.ErrNoSigningInfoFound, params.ConsAddress)
 	}

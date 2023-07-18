@@ -6,28 +6,29 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	"github.com/cosmos/cosmos-sdk/x/capability/simulation"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/capability/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability/simulation"
+	"github.com/Finschia/finschia-sdk/x/capability/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // ----------------------------------------------------------------------------
@@ -67,9 +68,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	}
 	return genState.Validate()
 }
-
-// RegisterRESTRoutes registers the capability module's REST service handlers.
-func (a AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the capability module.
 func (a AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {
@@ -115,7 +113,12 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier { retur
 
 // RegisterServices registers a GRPC query service to respond to the
 // module-specific GRPC queries.
-func (am AppModule) RegisterServices(module.Configurator) {}
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	// m := keeper.NewMigrator(am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/capability from version 1 to 2: %v", err))
+	// }
+}
 
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
@@ -143,7 +146,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlocker calls InitMemStore to assert that the memory store is initialized.
 // It's safe to run multiple times.
-func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, _ ocabci.RequestBeginBlock) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	am.keeper.InitMemStore(ctx)

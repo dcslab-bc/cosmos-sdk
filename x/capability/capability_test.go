@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	"github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/capability"
+	"github.com/Finschia/finschia-sdk/x/capability/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 )
 
 type CapabilityTestSuite struct {
@@ -64,7 +64,7 @@ func (suite *CapabilityTestSuite) TestInitializeMemStore() {
 	ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockGasMeter(sdk.NewGasMeter(50))
 	prevGas := ctx.BlockGasMeter().GasConsumed()
 	restartedModule := capability.NewAppModule(suite.cdc, *newKeeper)
-	restartedModule.BeginBlock(ctx, abci.RequestBeginBlock{})
+	restartedModule.BeginBlock(ctx, ocabci.RequestBeginBlock{})
 	suite.Require().True(newKeeper.IsInitialized(ctx), "memstore initialized flag not set")
 	gasUsed := ctx.BlockGasMeter().GasConsumed()
 
@@ -85,7 +85,7 @@ func (suite *CapabilityTestSuite) TestInitializeMemStore() {
 	// Ensure the capabilities don't get reinitialized on next BeginBlock
 	// by testing to see if capability returns same pointer
 	// also check that initialized flag is still set
-	restartedModule.BeginBlock(ctx, abci.RequestBeginBlock{})
+	restartedModule.BeginBlock(ctx, ocabci.RequestBeginBlock{})
 	recap, ok := newSk1.GetCapability(ctx, "transfer")
 	suite.Require().True(ok)
 	suite.Require().Equal(cap1, recap, "capabilities got reinitialized after second BeginBlock")

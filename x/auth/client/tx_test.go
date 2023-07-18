@@ -7,17 +7,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authclient "github.com/Finschia/finschia-sdk/x/auth/client"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 var (

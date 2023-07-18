@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	abcitypes "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 func TestItCreatesModuleAccountOnInitBlock(t *testing.T) {
@@ -16,7 +16,7 @@ func TestItCreatesModuleAccountOnInitBlock(t *testing.T) {
 	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	app.InitChain(
-		abcitypes.RequestInitChain{
+		abci.RequestInitChain{
 			AppStateBytes: []byte("{}"),
 			ChainId:       "test-chain-id",
 		},

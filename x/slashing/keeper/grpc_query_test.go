@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing/testslashing"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/slashing/testslashing"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 type SlashingTestSuite struct {

@@ -4,18 +4,19 @@ import (
 	"errors"
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/simulation"
+	"github.com/Finschia/finschia-sdk/x/slashing/keeper"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
+	stakingkeeper "github.com/Finschia/finschia-sdk/x/staking/keeper"
 )
 
+// nolint: gosec
 // Simulation operation weights constants
 const (
 	OpWeightMsgUnjail = "op_weight_msg_unjail" //nolint:gosec
@@ -127,7 +128,7 @@ func SimulateMsgUnjail(ak types.AccountKeeper, bk types.BankKeeper, k keeper.Kee
 		}
 
 		if err != nil {
-			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "unable to deliver tx"), nil, errors.New(res.Log)
+			return simtypes.NoOpMsg(types.ModuleName, msg.Type(), "unable to deliver tx"), nil, err
 		}
 
 		return simtypes.NewOperationMsg(msg, true, "", nil), nil, nil

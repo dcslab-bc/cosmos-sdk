@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Finschia/ostracon/crypto"
 	"github.com/gogo/protobuf/proto"
-	"github.com/tendermint/tendermint/crypto"
 	"gopkg.in/yaml.v2"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var (
@@ -58,7 +58,7 @@ func NewBaseAccountWithAddress(addr sdk.AccAddress) *BaseAccount {
 
 // GetAddress - Implements sdk.AccountI.
 func (acc BaseAccount) GetAddress() sdk.AccAddress {
-	addr, _ := sdk.AccAddressFromBech32(acc.Address)
+	addr := sdk.MustAccAddressFromBech32(acc.Address)
 	return addr
 }
 

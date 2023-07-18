@@ -8,12 +8,14 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/slashing"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func TestBeginBlocker(t *testing.T) {
@@ -41,7 +43,7 @@ func TestBeginBlocker(t *testing.T) {
 	}
 
 	// mark the validator as having signed
-	req := abci.RequestBeginBlock{
+	req := ocabci.RequestBeginBlock{
 		LastCommitInfo: abci.LastCommitInfo{
 			Votes: []abci.VoteInfo{{
 				Validator:       val,
@@ -64,7 +66,7 @@ func TestBeginBlocker(t *testing.T) {
 	// for 1000 blocks, mark the validator as having signed
 	for ; height < app.SlashingKeeper.SignedBlocksWindow(ctx); height++ {
 		ctx = ctx.WithBlockHeight(height)
-		req = abci.RequestBeginBlock{
+		req = ocabci.RequestBeginBlock{
 			LastCommitInfo: abci.LastCommitInfo{
 				Votes: []abci.VoteInfo{{
 					Validator:       val,
@@ -79,7 +81,7 @@ func TestBeginBlocker(t *testing.T) {
 	// for 500 blocks, mark the validator as having not signed
 	for ; height < ((app.SlashingKeeper.SignedBlocksWindow(ctx) * 2) - app.SlashingKeeper.MinSignedPerWindow(ctx) + 1); height++ {
 		ctx = ctx.WithBlockHeight(height)
-		req = abci.RequestBeginBlock{
+		req = ocabci.RequestBeginBlock{
 			LastCommitInfo: abci.LastCommitInfo{
 				Votes: []abci.VoteInfo{{
 					Validator:       val,

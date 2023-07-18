@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func TestCalculateRewardsBasic(t *testing.T) {
@@ -280,7 +280,7 @@ func TestWithdrawDelegationRewardsBasic(t *testing.T) {
 
 	// set module account coins
 	distrAcc := app.DistrKeeper.GetDistributionAccount(ctx)
-	require.NoError(t, simapp.FundModuleAccount(app.BankKeeper, ctx, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, balanceTokens))))
+	require.NoError(t, simapp.FundModuleAccount(app, ctx, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, balanceTokens))))
 	app.AccountKeeper.SetModuleAccount(ctx, distrAcc)
 
 	// create validator with 50% commission
@@ -344,7 +344,7 @@ func TestWithdrawDelegationZeroRewards(t *testing.T) {
 
 	// set module account coins
 	distrAcc := app.DistrKeeper.GetDistributionAccount(ctx)
-	require.NoError(t, simapp.FundModuleAccount(app.BankKeeper, ctx, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, balanceTokens))))
+	require.NoError(t, simapp.FundModuleAccount(app, ctx, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, balanceTokens))))
 	app.AccountKeeper.SetModuleAccount(ctx, distrAcc)
 
 	// create validator with 50% commission
@@ -512,7 +512,7 @@ func TestCalculateRewardsMultiDelegatorMultWithdraw(t *testing.T) {
 
 	// set module account coins
 	distrAcc := app.DistrKeeper.GetDistributionAccount(ctx)
-	require.NoError(t, simapp.FundModuleAccount(app.BankKeeper, ctx, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(1000)))))
+	require.NoError(t, simapp.FundModuleAccount(app, ctx, distrAcc.GetName(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(1000)))))
 	app.AccountKeeper.SetModuleAccount(ctx, distrAcc)
 
 	tokens := sdk.DecCoins{sdk.NewDecCoinFromDec(sdk.DefaultBondDenom, sdk.NewDec(initial))}

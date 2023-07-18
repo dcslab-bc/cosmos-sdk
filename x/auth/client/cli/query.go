@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"strings"
 
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/spf13/cobra"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/version"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/version"
+	authtx "github.com/Finschia/finschia-sdk/x/auth/tx"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 const (
@@ -117,6 +116,7 @@ func GetAccountCmd() *cobra.Command {
 func GetAccountsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "accounts",
+		Args:  cobra.NoArgs,
 		Short: "Query all the accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -183,6 +183,7 @@ func QueryModuleAccountByNameCmd() *cobra.Command {
 func QueryTxsByEventsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "txs",
+		Args:  cobra.NoArgs,
 		Short: "Query for paginated transactions that match a set of events",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
@@ -192,7 +193,7 @@ to each module's documentation for the full set of events to query for. Each mod
 documents its respective events under 'xx_events.md'.
 
 Example:
-$ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator_reward' --page 1 --limit 30
+$ %s query txs --%s 'message.sender=link1...&message.action=withdraw_delegator_reward' --page 1 --limit 30
 `, eventFormat, version.AppName, flagEvents),
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -220,7 +221,7 @@ $ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator
 				}
 
 				tokens := strings.Split(event, "=")
-				if tokens[0] == tmtypes.TxHeightKey {
+				if tokens[0] == octypes.TxHeightKey {
 					event = fmt.Sprintf("%s=%s", tokens[0], tokens[1])
 				} else {
 					event = fmt.Sprintf("%s='%s'", tokens[0], tokens[1])
@@ -242,8 +243,8 @@ $ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator
 	}
 
 	flags.AddQueryFlagsToCmd(cmd)
-	cmd.Flags().Int(flags.FlagPage, rest.DefaultPage, "Query a specific page of paginated results")
-	cmd.Flags().Int(flags.FlagLimit, rest.DefaultLimit, "Query number of transactions results per page returned")
+	cmd.Flags().Int(flags.FlagPage, query.DefaultPage, "Query a specific page of paginated results")
+	cmd.Flags().Int(flags.FlagLimit, query.DefaultLimit, "Query number of transactions results per page returned")
 	cmd.Flags().String(flagEvents, "", fmt.Sprintf("list of transaction events in the form of %s", eventFormat))
 	cmd.MarkFlagRequired(flagEvents)
 
@@ -303,7 +304,7 @@ $ %s query tx --%s=%s <sig1_base64>,<sig2_base64...>
 						tmEvents[i] = fmt.Sprintf("%s.%s='%s'", sdk.EventTypeTx, sdk.AttributeKeySignature, sig)
 					}
 
-					txs, err := authtx.QueryTxsByEvents(clientCtx, tmEvents, rest.DefaultPage, query.DefaultLimit, "")
+					txs, err := authtx.QueryTxsByEvents(clientCtx, tmEvents, query.DefaultPage, query.DefaultLimit, "")
 					if err != nil {
 						return err
 					}
@@ -326,7 +327,7 @@ $ %s query tx --%s=%s <sig1_base64>,<sig2_base64...>
 					tmEvents := []string{
 						fmt.Sprintf("%s.%s='%s'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, args[0]),
 					}
-					txs, err := authtx.QueryTxsByEvents(clientCtx, tmEvents, rest.DefaultPage, query.DefaultLimit, "")
+					txs, err := authtx.QueryTxsByEvents(clientCtx, tmEvents, query.DefaultPage, query.DefaultLimit, "")
 					if err != nil {
 						return err
 					}

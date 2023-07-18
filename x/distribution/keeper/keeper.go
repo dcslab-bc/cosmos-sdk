@@ -3,13 +3,13 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
+	paramtypes "github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 // Keeper of the distribution store

@@ -6,18 +6,19 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/simulation"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	distrtypes "github.com/Finschia/finschia-sdk/x/distribution/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/x/staking/simulation"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // TestWeightedOperations tests the weights of the operations.
@@ -71,7 +72,7 @@ func TestSimulateMsgCreateValidator(t *testing.T) {
 	accounts := getTestingAccounts(t, r, app, ctx, 3)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgCreateValidator(app.AccountKeeper, app.BankKeeper, app.StakingKeeper)
@@ -87,8 +88,8 @@ func TestSimulateMsgCreateValidator(t *testing.T) {
 	require.Equal(t, "0.019527679037870745", msg.Commission.Rate.String())
 	require.Equal(t, types.TypeMsgCreateValidator, msg.Type())
 	require.Equal(t, []byte{0xa, 0x20, 0x51, 0xde, 0xbd, 0xe8, 0xfa, 0xdf, 0x4e, 0xfc, 0x33, 0xa5, 0x16, 0x94, 0xf6, 0xee, 0xd3, 0x69, 0x7a, 0x7a, 0x1c, 0x2d, 0x50, 0xb6, 0x2, 0xf7, 0x16, 0x4e, 0x66, 0x9f, 0xff, 0x38, 0x91, 0x9b}, msg.Pubkey.Value)
-	require.Equal(t, "cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.DelegatorAddress)
-	require.Equal(t, "cosmosvaloper1ghekyjucln7y67ntx7cf27m9dpuxxemnsvnaes", msg.ValidatorAddress)
+	require.Equal(t, "link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.DelegatorAddress)
+	require.Equal(t, "linkvaloper1ghekyjucln7y67ntx7cf27m9dpuxxemnjz9hqc", msg.ValidatorAddress)
 	require.Len(t, futureOperations, 0)
 }
 
@@ -108,7 +109,7 @@ func TestSimulateMsgEditValidator(t *testing.T) {
 	_ = getTestingValidator0(t, app, ctx, accounts)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgEditValidator(app.AccountKeeper, app.BankKeeper, app.StakingKeeper)
@@ -125,7 +126,7 @@ func TestSimulateMsgEditValidator(t *testing.T) {
 	require.Equal(t, "WeLrQKjLxz", msg.Description.Website)
 	require.Equal(t, "rBqDOTtGTO", msg.Description.SecurityContact)
 	require.Equal(t, types.TypeMsgEditValidator, msg.Type())
-	require.Equal(t, "cosmosvaloper1tnh2q55v8wyygtt9srz5safamzdengsn9dsd7z", msg.ValidatorAddress)
+	require.Equal(t, "linkvaloper1tnh2q55v8wyygtt9srz5safamzdengsn8rx882", msg.ValidatorAddress)
 	require.Len(t, futureOperations, 0)
 }
 
@@ -146,7 +147,7 @@ func TestSimulateMsgDelegate(t *testing.T) {
 	setupValidatorRewards(app, ctx, validator0.GetOperator())
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgDelegate(app.AccountKeeper, app.BankKeeper, app.StakingKeeper)
@@ -157,11 +158,11 @@ func TestSimulateMsgDelegate(t *testing.T) {
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	require.True(t, operationMsg.OK)
-	require.Equal(t, "cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.DelegatorAddress)
+	require.Equal(t, "link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.DelegatorAddress)
 	require.Equal(t, "98100858108421259236", msg.Amount.Amount.String())
 	require.Equal(t, "stake", msg.Amount.Denom)
 	require.Equal(t, types.TypeMsgDelegate, msg.Type())
-	require.Equal(t, "cosmosvaloper1tnh2q55v8wyygtt9srz5safamzdengsn9dsd7z", msg.ValidatorAddress)
+	require.Equal(t, "linkvaloper1tnh2q55v8wyygtt9srz5safamzdengsn8rx882", msg.ValidatorAddress)
 	require.Len(t, futureOperations, 0)
 }
 
@@ -191,7 +192,7 @@ func TestSimulateMsgUndelegate(t *testing.T) {
 	setupValidatorRewards(app, ctx, validator0.GetOperator())
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgUndelegate(app.AccountKeeper, app.BankKeeper, app.StakingKeeper)
@@ -202,11 +203,11 @@ func TestSimulateMsgUndelegate(t *testing.T) {
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	require.True(t, operationMsg.OK)
-	require.Equal(t, "cosmos1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7u4x9a0", msg.DelegatorAddress)
+	require.Equal(t, "link1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7fmx8x8", msg.DelegatorAddress)
 	require.Equal(t, "280623462081924937", msg.Amount.Amount.String())
 	require.Equal(t, "stake", msg.Amount.Denom)
 	require.Equal(t, types.TypeMsgUndelegate, msg.Type())
-	require.Equal(t, "cosmosvaloper1tnh2q55v8wyygtt9srz5safamzdengsn9dsd7z", msg.ValidatorAddress)
+	require.Equal(t, "linkvaloper1tnh2q55v8wyygtt9srz5safamzdengsn8rx882", msg.ValidatorAddress)
 	require.Len(t, futureOperations, 0)
 }
 
@@ -239,9 +240,11 @@ func TestSimulateMsgBeginRedelegate(t *testing.T) {
 	setupValidatorRewards(app, ctx, validator1.GetOperator())
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
+	// SimulateMsgBeginRedelegate selects a validator randomly, so this test code was modified such that
+	// two validator addresses switched into each other
 	op := simulation.SimulateMsgBeginRedelegate(app.AccountKeeper, app.BankKeeper, app.StakingKeeper)
 	operationMsg, futureOperations, err := op(r, app.BaseApp, ctx, accounts, "")
 	require.NoError(t, err)
@@ -250,12 +253,12 @@ func TestSimulateMsgBeginRedelegate(t *testing.T) {
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	require.True(t, operationMsg.OK)
-	require.Equal(t, "cosmos12gwd9jchc69wck8dhstxgwz3z8qs8yv67ps8mu", msg.DelegatorAddress)
+	require.Equal(t, "link12gwd9jchc69wck8dhstxgwz3z8qs8yv6t0s9q5", msg.DelegatorAddress)
 	require.Equal(t, "489348507626016866", msg.Amount.Amount.String())
 	require.Equal(t, "stake", msg.Amount.Denom)
 	require.Equal(t, types.TypeMsgBeginRedelegate, msg.Type())
-	require.Equal(t, "cosmosvaloper1h6a7shta7jyc72hyznkys683z98z36e0zdk8g9", msg.ValidatorDstAddress)
-	require.Equal(t, "cosmosvaloper17s94pzwhsn4ah25tec27w70n65h5t2scgxzkv2", msg.ValidatorSrcAddress)
+	require.Equal(t, "linkvaloper1h6a7shta7jyc72hyznkys683z98z36e0qrqd3d", msg.ValidatorDstAddress)
+	require.Equal(t, "linkvaloper17s94pzwhsn4ah25tec27w70n65h5t2sc2g5u4z", msg.ValidatorSrcAddress)
 	require.Len(t, futureOperations, 0)
 }
 
@@ -281,7 +284,7 @@ func getTestingAccounts(t *testing.T, r *rand.Rand, app *simapp.SimApp, ctx sdk.
 	for _, account := range accounts {
 		acc := app.AccountKeeper.NewAccountWithAddress(ctx, account.Address)
 		app.AccountKeeper.SetAccount(ctx, acc)
-		require.NoError(t, simapp.FundAccount(app.BankKeeper, ctx, account.Address, initCoins))
+		require.NoError(t, simapp.FundAccount(app, ctx, account.Address, initCoins))
 	}
 
 	return accounts

@@ -4,19 +4,21 @@ import (
 	"encoding/json"
 	"testing"
 
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/gov"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 func TestImportExportQueues(t *testing.T) {
@@ -27,7 +29,7 @@ func TestImportExportQueues(t *testing.T) {
 	SortAddresses(addrs)
 
 	header := tmproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	ctx = app.BaseApp.NewContext(false, tmproto.Header{})
 
@@ -80,10 +82,10 @@ func TestImportExportQueues(t *testing.T) {
 	)
 
 	app2.Commit()
-	app2.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app2.LastBlockHeight() + 1}})
+	app2.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app2.LastBlockHeight() + 1}})
 
 	header = tmproto.Header{Height: app2.LastBlockHeight() + 1}
-	app2.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app2.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	ctx2 := app2.BaseApp.NewContext(false, tmproto.Header{})
 
@@ -141,7 +143,7 @@ func TestEqualProposals(t *testing.T) {
 	SortAddresses(addrs)
 
 	header := tmproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	// Submit two proposals
 	proposal := TestProposal

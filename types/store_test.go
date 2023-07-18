@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 type storeTestSuite struct {

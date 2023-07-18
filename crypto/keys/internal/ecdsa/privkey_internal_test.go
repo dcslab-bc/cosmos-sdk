@@ -7,7 +7,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/tendermint/tendermint/crypto"
+	"github.com/Finschia/ostracon/crypto"
 
 	"github.com/stretchr/testify/suite"
 )

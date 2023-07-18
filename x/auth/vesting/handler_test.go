@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/types"
 )
 
 type HandlerTestSuite struct {
@@ -37,7 +37,7 @@ func (suite *HandlerTestSuite) TestMsgCreateVestingAccount() {
 
 	acc1 := suite.app.AccountKeeper.NewAccountWithAddress(ctx, addr1)
 	suite.app.AccountKeeper.SetAccount(ctx, acc1)
-	suite.Require().NoError(simapp.FundAccount(suite.app.BankKeeper, ctx, addr1, balances))
+	suite.Require().NoError(simapp.FundAccount(suite.app, ctx, addr1, balances))
 
 	testCases := []struct {
 		name      string

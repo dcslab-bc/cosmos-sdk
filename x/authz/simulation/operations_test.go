@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	"github.com/cosmos/cosmos-sdk/x/authz/simulation"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/x/authz/simulation"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 type SimTestSuite struct {
@@ -76,7 +76,7 @@ func (suite *SimTestSuite) getTestingAccounts(r *rand.Rand, n int) []simtypes.Ac
 	for _, account := range accounts {
 		acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, account.Address)
 		suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
-		suite.Require().NoError(simapp.FundAccount(suite.app.BankKeeper, suite.ctx, account.Address, initCoins))
+		suite.Require().NoError(simapp.FundAccount(suite.app, suite.ctx, account.Address, initCoins))
 	}
 
 	return accounts
@@ -90,7 +90,7 @@ func (suite *SimTestSuite) TestSimulateGrant() {
 	ctx := suite.ctx.WithBlockTime(blockTime)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{
 		Header: tmproto.Header{
 			Height:  suite.app.LastBlockHeight() + 1,
 			AppHash: suite.app.LastCommitID().Hash,
@@ -106,7 +106,7 @@ func (suite *SimTestSuite) TestSimulateGrant() {
 	suite.Require().NoError(err)
 
 	var msg authz.MsgGrant
-	suite.app.AppCodec().UnmarshalJSON(operationMsg.Msg, &msg)
+	suite.app.LegacyAmino().UnmarshalJSON(operationMsg.Msg, &msg)
 	suite.Require().True(operationMsg.OK)
 	suite.Require().Equal(granter.Address.String(), msg.Granter)
 	suite.Require().Equal(grantee.Address.String(), msg.Grantee)
@@ -120,7 +120,7 @@ func (suite *SimTestSuite) TestSimulateRevoke() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{
 		Header: tmproto.Header{
 			Height:  suite.app.LastBlockHeight() + 1,
 			AppHash: suite.app.LastCommitID().Hash,
@@ -143,7 +143,7 @@ func (suite *SimTestSuite) TestSimulateRevoke() {
 	suite.Require().NoError(err)
 
 	var msg authz.MsgRevoke
-	suite.app.AppCodec().UnmarshalJSON(operationMsg.Msg, &msg)
+	suite.app.LegacyAmino().UnmarshalJSON(operationMsg.Msg, &msg)
 
 	suite.Require().True(operationMsg.OK)
 	suite.Require().Equal(granter.Address.String(), msg.Granter)
@@ -159,7 +159,7 @@ func (suite *SimTestSuite) TestSimulateExec() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	initAmt := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200000)
 	initCoins := sdk.NewCoins(sdk.NewCoin("stake", initAmt))
@@ -178,7 +178,7 @@ func (suite *SimTestSuite) TestSimulateExec() {
 
 	var msg authz.MsgExec
 
-	suite.app.AppCodec().UnmarshalJSON(operationMsg.Msg, &msg)
+	suite.app.LegacyAmino().UnmarshalJSON(operationMsg.Msg, &msg)
 
 	suite.Require().True(operationMsg.OK)
 	suite.Require().Equal(grantee.Address.String(), msg.Grantee)

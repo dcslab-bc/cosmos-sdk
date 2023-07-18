@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/iavl"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store/iavl"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 func newMemTestKVStore(t *testing.T) types.KVStore {

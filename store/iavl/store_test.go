@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-
 	"github.com/cosmos/iavl"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	"github.com/Finschia/ostracon/libs/log"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/store/cachekv"
+	"github.com/Finschia/finschia-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 var (
@@ -457,6 +457,26 @@ func TestIAVLNoPrune(t *testing.T) {
 			require.True(t, iavlStore.VersionExists(int64(j)),
 				"Missing version %d with latest version %d. Should be storing all versions",
 				j, i)
+		}
+
+		nextVersion(iavlStore)
+	}
+}
+
+func TestIAVLGetAllVersions(t *testing.T) {
+	db := dbm.NewMemDB()
+	tree, err := iavl.NewMutableTree(db, cacheSize, false)
+	require.NoError(t, err)
+
+	iavlStore := UnsafeNewStore(tree)
+	nextVersion(iavlStore)
+
+	for i := 1; i < 100; i++ {
+		for _, ver := range iavlStore.GetAllVersions() {
+			require.True(t, iavlStore.VersionExists(int64(ver)),
+				"Missing version %d with latest version %d. Should be storing all versions",
+				ver, i)
+
 		}
 
 		nextVersion(iavlStore)

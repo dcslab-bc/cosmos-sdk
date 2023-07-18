@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	tmcli "github.com/tendermint/tendermint/libs/cli"
+	ostcli "github.com/Finschia/ostracon/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/testutil"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/x/auth/client/cli"
 )
 
 func TxSignExec(clientCtx client.Context, from fmt.Stringer, filename string, extraArgs ...string) (testutil.BufferWriter, error) {
@@ -24,7 +24,7 @@ func TxSignExec(clientCtx client.Context, from fmt.Stringer, filename string, ex
 	}
 
 	cmd := cli.GetSignCommand()
-	tmcli.PrepareBaseCmd(cmd, "", "")
+	ostcli.PrepareBaseCmd(cmd, "", "")
 
 	return clitestutil.ExecTestCLICmd(clientCtx, cmd, append(args, extraArgs...))
 }
@@ -87,7 +87,7 @@ func TxDecodeExec(clientCtx client.Context, encodedTx string, extraArgs ...strin
 }
 
 func QueryAccountExec(clientCtx client.Context, address fmt.Stringer, extraArgs ...string) (testutil.BufferWriter, error) {
-	args := []string{address.String(), fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	args := []string{address.String(), fmt.Sprintf("--%s=json", ostcli.OutputFlag)}
 
 	return clitestutil.ExecTestCLICmd(clientCtx, cli.GetAccountCmd(), append(args, extraArgs...))
 }

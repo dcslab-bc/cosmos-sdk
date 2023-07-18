@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Finschia/ostracon/libs/cli"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	"github.com/cosmos/cosmos-sdk/crypto/ledger"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerr "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	"github.com/Finschia/finschia-sdk/crypto/ledger"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerr "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
@@ -63,6 +63,12 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 		info, err = fetchKey(clientCtx.Keyring, args[0])
 		if err != nil {
 			return fmt.Errorf("%s is not a valid name or address: %v", args[0], err)
+		}
+		if info.GetType() == keyring.TypeMulti {
+			info, err = keyring.NewMultiInfo(info.GetName(), info.GetPubKey())
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		pks := make([]cryptotypes.PubKey, len(args))

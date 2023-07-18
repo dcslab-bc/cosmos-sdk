@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
+
+	ostrand "github.com/Finschia/ostracon/libs/rand"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/dbadapter"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/cachekv"
+	"github.com/Finschia/finschia-sdk/store/dbadapter"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 func newCacheKVStore() types.CacheKVStore {
@@ -320,7 +321,7 @@ const (
 )
 
 func randInt(n int) int {
-	return tmrand.NewRand().Int() % n
+	return ostrand.NewRand().Int() % n
 }
 
 // useful for replaying a error case if we find one

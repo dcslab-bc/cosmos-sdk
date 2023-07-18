@@ -5,13 +5,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/std"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/std"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/types/module"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 func makeCodec(bm module.BasicManager) *codec.LegacyAmino {
@@ -21,6 +23,21 @@ func makeCodec(bm module.BasicManager) *codec.LegacyAmino {
 	std.RegisterLegacyAminoCodec(cdc)
 
 	return cdc
+}
+
+func TestSetup(t *testing.T) {
+	app := Setup(false)
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+
+	app.InitChain(
+		types.RequestInitChain{
+			AppStateBytes: []byte("{}"),
+			ChainId:       "test-chain-id",
+		},
+	)
+
+	acc := app.AccountKeeper.GetAccount(ctx, authtypes.NewModuleAddress(authtypes.FeeCollectorName))
+	require.NotNil(t, acc)
 }
 
 func TestGetSimulationLog(t *testing.T) {

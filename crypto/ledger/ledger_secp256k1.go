@@ -9,9 +9,9 @@ import (
 
 	tmbtcec "github.com/tendermint/btcd/btcec"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/crypto/types"
 )
 
 // discoverLedger defines a function to be invoked at runtime for discovering

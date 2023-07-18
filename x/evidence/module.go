@@ -8,29 +8,29 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	eviclient "github.com/cosmos/cosmos-sdk/x/evidence/client"
-	"github.com/cosmos/cosmos-sdk/x/evidence/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/evidence/client/rest"
-	"github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	"github.com/cosmos/cosmos-sdk/x/evidence/simulation"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	eviclient "github.com/Finschia/finschia-sdk/x/evidence/client"
+	"github.com/Finschia/finschia-sdk/x/evidence/client/cli"
+	"github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	"github.com/Finschia/finschia-sdk/x/evidence/simulation"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // ----------------------------------------------------------------------------
@@ -74,20 +74,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return gs.Validate()
 }
 
-// RegisterRESTRoutes registers the evidence module's REST service handlers.
-func (a AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	evidenceRESTHandlers := make([]rest.EvidenceRESTHandler, len(a.evidenceHandlers))
-
-	for i, evidenceHandler := range a.evidenceHandlers {
-		evidenceRESTHandlers[i] = evidenceHandler.RESTHandler(clientCtx)
-	}
-
-	rest.RegisterRoutes(clientCtx, rtr, evidenceRESTHandlers)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the evidence module.
 func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the evidence module's root tx command.
@@ -152,6 +143,11 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	// m := keeper.NewMigrator(am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/evidence from version 1 to 2: %v", err))
+	// }
 }
 
 // RegisterInvariants registers the evidence module's invariants.
@@ -179,7 +175,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock executes all ABCI BeginBlock logic respective to the evidence module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {
 	BeginBlocker(ctx, req, am.keeper)
 }
 

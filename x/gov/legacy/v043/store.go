@@ -3,11 +3,11 @@ package v043
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/address"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 const proposalIDLen = 8

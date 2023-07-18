@@ -1,13 +1,14 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/Finschia/finschia-sdk/codec"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var amino = codec.NewLegacyAmino()
 
 func init() {
 	cryptocodec.RegisterCrypto(amino)
-	amino.Seal()
+	sdk.RegisterLegacyAminoCodec(amino)
 }

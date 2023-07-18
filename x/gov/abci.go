@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/gov/keeper"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 // EndBlocker called every block, process inflation, update validator set.

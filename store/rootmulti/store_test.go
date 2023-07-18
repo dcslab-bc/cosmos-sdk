@@ -2,23 +2,27 @@ package rootmulti
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/cachemulti"
-	"github.com/cosmos/cosmos-sdk/store/iavl"
-	sdkmaps "github.com/cosmos/cosmos-sdk/store/internal/maps"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/ostracon/libs/log"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	codecTypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/store/cachemulti"
+	"github.com/Finschia/finschia-sdk/store/iavl"
+	sdkmaps "github.com/Finschia/finschia-sdk/store/internal/maps"
+	"github.com/Finschia/finschia-sdk/store/listenkv"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 func TestStoreType(t *testing.T) {
@@ -524,6 +528,15 @@ func TestMultiStore_Pruning(t *testing.T) {
 
 			for _, v := range tc.deleted {
 				_, err := ms.CacheMultiStoreWithVersion(v)
+				// Line: Pruning is async. store/iavl/store.GetImmutable
+				// returns an empty tree when the version doesn't exist.
+				// However, when it gets caught in between, i.e. version
+				// checking is done before, but iavl.GetImmutable is done
+				// after pruning, it fails with 'version not exist' error.
+				// Simply retry would do.
+				if err != nil {
+					_, err = ms.CacheMultiStoreWithVersion(v)
+				}
 				require.NoError(t, err, "expected error when loading height: %d", v)
 			}
 		})
@@ -562,6 +575,25 @@ func TestMultiStore_PruningRestart(t *testing.T) {
 		_, err := ms.CacheMultiStoreWithVersion(v)
 		require.NoError(t, err, "expected error when loading height: %d", v)
 	}
+}
+
+func assertStoresEqual(t *testing.T, expect, actual types.CommitKVStore, msgAndArgs ...interface{}) {
+	assert.Equal(t, expect.LastCommitID(), actual.LastCommitID())
+	expectIter := expect.Iterator(nil, nil)
+	expectMap := map[string][]byte{}
+	for ; expectIter.Valid(); expectIter.Next() {
+		expectMap[string(expectIter.Key())] = expectIter.Value()
+	}
+	require.NoError(t, expectIter.Error())
+
+	actualIter := expect.Iterator(nil, nil)
+	actualMap := map[string][]byte{}
+	for ; actualIter.Valid(); actualIter.Next() {
+		actualMap[string(actualIter.Key())] = actualIter.Value()
+	}
+	require.NoError(t, actualIter.Error())
+
+	assert.Equal(t, expectMap, actualMap, msgAndArgs...)
 }
 
 func TestSetInitialVersion(t *testing.T) {
@@ -771,6 +803,48 @@ func newMultiStoreWithMounts(db dbm.DB, pruningOpts types.PruningOptions) *Store
 	return store
 }
 
+func newMultiStoreWithMixedMounts(db dbm.DB) *Store {
+	store := NewStore(db, log.NewNopLogger())
+	store.MountStoreWithDB(types.NewKVStoreKey("iavl1"), types.StoreTypeIAVL, nil)
+	store.MountStoreWithDB(types.NewKVStoreKey("iavl2"), types.StoreTypeIAVL, nil)
+	store.MountStoreWithDB(types.NewKVStoreKey("iavl3"), types.StoreTypeIAVL, nil)
+	store.LoadLatestVersion()
+
+	return store
+}
+
+func newMultiStoreWithGeneratedData(db dbm.DB, stores uint8, storeKeys uint64) *Store {
+	multiStore := NewStore(db, log.NewNopLogger())
+	r := rand.New(rand.NewSource(49872768940)) // Fixed seed for deterministic tests
+
+	keys := []*types.KVStoreKey{}
+	for i := uint8(0); i < stores; i++ {
+		key := types.NewKVStoreKey(fmt.Sprintf("store%v", i))
+		multiStore.MountStoreWithDB(key, types.StoreTypeIAVL, nil)
+		keys = append(keys, key)
+	}
+	multiStore.LoadLatestVersion()
+
+	for _, key := range keys {
+		store := multiStore.stores[key].(*iavl.Store)
+		for i := uint64(0); i < storeKeys; i++ {
+			k := make([]byte, 8)
+			v := make([]byte, 1024)
+			binary.BigEndian.PutUint64(k, i)
+			_, err := r.Read(v)
+			if err != nil {
+				panic(err)
+			}
+			store.Set(k, v)
+		}
+	}
+
+	multiStore.Commit()
+	multiStore.LoadLatestVersion()
+
+	return multiStore
+}
+
 func newMultiStoreWithModifiedMounts(db dbm.DB, pruningOpts types.PruningOptions) (*Store, *types.StoreUpgrades) {
 	store := NewStore(db, log.NewNopLogger())
 	store.pruningOpts = pruningOpts
@@ -834,51 +908,13 @@ func hashStores(stores map[types.StoreKey]types.CommitKVStore) []byte {
 	return sdkmaps.HashFromMap(m)
 }
 
-type MockListener struct {
-	stateCache []types.StoreKVPair
-}
+func TestSetIAVLDIsableFastNode(t *testing.T) {
+	db := dbm.NewMemDB()
+	multi := newMultiStoreWithMounts(db, types.PruneNothing)
 
-func (tl *MockListener) OnWrite(storeKey types.StoreKey, key []byte, value []byte, delete bool) error {
-	tl.stateCache = append(tl.stateCache, types.StoreKVPair{
-		StoreKey: storeKey.Name(),
-		Key:      key,
-		Value:    value,
-		Delete:   delete,
-	})
-	return nil
-}
+	multi.SetIAVLDisableFastNode(true)
+	require.Equal(t, multi.iavlDisableFastNode, true)
 
-func TestStateListeners(t *testing.T) {
-	var db dbm.DB = dbm.NewMemDB()
-	ms := newMultiStoreWithMounts(db, types.NewPruningOptionsFromString(types.PruningOptionNothing))
-
-	listener := &MockListener{}
-	ms.AddListeners(testStoreKey1, []types.WriteListener{listener})
-
-	require.NoError(t, ms.LoadLatestVersion())
-	cacheMulti := ms.CacheMultiStore()
-
-	store1 := cacheMulti.GetKVStore(testStoreKey1)
-	store1.Set([]byte{1}, []byte{1})
-	require.Empty(t, listener.stateCache)
-
-	// writes are observed when cache store commit.
-	cacheMulti.Write()
-	require.Equal(t, 1, len(listener.stateCache))
-
-	// test nested cache store
-	listener.stateCache = []types.StoreKVPair{}
-	nested := cacheMulti.CacheMultiStore()
-
-	store1 = nested.GetKVStore(testStoreKey1)
-	store1.Set([]byte{1}, []byte{1})
-	require.Empty(t, listener.stateCache)
-
-	// writes are not observed when nested cache store commit
-	nested.Write()
-	require.Empty(t, listener.stateCache)
-
-	// writes are observed when inner cache store commit
-	cacheMulti.Write()
-	require.Equal(t, 1, len(listener.stateCache))
+	multi.SetIAVLDisableFastNode(false)
+	require.Equal(t, multi.iavlDisableFastNode, false)
 }

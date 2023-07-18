@@ -3,14 +3,14 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	vestexported "github.com/Finschia/finschia-sdk/x/auth/vesting/exported"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 var _ ViewKeeper = (*BaseViewKeeper)(nil)
@@ -229,5 +229,5 @@ func (k BaseViewKeeper) ValidateBalance(ctx sdk.Context, addr sdk.AccAddress) er
 func (k BaseViewKeeper) getAccountStore(ctx sdk.Context, addr sdk.AccAddress) prefix.Store {
 	store := ctx.KVStore(k.storeKey)
 
-	return prefix.NewStore(store, types.CreateAccountBalancesPrefix(addr))
+	return prefix.NewStore(store, types.CreateAccountBalancesPrefix(addr.Bytes()))
 }

@@ -6,17 +6,18 @@ import (
 	"testing"
 	"time"
 
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/gov/simulation"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	govcodec "github.com/Finschia/finschia-sdk/x/gov/codec"
+	"github.com/Finschia/finschia-sdk/x/gov/simulation"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 type MockWeightedProposalContent struct {
@@ -103,7 +104,7 @@ func TestSimulateMsgSubmitProposal(t *testing.T) {
 	accounts := getTestingAccounts(t, r, app, ctx, 3)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgSubmitProposal(app.AccountKeeper, app.BankKeeper, app.GovKeeper, MockWeightedProposalContent{3}.ContentSimulatorFn())
@@ -111,10 +112,11 @@ func TestSimulateMsgSubmitProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	var msg types.MsgSubmitProposal
-	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	err = govcodec.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	require.NoError(t, err)
 
 	require.True(t, operationMsg.OK)
-	require.Equal(t, "cosmos1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7u4x9a0", msg.Proposer)
+	require.Equal(t, "link1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7fmx8x8", msg.Proposer)
 	require.Equal(t, "2686011stake", msg.InitialDeposit.String())
 	require.Equal(t, "title-3: ZBSpYuLyYggwexjxusrBqDOTtGTOWeLrQKjLxzIivHSlcxgdXhhuTSkuxKGLwQvuyNhYFmBZHeAerqyNEUzXPFGkqEGqiQWIXnku", msg.GetContent().GetTitle())
 	require.Equal(t, "description-3: NJWzHdBNpAXKJPHWQdrGYcAHSctgVlqwqHoLfHsXUdStwfefwzqLuKEhmMyYLdbZrcPgYqjNHxPexsruwEGStAneKbWkQDDIlCWBLSiAASNhZqNFlPtfqPJoxKsgMdzjWqLWdqKQuJqWPMvwPQWZUtVMOTMYKJbfdlZsjdsomuScvDmbDkgRualsxDvRJuCAmPOXitIbcyWsKGSdrEunFAOdmXnsuyFVgJqEjbklvmwrUlsxjRSfKZxGcpayDdgoFcnVSutxjRgOSFzPwidAjubMncNweqpbxhXGchpZUxuFDOtpnhNUycJICRYqsPhPSCjPTWZFLkstHWJxvdPEAyEIxXgLwbNOjrgzmaujiBABBIXvcXpLrbcEWNNQsbjvgJFgJkflpRohHUutvnaUqoopuKjTDaemDeSdqbnOzcfJpcTuAQtZoiLZOoAIlboFDAeGmSNwkvObPRvRWQgWkGkxwtPauYgdkmypLjbqhlHJIQTntgWjXwZdOyYEdQRRLfMSdnxqppqUofqLbLQDUjwKVKfZJUJQPsWIPwIVaSTrmKskoAhvmZyJgeRpkaTfGgrJzAigcxtfshmiDCFkuiluqtMOkidknnTBtumyJYlIsWLnCQclqdVmikUoMOPdPWwYbJxXyqUVicNxFxyqJTenNblyyKSdlCbiXxUiYUiMwXZASYfvMDPFgxniSjWaZTjHkqlJvtBsXqwPpyVxnJVGFWhfSxgOcduoxkiopJvFjMmFabrGYeVtTXLhxVUEiGwYUvndjFGzDVntUvibiyZhfMQdMhgsiuysLMiePBNXifRLMsSmXPkwlPloUbJveCvUlaalhZHuvdkCnkSHbMbmOnrfEGPwQiACiPlnihiaOdbjPqPiTXaHDoJXjSlZmltGqNHHNrcKdlFSCdmVOuvDcBLdSklyGJmcLTbSFtALdGlPkqqecJrpLCXNPWefoTJNgEJlyMEPneVaxxduAAEqQpHWZodWyRkDAxzyMnFMcjSVqeRXLqsNyNtQBbuRvunZflWSbbvXXdkyLikYqutQhLPONXbvhcQZJPSWnOulqQaXmbfFxAkqfYeseSHOQidHwbcsOaMnSrrmGjjRmEMQNuknupMxJiIeVjmgZvbmjPIQTEhQFULQLBMPrxcFPvBinaOPYWGvYGRKxLZdwamfRQQFngcdSlvwjfaPbURasIsGJVHtcEAxnIIrhSriiXLOlbEBLXFElXJFGxHJczRBIxAuPKtBisjKBwfzZFagdNmjdwIRvwzLkFKWRTDPxJCmpzHUcrPiiXXHnOIlqNVoGSXZewdnCRhuxeYGPVTfrNTQNOxZmxInOazUYNTNDgzsxlgiVEHPKMfbesvPHUqpNkUqbzeuzfdrsuLDpKHMUbBMKczKKWOdYoIXoPYtEjfOnlQLoGnbQUCuERdEFaptwnsHzTJDsuZkKtzMpFaZobynZdzNydEeJJHDYaQcwUxcqvwfWwNUsCiLvkZQiSfzAHftYgAmVsXgtmcYgTqJIawstRYJrZdSxlfRiqTufgEQVambeZZmaAyRQbcmdjVUZZCgqDrSeltJGXPMgZnGDZqISrGDOClxXCxMjmKqEPwKHoOfOeyGmqWqihqjINXLqnyTesZePQRqaWDQNqpLgNrAUKulklmckTijUltQKuWQDwpLmDyxLppPVMwsmBIpOwQttYFMjgJQZLYFPmxWFLIeZihkRNnkzoypBICIxgEuYsVWGIGRbbxqVasYnstWomJnHwmtOhAFSpttRYYzBmyEtZXiCthvKvWszTXDbiJbGXMcrYpKAgvUVFtdKUfvdMfhAryctklUCEdjetjuGNfJjajZtvzdYaqInKtFPPLYmRaXPdQzxdSQfmZDEVHlHGEGNSPRFJuIfKLLfUmnHxHnRjmzQPNlqrXgifUdzAGKVabYqvcDeYoTYgPsBUqehrBhmQUgTvDnsdpuhUoxskDdppTsYMcnDIPSwKIqhXDCIxOuXrywahvVavvHkPuaenjLmEbMgrkrQLHEAwrhHkPRNvonNQKqprqOFVZKAtpRSpvQUxMoXCMZLSSbnLEFsjVfANdQNQVwTmGxqVjVqRuxREAhuaDrFgEZpYKhwWPEKBevBfsOIcaZKyykQafzmGPLRAKDtTcJxJVgiiuUkmyMYuDUNEUhBEdoBLJnamtLmMJQgmLiUELIhLpiEvpOXOvXCPUeldLFqkKOwfacqIaRcnnZvERKRMCKUkMABbDHytQqQblrvoxOZkwzosQfDKGtIdfcXRJNqlBNwOCWoQBcEWyqrMlYZIAXYJmLfnjoJepgSFvrgajaBAIksoyeHqgqbGvpAstMIGmIhRYGGNPRIfOQKsGoKgxtsidhTaAePRCBFqZgPDWCIkqOJezGVkjfYUCZTlInbxBXwUAVRsxHTQtJFnnpmMvXDYCVlEmnZBKhmmxQOIQzxFWpJQkQoSAYzTEiDWEOsVLNrbfzeHFRyeYATakQQWmFDLPbVMCJcWjFGJjfqCoVzlbNNEsqxdSmNPjTjHYOkuEMFLkXYGaoJlraLqayMeCsTjWNRDPBywBJLAPVkGQqTwApVVwYAetlwSbzsdHWsTwSIcctkyKDuRWYDQikRqsKTMJchrliONJeaZIzwPQrNbTwxsGdwuduvibtYndRwpdsvyCktRHFalvUuEKMqXbItfGcNGWsGzubdPMYayOUOINjpcFBeESdwpdlTYmrPsLsVDhpTzoMegKrytNVZkfJRPuDCUXxSlSthOohmsuxmIZUedzxKmowKOdXTMcEtdpHaPWgIsIjrViKrQOCONlSuazmLuCUjLltOGXeNgJKedTVrrVCpWYWHyVrdXpKgNaMJVjbXxnVMSChdWKuZdqpisvrkBJPoURDYxWOtpjzZoOpWzyUuYNhCzRoHsMjmmWDcXzQiHIyjwdhPNwiPqFxeUfMVFQGImhykFgMIlQEoZCaRoqSBXTSWAeDumdbsOGtATwEdZlLfoBKiTvodQBGOEcuATWXfiinSjPmJKcWgQrTVYVrwlyMWhxqNbCMpIQNoSMGTiWfPTCezUjYcdWppnsYJihLQCqbNLRGgqrwHuIvsazapTpoPZIyZyeeSueJuTIhpHMEJfJpScshJubJGfkusuVBgfTWQoywSSliQQSfbvaHKiLnyjdSbpMkdBgXepoSsHnCQaYuHQqZsoEOmJCiuQUpJkmfyfbIShzlZpHFmLCsbknEAkKXKfRTRnuwdBeuOGgFbJLbDksHVapaRayWzwoYBEpmrlAxrUxYMUekKbpjPNfjUCjhbdMAnJmYQVZBQZkFVweHDAlaqJjRqoQPoOMLhyvYCzqEuQsAFoxWrzRnTVjStPadhsESlERnKhpEPsfDxNvxqcOyIulaCkmPdambLHvGhTZzysvqFauEgkFRItPfvisehFmoBhQqmkfbHVsgfHXDPJVyhwPllQpuYLRYvGodxKjkarnSNgsXoKEMlaSKxKdcVgvOkuLcfLFfdtXGTclqfPOfeoVLbqcjcXCUEBgAGplrkgsmIEhWRZLlGPGCwKWRaCKMkBHTAcypUrYjWwCLtOPVygMwMANGoQwFnCqFrUGMCRZUGJKTZIGPyldsifauoMnJPLTcDHmilcmahlqOELaAUYDBuzsVywnDQfwRLGIWozYaOAilMBcObErwgTDNGWnwQMUgFFSKtPDMEoEQCTKVREqrXZSGLqwTMcxHfWotDllNkIJPMbXzjDVjPOOjCFuIvTyhXKLyhUScOXvYthRXpPfKwMhptXaxIxgqBoUqzrWbaoLTVpQoottZyPFfNOoMioXHRuFwMRYUiKvcWPkrayyTLOCFJlAyslDameIuqVAuxErqFPEWIScKpBORIuZqoXlZuTvAjEdlEWDODFRregDTqGNoFBIHxvimmIZwLfFyKUfEWAnNBdtdzDmTPXtpHRGdIbuucfTjOygZsTxPjfweXhSUkMhPjMaxKlMIJMOXcnQfyzeOcbWwNbeH", msg.GetContent().GetDescription())
@@ -146,7 +148,7 @@ func TestSimulateMsgDeposit(t *testing.T) {
 	app.GovKeeper.SetProposal(ctx, proposal)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgDeposit(app.AccountKeeper, app.BankKeeper, app.GovKeeper)
@@ -154,11 +156,12 @@ func TestSimulateMsgDeposit(t *testing.T) {
 	require.NoError(t, err)
 
 	var msg types.MsgDeposit
-	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	err = govcodec.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	require.NoError(t, err)
 
 	require.True(t, operationMsg.OK)
 	require.Equal(t, uint64(1), msg.ProposalId)
-	require.Equal(t, "cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.Depositor)
+	require.Equal(t, "link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.Depositor)
 	require.Equal(t, "560969stake", msg.Amount.String())
 	require.Equal(t, "gov", msg.Route())
 	require.Equal(t, types.TypeMsgDeposit, msg.Type())
@@ -188,7 +191,7 @@ func TestSimulateMsgVote(t *testing.T) {
 	app.GovKeeper.ActivateVotingPeriod(ctx, proposal)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgVote(app.AccountKeeper, app.BankKeeper, app.GovKeeper)
@@ -196,11 +199,12 @@ func TestSimulateMsgVote(t *testing.T) {
 	require.NoError(t, err)
 
 	var msg types.MsgVote
-	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	err = govcodec.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	require.NoError(t, err)
 
 	require.True(t, operationMsg.OK)
 	require.Equal(t, uint64(1), msg.ProposalId)
-	require.Equal(t, "cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.Voter)
+	require.Equal(t, "link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.Voter)
 	require.Equal(t, types.OptionYes, msg.Option)
 	require.Equal(t, "gov", msg.Route())
 	require.Equal(t, types.TypeMsgVote, msg.Type())
@@ -230,7 +234,7 @@ func TestSimulateMsgVoteWeighted(t *testing.T) {
 	app.GovKeeper.ActivateVotingPeriod(ctx, proposal)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash, Time: blockTime}})
 
 	// execute operation
 	op := simulation.SimulateMsgVoteWeighted(app.AccountKeeper, app.BankKeeper, app.GovKeeper)
@@ -238,11 +242,12 @@ func TestSimulateMsgVoteWeighted(t *testing.T) {
 	require.NoError(t, err)
 
 	var msg types.MsgVoteWeighted
-	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	err = govcodec.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
+	require.NoError(t, err)
 
 	require.True(t, operationMsg.OK)
 	require.Equal(t, uint64(1), msg.ProposalId)
-	require.Equal(t, "cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.Voter)
+	require.Equal(t, "link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.Voter)
 	require.True(t, len(msg.Options) >= 1)
 	require.Equal(t, "gov", msg.Route())
 	require.Equal(t, types.TypeMsgVoteWeighted, msg.Type())
@@ -269,7 +274,7 @@ func getTestingAccounts(t *testing.T, r *rand.Rand, app *simapp.SimApp, ctx sdk.
 	for _, account := range accounts {
 		acc := app.AccountKeeper.NewAccountWithAddress(ctx, account.Address)
 		app.AccountKeeper.SetAccount(ctx, acc)
-		require.NoError(t, simapp.FundAccount(app.BankKeeper, ctx, account.Address, initCoins))
+		require.NoError(t, simapp.FundAccount(app, ctx, account.Address, initCoins))
 	}
 
 	return accounts

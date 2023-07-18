@@ -7,15 +7,17 @@ import (
 
 	"github.com/gogo/protobuf/grpc"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server/api"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	octypes "github.com/Finschia/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/server/api"
+	"github.com/Finschia/finschia-sdk/server/config"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // ServerStartTime defines the time duration that the server need to stay running after startup
@@ -38,7 +40,7 @@ type (
 	// The interface defines the necessary contracts to be implemented in order
 	// to fully bootstrap and start an application.
 	Application interface {
-		abci.Application
+		ocabci.Application
 
 		RegisterAPIRoutes(*api.Server, config.APIConfig)
 
@@ -50,7 +52,7 @@ type (
 		// simulation, fetching txs by hash...).
 		RegisterTxService(client.Context)
 
-		// RegisterTendermintService registers the gRPC Query service for tendermint queries.
+		// RegisterTendermintService registers the gRPC Query service for ostracon queries.
 		RegisterTendermintService(client.Context)
 
 		// CommitMultiStore Returns the multistore instance
@@ -80,7 +82,7 @@ type (
 		// AppState is the application state as JSON.
 		AppState json.RawMessage
 		// Validators is the exported validator set.
-		Validators []tmtypes.GenesisValidator
+		Validators []octypes.GenesisValidator
 		// Height is the app's latest block height.
 		Height int64
 		// ConsensusParams are the exported consensus params for ABCI.

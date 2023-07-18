@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/gorilla/mux"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/client/rest"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/upgrade/client/cli"
+	"github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 func init() {
@@ -25,8 +24,9 @@ func init() {
 }
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule           = AppModule{}
+	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // AppModuleBasic implements the sdk.AppModuleBasic interface
@@ -42,14 +42,11 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
-// RegisterRESTRoutes registers all REST query handlers
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, r *mux.Router) {
-	rest.RegisterRoutes(clientCtx, r)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the upgrade module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetQueryCmd returns the cli query commands for this module
@@ -98,6 +95,11 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 // module-specific GRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	/* m := keeper.NewMigrator(am.keeper)
+	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+		panic(fmt.Sprintf("failed to migrate x/upgrade from version 1 to 2: %v", err))
+	} */
 }
 
 // InitGenesis is ignored, no sense in serializing future upgrades
@@ -126,6 +128,6 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock calls the upgrade module hooks
 //
 // CONTRACT: this is registered in BeginBlocker *before* all other modules' BeginBlock functions
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {
 	BeginBlocker(am.keeper, ctx, req)
 }

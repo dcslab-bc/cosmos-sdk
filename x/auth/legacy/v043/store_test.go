@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authkeeper "github.com/Finschia/finschia-sdk/x/auth/keeper"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/exported"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	stakingkeeper "github.com/Finschia/finschia-sdk/x/staking/keeper"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func TestMigrateVestingAccounts(t *testing.T) {
@@ -564,7 +564,7 @@ func TestMigrateVestingAccounts(t *testing.T) {
 			require.NoError(t, tc.garbageFunc(ctx, vestingAccount, app))
 
 			m := authkeeper.NewMigrator(app.AccountKeeper, app.GRPCQueryRouter())
-			require.NoError(t, m.Migrate1to2(ctx))
+			require.NoError(t, m.MigrateV040ToV043(ctx))
 
 			var expVested sdk.Coins
 			var expFree sdk.Coins

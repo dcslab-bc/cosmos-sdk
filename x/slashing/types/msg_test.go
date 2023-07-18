@@ -5,16 +5,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func TestMsgUnjailGetSignBytes(t *testing.T) {
-	addr := sdk.AccAddress("abcd")
-	msg := NewMsgUnjail(sdk.ValAddress(addr))
+	addr := sdk.ValAddress("abcd")
+	msg := NewMsgUnjail(addr)
 	bytes := msg.GetSignBytes()
 	require.Equal(
 		t,
-		`{"type":"cosmos-sdk/MsgUnjail","value":{"address":"cosmosvaloper1v93xxeqhg9nn6"}}`,
+		`{"type":"cosmos-sdk/MsgUnjail","value":{"address":"linkvaloper1v93xxeqn4h65f"}}`,
 		string(bytes),
 	)
 }

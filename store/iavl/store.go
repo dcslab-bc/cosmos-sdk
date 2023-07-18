@@ -9,21 +9,24 @@ import (
 	ics23 "github.com/confio/ics23/go"
 	"github.com/cosmos/iavl"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store/cachekv"
+	"github.com/Finschia/finschia-sdk/store/listenkv"
+	"github.com/Finschia/finschia-sdk/store/tracekv"
+	"github.com/Finschia/finschia-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 const (
-	DefaultIAVLCacheSize = 500000
+	// DefaultIAVLCacheSize is default Iavl cache units size. 1 unit is 128 byte
+	// default 64MB
+	DefaultIAVLCacheSize = 1024 * 512
 )
 
 var (
@@ -418,17 +421,3 @@ type iavlIterator struct {
 }
 
 var _ types.Iterator = (*iavlIterator)(nil)
-
-// newIAVLIterator will create a new iavlIterator.
-// CONTRACT: Caller must release the iavlIterator, as each one creates a new
-// goroutine.
-func newIAVLIterator(tree *iavl.ImmutableTree, start, end []byte, ascending bool) *iavlIterator { //nolint:unused
-	iterator, err := tree.Iterator(start, end, ascending)
-	if err != nil {
-		panic(err)
-	}
-	iter := &iavlIterator{
-		Iterator: iterator,
-	}
-	return iter
-}

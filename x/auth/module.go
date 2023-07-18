@@ -8,21 +8,19 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
-	"github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	"github.com/cosmos/cosmos-sdk/x/auth/simulation"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/auth/client/cli"
+	"github.com/Finschia/finschia-sdk/x/auth/keeper"
+	"github.com/Finschia/finschia-sdk/x/auth/simulation"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 var (
@@ -58,11 +56,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	}
 
 	return types.ValidateGenesis(data)
-}
-
-// RegisterRESTRoutes registers the REST routes for the auth module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterRoutes(clientCtx, rtr, types.StoreKey)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the auth module.
@@ -129,11 +122,11 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 // module-specific GRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.accountKeeper)
-	m := keeper.NewMigrator(am.accountKeeper, cfg.QueryServer())
-	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
-	if err != nil {
-		panic(err)
-	}
+
+	// m := keeper.NewMigrator(am.accountKeeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/auth from version 1 to 2: %v", err))
+	// }
 }
 
 // InitGenesis performs genesis initialization for the auth module. It returns
@@ -153,7 +146,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // AppModuleSimulation functions
 

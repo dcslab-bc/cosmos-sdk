@@ -1,9 +1,9 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/address"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 const (
@@ -28,12 +28,6 @@ var (
 	SupplyKey           = []byte{0x00}
 	DenomMetadataPrefix = []byte{0x1}
 )
-
-// DenomMetadataKey returns the denomination metadata key.
-func DenomMetadataKey(denom string) []byte {
-	d := []byte(denom)
-	return append(DenomMetadataPrefix, d...)
-}
 
 // AddressFromBalancesStore returns an account address from a balances prefix
 // store. The key must not contain the prefix BalancesPrefix as the prefix store

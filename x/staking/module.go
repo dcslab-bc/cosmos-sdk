@@ -8,35 +8,34 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/staking/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/staking/client/rest"
-	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	"github.com/cosmos/cosmos-sdk/x/staking/simulation"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/staking/client/cli"
+	"github.com/Finschia/finschia-sdk/x/staking/keeper"
+	"github.com/Finschia/finschia-sdk/x/staking/simulation"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.BeginBlockAppModule = AppModule{}
+	_ module.EndBlockAppModule   = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the staking module.
 type AppModuleBasic struct {
 	cdc codec.Codec
 }
-
-var _ module.AppModuleBasic = AppModuleBasic{}
 
 // Name returns the staking module's name.
 func (AppModuleBasic) Name() string {
@@ -69,14 +68,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return ValidateGenesis(&data)
 }
 
-// RegisterRESTRoutes registers the REST routes for the staking module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the staking module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the root tx command for the staking module.
@@ -139,8 +135,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	querier := keeper.Querier{Keeper: am.keeper}
 	types.RegisterQueryServer(cfg.QueryServer(), querier)
 
-	m := keeper.NewMigrator(am.keeper)
-	cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	// m := keeper.NewMigrator(am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/staking from version 1 to 2: %v", err))
+	// }
 }
 
 // InitGenesis performs genesis initialization for the staking module. It returns
@@ -161,10 +159,10 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock returns the begin blocker for the staking module.
-func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, _ ocabci.RequestBeginBlock) {
 	BeginBlocker(ctx, am.keeper)
 }
 

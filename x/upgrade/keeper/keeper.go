@@ -9,17 +9,17 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	"github.com/Finschia/ostracon/libs/log"
+	ostos "github.com/Finschia/ostracon/libs/os"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	xp "github.com/cosmos/cosmos-sdk/x/upgrade/exported"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	store "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/module"
+	xp "github.com/Finschia/finschia-sdk/x/upgrade/exported"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 // UpgradeInfoFileName file to store upgrade information
@@ -398,7 +398,7 @@ func (k Keeper) DumpUpgradeInfoWithInfoToDisk(height int64, name string, info st
 // GetUpgradeInfoPath returns the upgrade info file path
 func (k Keeper) GetUpgradeInfoPath() (string, error) {
 	upgradeInfoFileDir := path.Join(k.getHomeDir(), "data")
-	err := tmos.EnsureDir(upgradeInfoFileDir, os.ModePerm)
+	err := ostos.EnsureDir(upgradeInfoFileDir, os.ModePerm)
 	if err != nil {
 		return "", err
 	}

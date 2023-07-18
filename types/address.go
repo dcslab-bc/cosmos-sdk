@@ -12,11 +12,11 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	yaml "gopkg.in/yaml.v2"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/internal/conv"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/internal/conv"
+	"github.com/Finschia/finschia-sdk/types/address"
+	"github.com/Finschia/finschia-sdk/types/bech32"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
@@ -33,17 +33,17 @@ const (
 	//	config.Seal()
 
 	// Bech32MainPrefix defines the main SDK Bech32 prefix of an account's address
-	Bech32MainPrefix = "cosmos"
+	Bech32MainPrefix = "link"
 
-	// Purpose is the ATOM purpose as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+	// Purpose is the LINK purpose as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 	Purpose = 44
 
-	// CoinType is the ATOM coin type as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
-	CoinType = 118
+	// CoinType is the LINK coin type as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+	CoinType = 438
 
 	// FullFundraiserPath is the parts of the BIP44 HD path that are fixed by
-	// what we used during the ATOM fundraiser.
-	FullFundraiserPath = "m/44'/118'/0'/0/0"
+	// what we used during the LINK fundraiser.
+	FullFundraiserPath = "m/44'/438'/0'/0/0"
 
 	// PrefixAccount is the prefix for account keys
 	PrefixAccount = "acc"

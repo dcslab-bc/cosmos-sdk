@@ -33,16 +33,17 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // AppModuleBasic is the standard form for basic non-dependant elements of an application module.
@@ -55,7 +56,6 @@ type AppModuleBasic interface {
 	ValidateGenesis(codec.JSONCodec, client.TxEncodingConfig, json.RawMessage) error
 
 	// client functionality
-	RegisterRESTRoutes(client.Context, *mux.Router)
 	RegisterGRPCGatewayRoutes(client.Context, *runtime.ServeMux)
 	GetTxCmd() *cobra.Command
 	GetQueryCmd() *cobra.Command
@@ -106,13 +106,6 @@ func (bm BasicManager) ValidateGenesis(cdc codec.JSONCodec, txEncCfg client.TxEn
 	}
 
 	return nil
-}
-
-// RegisterRESTRoutes registers all module rest routes
-func (bm BasicManager) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	for _, b := range bm {
-		b.RegisterRESTRoutes(clientCtx, rtr)
-	}
 }
 
 // RegisterGRPCGatewayRoutes registers all module rest routes
@@ -183,7 +176,7 @@ type AppModule interface {
 // BeginBlockAppModule is an extension interface that contains information about the AppModule and BeginBlock.
 type BeginBlockAppModule interface {
 	AppModule
-	BeginBlock(sdk.Context, abci.RequestBeginBlock)
+	BeginBlock(sdk.Context, ocabci.RequestBeginBlock)
 }
 
 // EndBlockAppModule is an extension interface that contains information about the AppModule and EndBlock.
@@ -223,7 +216,7 @@ func (gam GenesisOnlyAppModule) RegisterServices(Configurator) {}
 func (gam GenesisOnlyAppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock returns an empty module begin-block
-func (gam GenesisOnlyAppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {}
+func (gam GenesisOnlyAppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {}
 
 // EndBlock returns an empty module end-block
 func (GenesisOnlyAppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
@@ -482,7 +475,7 @@ func (m Manager) RunMigrations(ctx sdk.Context, cfg Configurator, fromVM Version
 // BeginBlock performs begin block functionality for all modules. It creates a
 // child context with an event manager to aggregate events emitted from all
 // modules.
-func (m *Manager) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (m *Manager) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) abci.ResponseBeginBlock {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 
 	for _, moduleName := range m.OrderBeginBlockers {

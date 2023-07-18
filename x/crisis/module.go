@@ -5,25 +5,25 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/crisis/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/crisis/keeper"
-	"github.com/cosmos/cosmos-sdk/x/crisis/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/crisis/client/cli"
+	"github.com/Finschia/finschia-sdk/x/crisis/keeper"
+	"github.com/Finschia/finschia-sdk/x/crisis/types"
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule         = AppModule{}
+	_ module.AppModuleBasic    = AppModuleBasic{}
+	_ module.EndBlockAppModule = AppModule{}
 )
 
 // Module init related flags
@@ -59,9 +59,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 	return types.ValidateGenesis(&data)
 }
-
-// RegisterRESTRoutes registers no REST routes for the crisis module.
-func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the capability module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {}
@@ -132,6 +129,11 @@ func (AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier { return n
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
+
+	// m := keeper.NewMigrator(*am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/crisis from version 1 to 2: %v", err))
+	// }
 }
 
 // InitGenesis performs genesis initialization for the crisis module. It returns

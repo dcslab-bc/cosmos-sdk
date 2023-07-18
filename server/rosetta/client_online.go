@@ -11,26 +11,22 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/version"
-
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-
 	rosettatypes "github.com/coinbase/rosetta-sdk-go/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/tendermint/tendermint/rpc/client/http"
-	"google.golang.org/grpc"
+	ocrpc "github.com/Finschia/ostracon/rpc/client"
+	"github.com/Finschia/ostracon/rpc/client/http"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	crgerrs "github.com/cosmos/cosmos-sdk/server/rosetta/lib/errors"
-	crgtypes "github.com/cosmos/cosmos-sdk/server/rosetta/lib/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-
-	tmrpc "github.com/tendermint/tendermint/rpc/client"
+	crgerrs "github.com/Finschia/finschia-sdk/server/rosetta/lib/errors"
+	crgtypes "github.com/Finschia/finschia-sdk/server/rosetta/lib/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	grpctypes "github.com/Finschia/finschia-sdk/types/grpc"
+	"github.com/Finschia/finschia-sdk/version"
+	authtx "github.com/Finschia/finschia-sdk/x/auth/tx"
+	auth "github.com/Finschia/finschia-sdk/x/auth/types"
+	bank "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 // interface assertion
@@ -49,7 +45,7 @@ type Client struct {
 
 	auth  auth.QueryClient
 	bank  bank.QueryClient
-	tmRPC tmrpc.Client
+	tmRPC ocrpc.Client
 
 	version string
 
@@ -250,8 +246,7 @@ func (c *Client) TxOperationsAndSignersAccountIdentifiers(signed bool, txBytes [
 }
 
 // GetTx returns a transaction given its hash. For Rosetta we  make a synthetic transaction for BeginBlock
-//
-//	and EndBlock to adhere to balance tracking rules.
+// and EndBlock to adhere to balance tracking rules.
 func (c *Client) GetTx(ctx context.Context, hash string) (*rosettatypes.Transaction, error) {
 	hashBytes, err := hex.DecodeString(hash)
 	if err != nil {
@@ -374,7 +369,7 @@ func (c *Client) PostTx(txBytes []byte) (*rosettatypes.TransactionIdentifier, ma
 		return nil, nil, crgerrs.WrapError(crgerrs.ErrUnknown, err.Error())
 	}
 	// check if tx was broadcast successfully
-	if res.Code != abcitypes.CodeTypeOK {
+	if res.Code != abci.CodeTypeOK {
 		return nil, nil, crgerrs.WrapError(
 			crgerrs.ErrUnknown,
 			fmt.Sprintf("transaction broadcast failure: (%d) %s ", res.Code, res.Log),

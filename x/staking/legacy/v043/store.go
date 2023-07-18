@@ -1,13 +1,13 @@
 package v043
 
 import (
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	v040auth "github.com/cosmos/cosmos-sdk/x/auth/legacy/v040"
-	v043distribution "github.com/cosmos/cosmos-sdk/x/distribution/legacy/v043"
-	v040staking "github.com/cosmos/cosmos-sdk/x/staking/legacy/v040"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/address"
+	v040auth "github.com/Finschia/finschia-sdk/x/auth/legacy/v040"
+	v043distribution "github.com/Finschia/finschia-sdk/x/distribution/legacy/v043"
+	v040staking "github.com/Finschia/finschia-sdk/x/staking/legacy/v040"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // migratePrefixAddressAddressAddress is a helper function that migrates all keys of format:

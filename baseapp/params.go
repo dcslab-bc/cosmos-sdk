@@ -6,8 +6,9 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // Paramspace defines the parameter subspace to be used for the paramstore.
@@ -80,6 +81,15 @@ func ValidateValidatorParams(i interface{}) error {
 
 	if len(v.PubKeyTypes) == 0 {
 		return errors.New("validator allowed pubkey types must not be empty")
+	}
+
+	for _, pubKeyType := range v.PubKeyTypes {
+		switch pubKeyType {
+		case tmtypes.ABCIPubKeyTypeEd25519, tmtypes.ABCIPubKeyTypeSecp256k1:
+			continue
+		default:
+			return fmt.Errorf("not-allowed pubkey type: %s", pubKeyType)
+		}
 	}
 
 	return nil

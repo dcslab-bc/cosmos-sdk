@@ -5,19 +5,20 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/gov/keeper"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/simulation"
 )
 
 var initialProposalID = uint64(100000000000000)
 
+// nolint:gosec
 // Simulation operation weights constants
 const (
 	OpWeightMsgDeposit      = "op_weight_msg_deposit"       //nolint:gosec

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func TestGenesisStateValidate(t *testing.T) {
@@ -20,7 +20,7 @@ func TestGenesisStateValidate(t *testing.T) {
 				Params: DefaultParams(),
 				Balances: []Balance{
 					{
-						Address: "cosmos1yq8lgssgxlx9smjhes6ryjasmqmd3ts2559g0t",
+						Address: "link1yq8lgssgxlx9smjhes6ryjasmqmd3ts2p6925r",
 						Coins:   sdk.Coins{sdk.NewInt64Coin("uatom", 1)},
 					},
 				},
@@ -59,11 +59,11 @@ func TestGenesisStateValidate(t *testing.T) {
 			GenesisState{
 				Balances: []Balance{
 					{
-						Address: "cosmos1yq8lgssgxlx9smjhes6ryjasmqmd3ts2559g0t",
+						Address: "link1yq8lgssgxlx9smjhes6ryjasmqmd3ts2p6925r",
 						Coins:   sdk.Coins{sdk.NewInt64Coin("uatom", 1)},
 					},
 					{
-						Address: "cosmos1yq8lgssgxlx9smjhes6ryjasmqmd3ts2559g0t",
+						Address: "link1yq8lgssgxlx9smjhes6ryjasmqmd3ts2p6925r",
 						Coins:   sdk.Coins{sdk.NewInt64Coin("uatom", 1)},
 					},
 				},
@@ -75,7 +75,7 @@ func TestGenesisStateValidate(t *testing.T) {
 			GenesisState{
 				Balances: []Balance{
 					{
-						Address: "cosmos1yq8lgssgxlx9smjhes6ryjasmqmd3ts2559g0t",
+						Address: "link1yq8lgssgxlx9smjhes6ryjasmqmd3ts2p6925r",
 					},
 				},
 			},

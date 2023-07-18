@@ -6,8 +6,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/cosmos/cosmos-sdk/codec/unknownproto"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
+	"github.com/Finschia/finschia-sdk/codec/unknownproto"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
 )
 
 var n1BBlob []byte

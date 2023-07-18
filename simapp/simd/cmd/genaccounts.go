@@ -8,16 +8,16 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/server"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	authvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/server"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	authvesting "github.com/Finschia/finschia-sdk/x/auth/vesting/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutiltypes "github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 const (
@@ -44,22 +44,23 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			config.SetRoot(clientCtx.HomeDir)
 
-			var kr keyring.Keyring
+			var kb keyring.Keyring
 			addr, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
 				inBuf := bufio.NewReader(cmd.InOrStdin())
 				keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
 				if keyringBackend != "" && clientCtx.Keyring == nil {
 					var err error
-					kr, err = keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf)
+					// attempt to lookup address from Keybase if no address was provided
+					kb, err = keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf)
 					if err != nil {
 						return err
 					}
 				} else {
-					kr = clientCtx.Keyring
+					kb = clientCtx.Keyring
 				}
 
-				info, err := kr.Key(args[0])
+				info, err := kb.Key(args[0])
 				if err != nil {
 					return fmt.Errorf("failed to get address from Keyring: %w", err)
 				}

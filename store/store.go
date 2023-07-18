@@ -1,18 +1,18 @@
 package store
 
 import (
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cache"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/cache"
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 func NewCommitMultiStore(db dbm.DB) types.CommitMultiStore {
 	return rootmulti.NewStore(db, log.NewNopLogger())
 }
 
-func NewCommitKVStoreCacheManager() types.MultiStorePersistentCache {
-	return cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize)
+func NewCommitKVStoreCacheManager(cacheSize int, metricsProvider cache.MetricsProvider) types.MultiStorePersistentCache {
+	return cache.NewCommitKVStoreCacheManager(cacheSize, metricsProvider)
 }

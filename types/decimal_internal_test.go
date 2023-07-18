@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+
+	"github.com/Finschia/finschia-sdk/codec"
 )
 
 type decimalInternalTestSuite struct {
@@ -22,6 +24,7 @@ func (s *decimalInternalTestSuite) TestPrecisionMultiplier() {
 }
 
 func (s *decimalInternalTestSuite) TestZeroDeserializationJSON() {
+	var cdc = codec.NewLegacyAmino()
 	d := Dec{new(big.Int)}
 	err := cdc.UnmarshalJSON([]byte(`"0"`), &d)
 	s.Require().Nil(err)
@@ -30,6 +33,7 @@ func (s *decimalInternalTestSuite) TestZeroDeserializationJSON() {
 }
 
 func (s *decimalInternalTestSuite) TestSerializationGocodecJSON() {
+	var cdc = codec.NewLegacyAmino()
 	d := MustNewDecFromStr("0.333")
 
 	bz, err := cdc.MarshalJSON(d)

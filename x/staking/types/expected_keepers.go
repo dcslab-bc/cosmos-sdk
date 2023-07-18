@@ -1,8 +1,8 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 // DistributionKeeper expected distribution keeper (noalias)

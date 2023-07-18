@@ -10,15 +10,15 @@ import (
 	"io"
 	"testing"
 
+	"github.com/Finschia/ostracon/libs/cli"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/testutil"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func Test_runAddCmdLedgerWithCustomCoinType(t *testing.T) {
@@ -80,7 +80,7 @@ func Test_runAddCmdLedgerWithCustomCoinType(t *testing.T) {
 		key1.GetPubKey().String())
 
 	config.SetPurpose(44)
-	config.SetCoinType(118)
+	config.SetCoinType(438)
 	config.SetBech32PrefixForAccount(sdk.Bech32PrefixAccAddr, sdk.Bech32PrefixAccPub)
 	config.SetBech32PrefixForValidator(sdk.Bech32PrefixValAddr, sdk.Bech32PrefixValPub)
 	config.SetBech32PrefixForConsensusNode(sdk.Bech32PrefixConsAddr, sdk.Bech32PrefixConsPub)
@@ -124,7 +124,7 @@ func Test_runAddCmdLedger(t *testing.T) {
 	require.Equal(t, "keyname1", key1.GetName())
 	require.Equal(t, keyring.TypeLedger, key1.GetType())
 	require.Equal(t,
-		"PubKeySecp256k1{034FEF9CD7C4C63588D3B03FEB5281B9D232CBA34D6F3D71AEE59211FFBFE1FE87}",
+		"PubKeySecp256k1{02BCD96CAB102304AC10E90C5A0F29358E3A4A6FB1217B83E5DB657918EA28BEC1}",
 		key1.GetPubKey().String())
 }
 

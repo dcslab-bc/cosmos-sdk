@@ -6,33 +6,35 @@ import (
 	"os"
 	"path/filepath"
 
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/spf13/viper"
+
+	ostcli "github.com/Finschia/ostracon/libs/cli"
+	"github.com/Finschia/ostracon/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/config"
-	"github.com/cosmos/cosmos-sdk/client/debug"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/keys"
-	"github.com/cosmos/cosmos-sdk/client/pruning"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
-	"github.com/cosmos/cosmos-sdk/server"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/config"
+	"github.com/Finschia/finschia-sdk/client/debug"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/keys"
+	"github.com/Finschia/finschia-sdk/client/pruning"
+	"github.com/Finschia/finschia-sdk/client/rpc"
+	"github.com/Finschia/finschia-sdk/server"
+	serverconfig "github.com/Finschia/finschia-sdk/server/config"
+	servertypes "github.com/Finschia/finschia-sdk/server/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/simapp/params"
+	"github.com/Finschia/finschia-sdk/snapshots"
+	"github.com/Finschia/finschia-sdk/store"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authcmd "github.com/Finschia/finschia-sdk/x/auth/client/cli"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/crisis"
+	genutilcli "github.com/Finschia/finschia-sdk/x/genutil/client/cli"
 )
 
 // NewRootCmd creates a new root command for simd. It is called once in the
@@ -87,19 +89,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 func initAppConfig() (string, interface{}) {
 	// The following code snippet is just for reference.
 
-	// WASMConfig defines configuration for the wasm module.
-	type WASMConfig struct {
-		// This is the maximum sdk gas (wasm and storage) that we allow for any x/wasm "smart" queries
-		QueryGasLimit uint64 `mapstructure:"query_gas_limit"`
-
-		// Address defines the gRPC-web server to listen on
-		LruSize uint64 `mapstructure:"lru_size"`
-	}
-
 	type CustomAppConfig struct {
 		serverconfig.Config
-
-		WASM WASMConfig `mapstructure:"wasm"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -122,19 +113,9 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig := CustomAppConfig{
 		Config: *srvCfg,
-		WASM: WASMConfig{
-			LruSize:       1,
-			QueryGasLimit: 300000,
-		},
 	}
 
-	customAppTemplate := serverconfig.DefaultConfigTemplate + `
-[wasm]
-# This is the maximum sdk gas (wasm and storage) that we allow for any x/wasm "smart" queries
-query_gas_limit = 300000
-# This is the number of wasm vm instances we keep cached in memory for speed-up
-# Warning: this is currently unstable and may lead to crashes, best to keep for 0 unless testing locally
-lru_size = 0`
+	customAppTemplate := serverconfig.DefaultConfigTemplate
 
 	return customAppTemplate, customAppConfig
 }
@@ -147,11 +128,11 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(simapp.ModuleBasics, simapp.DefaultNodeHome),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome),
-		genutilcli.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(simapp.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, simapp.DefaultNodeHome),
+		genutilcli.MigrateGenesisCmd(),
 		genutilcli.ValidateGenesisCmd(simapp.ModuleBasics),
 		AddGenesisAccountCmd(simapp.DefaultNodeHome),
-		tmcli.NewCompletionCmd(rootCmd, true),
+		ostcli.NewCompletionCmd(rootCmd, true),
 		testnetCmd(simapp.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
@@ -230,12 +211,14 @@ type appCreator struct {
 	encCfg params.EncodingConfig
 }
 
-// newApp is an appCreator
+// newApp is an AppCreator
 func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
+	ibCacheMetricsProvider := baseapp.MetricsProvider(cast.ToBool(viper.GetBool(server.FlagPrometheus)))
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
-		cache = store.NewCommitKVStoreCacheManager()
+		cache = store.NewCommitKVStoreCacheManager(
+			cast.ToInt(appOpts.Get(server.FlagInterBlockCacheSize)), ibCacheMetricsProvider)
 	}
 
 	skipUpgradeHeights := make(map[int64]bool)
@@ -277,6 +260,7 @@ func (a appCreator) newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, a
 		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
 		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
 		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server.FlagIAVLFastNode))),
+		baseapp.SetChanCheckTxSize(cast.ToUint(appOpts.Get(server.FlagChanCheckTxSize))),
 	)
 }
 

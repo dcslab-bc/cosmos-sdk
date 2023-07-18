@@ -6,31 +6,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	octypes "github.com/Finschia/ostracon/types"
+
+	bam "github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	"github.com/Finschia/finschia-sdk/snapshots"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/errors"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 // DefaultConsensusParams defines the default Tendermint consensus params used in
@@ -47,15 +49,22 @@ var DefaultConsensusParams = &abci.ConsensusParams{
 	},
 	Validator: &tmproto.ValidatorParams{
 		PubKeyTypes: []string{
-			tmtypes.ABCIPubKeyTypeEd25519,
+			octypes.ABCIPubKeyTypeEd25519,
 		},
 	},
 }
 
 func setup(withGenesis bool, invCheckPeriod uint) (*SimApp, GenesisState) {
+	randDir, _ := os.MkdirTemp(DefaultNodeHome, "")
+	snapshotDir := filepath.Join(randDir, "data", "snapshots")
+	snapshotDB := dbm.NewMemDB()
+
+	snapshotStore, _ := snapshots.NewStore(snapshotDB, snapshotDir)
+	baseAppOpts := []func(*bam.BaseApp){bam.SetSnapshotStore(snapshotStore), bam.SetSnapshotKeepRecent(2)}
+
 	db := dbm.NewMemDB()
 	encCdc := MakeTestEncodingConfig()
-	app := NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, invCheckPeriod, encCdc, EmptyAppOptions{})
+	app := NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, DefaultNodeHome, invCheckPeriod, encCdc, EmptyAppOptions{}, baseAppOpts...)
 	if withGenesis {
 		return app, NewDefaultGenesisState(encCdc.Marshaler)
 	}
@@ -89,82 +98,82 @@ func Setup(isCheckTx bool) *SimApp {
 // that also act as delegators. For simplicity, each validator is bonded with a delegation
 // of one consensus engine unit (10^6) in the default token of the simapp from first genesis
 // account. A Nop logger is set in SimApp.
-func SetupWithGenesisValSet(t *testing.T, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *SimApp {
-	app, genesisState := setup(true, 5)
-	// set genesis accounts
-	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
-	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
-
-	validators := make([]stakingtypes.Validator, 0, len(valSet.Validators))
-	delegations := make([]stakingtypes.Delegation, 0, len(valSet.Validators))
-
-	bondAmt := sdk.NewInt(1000000)
-
-	for _, val := range valSet.Validators {
-		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
-		require.NoError(t, err)
-		pkAny, err := codectypes.NewAnyWithValue(pk)
-		require.NoError(t, err)
-		validator := stakingtypes.Validator{
-			OperatorAddress:   sdk.ValAddress(val.Address).String(),
-			ConsensusPubkey:   pkAny,
-			Jailed:            false,
-			Status:            stakingtypes.Bonded,
-			Tokens:            bondAmt,
-			DelegatorShares:   sdk.OneDec(),
-			Description:       stakingtypes.Description{},
-			UnbondingHeight:   int64(0),
-			UnbondingTime:     time.Unix(0, 0).UTC(),
-			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
-			MinSelfDelegation: sdk.ZeroInt(),
-		}
-		validators = append(validators, validator)
-		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
-
-	}
-	// set validators and delegations
-	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
-	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
-
-	totalSupply := sdk.NewCoins()
-	for _, b := range balances {
-		// add genesis acc tokens and delegated tokens to total supply
-		totalSupply = totalSupply.Add(b.Coins.Add(sdk.NewCoin(sdk.DefaultBondDenom, bondAmt))...)
-	}
-
-	// add bonded amount to bonded pool module account
-	balances = append(balances, banktypes.Balance{
-		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
-		Coins:   sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, bondAmt)},
-	})
-
-	// update total supply
-	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{})
-	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
-
-	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
-	require.NoError(t, err)
-
-	// init chain will set the validator set and initialize the genesis accounts
-	app.InitChain(
-		abci.RequestInitChain{
-			Validators:      []abci.ValidatorUpdate{},
-			ConsensusParams: DefaultConsensusParams,
-			AppStateBytes:   stateBytes,
-		},
-	)
-
-	// commit genesis changes
-	app.Commit()
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
-		Height:             app.LastBlockHeight() + 1,
-		AppHash:            app.LastCommitID().Hash,
-		ValidatorsHash:     valSet.Hash(),
-		NextValidatorsHash: valSet.Hash(),
-	}})
-
-	return app
-}
+//func SetupWithGenesisValSet(t *testing.T, valSet *octypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *SimApp {
+//	app, genesisState := setup(true, 5)
+//	// set genesis accounts
+//	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
+//	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
+//
+//	validators := make([]stakingtypes.Validator, 0, len(valSet.Validators))
+//	delegations := make([]stakingtypes.Delegation, 0, len(valSet.Validators))
+//
+//	bondAmt := sdk.NewInt(1000000)
+//
+//	for _, val := range valSet.Validators {
+//		pk, err := cryptocodec.FromOcPubKeyInterface(val.PubKey)
+//		require.NoError(t, err)
+//		pkAny, err := codectypes.NewAnyWithValue(pk)
+//		require.NoError(t, err)
+//		validator := stakingtypes.Validator{
+//			OperatorAddress:   sdk.ValAddress(val.Address).String(),
+//			ConsensusPubkey:   pkAny,
+//			Jailed:            false,
+//			Status:            stakingtypes.Bonded,
+//			Tokens:            bondAmt,
+//			DelegatorShares:   sdk.OneDec(),
+//			Description:       stakingtypes.Description{},
+//			UnbondingHeight:   int64(0),
+//			UnbondingTime:     time.Unix(0, 0).UTC(),
+//			Commission:        stakingtypes.NewCommission(sdk.ZeroDec(), sdk.ZeroDec(), sdk.ZeroDec()),
+//			MinSelfDelegation: sdk.ZeroInt(),
+//		}
+//		validators = append(validators, validator)
+//		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
+//
+//	}
+//	// set validators and delegations
+//	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
+//	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
+//
+//	totalSupply := sdk.NewCoins()
+//	for _, b := range balances {
+//		// add genesis acc tokens and delegated tokens to total supply
+//		totalSupply = totalSupply.Add(b.Coins.Add(sdk.NewCoin(sdk.DefaultBondDenom, bondAmt))...)
+//	}
+//
+//	// add bonded amount to bonded pool module account
+//	balances = append(balances, banktypes.Balance{
+//		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
+//		Coins:   sdk.Coins{sdk.NewCoin(sdk.DefaultBondDenom, bondAmt)},
+//	})
+//
+//	// update total supply
+//	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{})
+//	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
+//
+//	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
+//	require.NoError(t, err)
+//
+//	// init chain will set the validator set and initialize the genesis accounts
+//	app.InitChain(
+//		abci.RequestInitChain{
+//			Validators:      []abci.ValidatorUpdate{},
+//			ConsensusParams: DefaultConsensusParams,
+//			AppStateBytes:   stateBytes,
+//		},
+//	)
+//
+//	// commit genesis changes
+//	app.Commit()
+//	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{
+//		Height:             app.LastBlockHeight() + 1,
+//		AppHash:            app.LastCommitID().Hash,
+//		ValidatorsHash:     valSet.Hash(),
+//		NextValidatorsHash: valSet.Hash(),
+//	}})
+//
+//	return app
+//}
 
 // SetupWithGenesisAccounts initializes a new SimApp with the provided genesis
 // accounts and possible balances.
@@ -195,7 +204,7 @@ func SetupWithGenesisAccounts(genAccs []authtypes.GenesisAccount, balances ...ba
 	)
 
 	app.Commit()
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1}})
 
 	return app
 }
@@ -239,9 +248,55 @@ func createIncrementalAccounts(accNum int) []sdk.AccAddress {
 func AddTestAddrsFromPubKeys(app *SimApp, ctx sdk.Context, pubKeys []cryptotypes.PubKey, accAmt sdk.Int) {
 	initCoins := sdk.NewCoins(sdk.NewCoin(app.StakingKeeper.BondDenom(ctx), accAmt))
 
+	// fill all the addresses with some coins, set the loose pool tokens simultaneously
 	for _, pk := range pubKeys {
 		initAccountWithCoins(app, ctx, sdk.AccAddress(pk.Address()), initCoins)
 	}
+}
+
+// SortAddresses - Sorts Addresses
+func SortAddresses(addrs []sdk.AccAddress) {
+	byteAddrs := make([][]byte, len(addrs))
+
+	for i, addr := range addrs {
+		byteAddrs[i] = addr.Bytes()
+	}
+
+	SortByteArrays(byteAddrs)
+
+	for i, byteAddr := range byteAddrs {
+		addrs[i] = sdk.AccAddress(byteAddr)
+	}
+}
+
+// implement `Interface` in sort package.
+type sortByteArrays [][]byte
+
+func (b sortByteArrays) Len() int {
+	return len(b)
+}
+
+func (b sortByteArrays) Less(i, j int) bool {
+	// bytes package already implements Comparable for []byte.
+	switch bytes.Compare(b[i], b[j]) {
+	case -1:
+		return true
+	case 0, 1:
+		return false
+	default:
+		panic("not fail-able with `bytes.Comparable` bounded [-1, 1].")
+	}
+}
+
+func (b sortByteArrays) Swap(i, j int) {
+	b[j], b[i] = b[i], b[j]
+}
+
+// SortByteArrays - sorts the provided byte array
+func SortByteArrays(src [][]byte) [][]byte {
+	sorted := sortByteArrays(src)
+	sort.Sort(sorted)
+	return sorted
 }
 
 // AddTestAddrs constructs and returns accNum amount of accounts with an
@@ -265,6 +320,7 @@ func addTestAddrs(app *SimApp, ctx sdk.Context, accNum int, accAmt sdk.Int, stra
 		initAccountWithCoins(app, ctx, addr, initCoins)
 	}
 
+	SortAddresses(testAddrs)
 	return testAddrs
 }
 
@@ -352,8 +408,47 @@ func SignCheckDeliver(
 		require.Nil(t, res)
 	}
 
+	// Simulate a sending a transaction and committing a block and recheck
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
+	gInfo, res, err := app.Deliver(txCfg.TxEncoder(), tx)
+
+	if expPass {
+		require.NoError(t, err)
+		require.NotNil(t, res)
+	} else {
+		require.Error(t, err)
+		require.Nil(t, res)
+	}
+
+	app.EndBlock(abci.RequestEndBlock{})
+	app.Commit()
+
+	app.BeginRecheckTx(ocabci.RequestBeginRecheckTx{Header: header})
+	app.EndRecheckTx(ocabci.RequestEndRecheckTx{})
+
+	return gInfo, res, err
+}
+
+// SignAndDeliver signs and delivers a transaction. No simulation occurs as the
+// ibc testing package causes checkState and deliverState to diverge in block time.
+func SignAndDeliver(
+	t *testing.T, txCfg client.TxConfig, app *bam.BaseApp, header tmproto.Header, msgs []sdk.Msg,
+	chainID string, accNums, accSeqs []uint64, expSimPass, expPass bool, priv ...cryptotypes.PrivKey,
+) (sdk.GasInfo, *sdk.Result, error) {
+	tx, err := helpers.GenTx(
+		txCfg,
+		msgs,
+		sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)},
+		2*helpers.DefaultGenTxGas,
+		chainID,
+		accNums,
+		accSeqs,
+		priv...,
+	)
+	require.NoError(t, err)
+
 	// Simulate a sending a transaction and committing a block
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 	gInfo, res, err := app.Deliver(txCfg.TxEncoder(), tx)
 
 	if expPass {
@@ -446,12 +541,12 @@ func (ao EmptyAppOptions) Get(o string) interface{} {
 //
 // TODO: Instead of using the mint module account, which has the
 // permission of minting, create a "faucet" account. (@fdymylja)
-func FundAccount(bankKeeper bankkeeper.Keeper, ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
-	if err := bankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
+func FundAccount(app *SimApp, ctx sdk.Context, addr sdk.AccAddress, amounts sdk.Coins) error {
+	if err := app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
 		return err
 	}
 
-	return bankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, addr, amounts)
+	return app.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, addr, amounts)
 }
 
 // FundModuleAccount is a utility function that funds a module account by
@@ -460,10 +555,10 @@ func FundAccount(bankKeeper bankkeeper.Keeper, ctx sdk.Context, addr sdk.AccAddr
 //
 // TODO: Instead of using the mint module account, which has the
 // permission of minting, create a "faucet" account. (@fdymylja)
-func FundModuleAccount(bankKeeper bankkeeper.Keeper, ctx sdk.Context, recipientMod string, amounts sdk.Coins) error {
-	if err := bankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
+func FundModuleAccount(app *SimApp, ctx sdk.Context, recipientMod string, amounts sdk.Coins) error {
+	if err := app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, amounts); err != nil {
 		return err
 	}
 
-	return bankKeeper.SendCoinsFromModuleToModule(ctx, minttypes.ModuleName, recipientMod, amounts)
+	return app.BankKeeper.SendCoinsFromModuleToModule(ctx, minttypes.ModuleName, recipientMod, amounts)
 }

@@ -1,17 +1,18 @@
 package capability_test
 
 import (
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	"github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/ostracon/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/capability"
+	"github.com/Finschia/finschia-sdk/x/capability/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func (suite *CapabilityTestSuite) TestGenesis() {

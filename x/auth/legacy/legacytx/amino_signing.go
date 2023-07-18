@@ -3,12 +3,12 @@ package legacytx
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/crypto/types/multisig"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	signingtypes "github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/signing"
 )
 
 // stdTxSignModeHandler is a SignModeHandler that handles SIGN_MODE_LEGACY_AMINO_JSON

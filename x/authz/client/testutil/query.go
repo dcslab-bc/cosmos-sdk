@@ -5,19 +5,19 @@ import (
 	"strings"
 	"time"
 
-	tmcli "github.com/tendermint/tendermint/libs/cli"
+	ostcli "github.com/Finschia/ostracon/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	"github.com/cosmos/cosmos-sdk/x/authz/client/cli"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/x/authz/client/cli"
 )
 
 func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 	val := s.network.Validators[0]
 
-	grantee := s.grantee
+	grantee := s.grantee[0]
 	twoHours := time.Now().Add(time.Minute * time.Duration(120)).Unix()
 
 	_, err := ExecGrant(
@@ -46,7 +46,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 			[]string{
 				val.Address.String(),
 				"invalid grantee",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true,
 			"decoding bech32 failed: invalid character in string: ' '",
@@ -56,7 +56,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 			[]string{
 				"invalid granter",
 				grantee.String(),
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true,
 			"decoding bech32 failed: invalid character in string: ' '",
@@ -66,7 +66,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 			[]string{
 				val.Address.String(),
 				grantee.String(),
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			false,
 			``,
@@ -95,7 +95,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 func (s *IntegrationTestSuite) TestQueryAuthorization() {
 	val := s.network.Validators[0]
 
-	grantee := s.grantee
+	grantee := s.grantee[0]
 	twoHours := time.Now().Add(time.Minute * time.Duration(120)).Unix()
 
 	_, err := ExecGrant(
@@ -125,7 +125,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorization() {
 				val.Address.String(),
 				"invalid grantee",
 				typeMsgSend,
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true,
 			"",
@@ -136,7 +136,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorization() {
 				"invalid granter",
 				grantee.String(),
 				typeMsgSend,
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true,
 			"",
@@ -147,7 +147,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorization() {
 				val.Address.String(),
 				grantee.String(),
 				"typeMsgSend",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true,
 			"",
@@ -158,7 +158,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorization() {
 				val.Address.String(),
 				grantee.String(),
 				typeMsgSend,
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			false,
 			`{"@type":"/cosmos.bank.v1beta1.SendAuthorization","spend_limit":[{"denom":"steak","amount":"100"}]}`,

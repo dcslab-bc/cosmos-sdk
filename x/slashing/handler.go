@@ -1,10 +1,10 @@
 package slashing
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/slashing/keeper"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 // NewHandler creates an sdk.Handler for all the slashing type messages

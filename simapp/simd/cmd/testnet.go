@@ -11,28 +11,29 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	tmconfig "github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/server"
-	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ostconfig "github.com/Finschia/ostracon/config"
+	ostos "github.com/Finschia/ostracon/libs/os"
+	ostrand "github.com/Finschia/ostracon/libs/rand"
+	"github.com/Finschia/ostracon/types"
+	osttime "github.com/Finschia/ostracon/types/time"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/server"
+	srvconfig "github.com/Finschia/finschia-sdk/server/config"
+	"github.com/Finschia/finschia-sdk/testutil"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutiltypes "github.com/Finschia/finschia-sdk/x/genutil/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (
@@ -43,7 +44,7 @@ var (
 	flagStartingIPAddress = "starting-ip-address"
 )
 
-// get cmd to initialize all files for tendermint testnet and application
+// get cmd to initialize all files for ostracon testnet and application
 func testnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "testnet",
@@ -101,7 +102,7 @@ const nodeDirPerm = 0o755
 func InitTestnet(
 	clientCtx client.Context,
 	cmd *cobra.Command,
-	nodeConfig *tmconfig.Config,
+	nodeConfig *ostconfig.Config,
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
 	outputDir,
@@ -115,7 +116,7 @@ func InitTestnet(
 	numValidators int,
 ) error {
 	if chainID == "" {
-		chainID = "chain-" + tmrand.NewRand().Str(6)
+		chainID = "chain-" + ostrand.NewRand().Str(6)
 	}
 
 	nodeIDs := make([]string, numValidators)
@@ -315,12 +316,12 @@ func initGenFiles(
 }
 
 func collectGenFiles(
-	clientCtx client.Context, nodeConfig *tmconfig.Config, chainID string,
+	clientCtx client.Context, nodeConfig *ostconfig.Config, chainID string,
 	nodeIDs []string, valPubKeys []cryptotypes.PubKey, numValidators int,
 	outputDir, nodeDirPrefix, nodeDaemonHome string, genBalIterator banktypes.GenesisBalancesIterator,
 ) error {
 	var appState json.RawMessage
-	genTime := tmtime.Now()
+	genTime := osttime.Now()
 
 	for i := 0; i < numValidators; i++ {
 		nodeDirName := fmt.Sprintf("%s%d", nodeDirPrefix, i)
@@ -387,12 +388,12 @@ func writeFile(name string, dir string, contents []byte) error {
 	writePath := filepath.Join(dir) //nolint:gocritic
 	file := filepath.Join(writePath, name)
 
-	err := tmos.EnsureDir(writePath, 0o755)
+	err := ostos.EnsureDir(writePath, 0755)
 	if err != nil {
 		return err
 	}
 
-	err = tmos.WriteFile(file, contents, 0o644)
+	err = ostos.WriteFile(file, contents, 0644)
 	if err != nil {
 		return err
 	}

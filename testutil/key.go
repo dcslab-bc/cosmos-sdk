@@ -3,8 +3,8 @@ package testutil
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // GenerateCoinKey generates a new key mnemonic along with its addrress.

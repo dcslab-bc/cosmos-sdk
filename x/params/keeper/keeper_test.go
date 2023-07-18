@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/params/types"
+	"github.com/Finschia/finschia-sdk/x/params/types/proposal"
 )
 
 type KeeperTestSuite struct {
@@ -73,7 +73,7 @@ func TestKeeper(t *testing.T) {
 		types.NewParamSetPair([]byte("extra2"), string(""), validateNoOp),
 	)
 
-	cdc, ctx, skey, _, keeper := testComponents()
+	cdc, ctx, skey, keeper := testComponents()
 
 	store := prefix.NewStore(ctx.KVStore(skey), []byte("test/"))
 	space := keeper.Subspace("test")
@@ -149,7 +149,7 @@ func indirect(ptr interface{}) interface{} {
 }
 
 func TestSubspace(t *testing.T) {
-	cdc, ctx, key, _, keeper := testComponents()
+	cdc, ctx, key, keeper := testComponents()
 
 	kvs := []struct {
 		key   string
@@ -189,12 +189,10 @@ func TestSubspace(t *testing.T) {
 	store := prefix.NewStore(ctx.KVStore(key), []byte("test/"))
 	space := keeper.Subspace("test").WithKeyTable(table)
 
-	// Test space.Set, space.Modified
+	// Test space.Set
 	for i, kv := range kvs {
 		i, kv := i, kv
-		require.False(t, space.Modified(ctx, []byte(kv.key)), "space.Modified returns true before setting, tc #%d", i)
 		require.NotPanics(t, func() { space.Set(ctx, []byte(kv.key), kv.param) }, "space.Set panics, tc #%d", i)
-		require.True(t, space.Modified(ctx, []byte(kv.key)), "space.Modified returns false after setting, tc #%d", i)
 	}
 
 	// Test space.Get, space.GetIfExists
@@ -233,7 +231,7 @@ type paramJSON struct {
 }
 
 func TestJSONUpdate(t *testing.T) {
-	_, ctx, _, _, keeper := testComponents()
+	_, ctx, _, keeper := testComponents()
 
 	key := []byte("key")
 

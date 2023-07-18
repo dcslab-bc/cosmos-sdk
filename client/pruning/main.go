@@ -7,21 +7,24 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
+
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server"
+	servertypes "github.com/Finschia/finschia-sdk/server/types"
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	storetypes "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 const FlagAppDBBackend = "app-db-backend"
 
 // PruningCmd prunes the sdk root multi store history versions based on the pruning options
 // specified by command flags.
+//
+//nolint:golint
 func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prune",
@@ -62,7 +65,7 @@ func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 				return err
 			}
 
-			logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+			logger := log.NewOCLogger(log.NewSyncWriter(os.Stdout))
 			app := appCreator(logger, db, nil, vp)
 			cms := app.CommitMultiStore()
 

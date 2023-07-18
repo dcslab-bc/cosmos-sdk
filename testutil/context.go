@@ -1,15 +1,16 @@
 package testutil
 
 import (
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
-// DefaultContext creates a sdk.Context with a fresh MemDB that can be used in tests.
+// DefaultContext creates a sdk.Context with a fresh dbm that can be used in tests.
 func DefaultContext(key sdk.StoreKey, tkey sdk.StoreKey) sdk.Context {
 	db := dbm.NewMemDB()
 	cms := store.NewCommitMultiStore(db)

@@ -7,17 +7,19 @@ import (
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/capability/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 type KeeperTestSuite struct {
 	suite.Suite
 
+	cdc    codec.Codec
 	ctx    sdk.Context
 	app    *simapp.SimApp
 	keeper *keeper.Keeper
@@ -34,6 +36,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.app = app
 	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{Height: 1})
 	suite.keeper = keeper
+	suite.cdc = cdc
 }
 
 func (suite *KeeperTestSuite) TestSeal() {

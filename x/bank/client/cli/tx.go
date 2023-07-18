@@ -3,11 +3,11 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 // NewTxCmd returns a root CLI command handler for all x/bank transaction commands.
@@ -33,7 +33,9 @@ func NewSendTxCmd() *cobra.Command {
 ignored as it is implied from [from_key_or_address].`,
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cmd.Flags().Set(flags.FlagFrom, args[0])
+			if err := cmd.Flags().Set(flags.FlagFrom, args[0]); err != nil {
+				return err
+			}
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

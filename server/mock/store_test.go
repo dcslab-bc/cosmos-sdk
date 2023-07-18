@@ -7,7 +7,7 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func TestStore(t *testing.T) {
@@ -32,4 +32,11 @@ func TestStore(t *testing.T) {
 	require.False(t, store.Has(k))
 	require.Panics(t, func() { store.Set([]byte(""), v) }, "setting an empty key should panic")
 	require.Panics(t, func() { store.Set(nil, v) }, "setting a nil key should panic")
+}
+
+func TestMultiStore(t *testing.T) {
+	store := multiStore{}
+	require.Panics(t, func() { store.Snapshot(1, nil) }, "Snapshot should panic")
+	require.Panics(t, func() { store.Restore(1, 1, nil) }, "Restore should panic")
+	require.Panics(t, func() { store.SetIAVLDisableFastNode(false) }, "SetIAVLDisableFastNode should panic")
 }

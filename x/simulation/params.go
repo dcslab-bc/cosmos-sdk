@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/Finschia/ostracon/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/types/simulation"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 const (

@@ -4,14 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func checkValidator(t *testing.T, app *simapp.SimApp, addr sdk.ValAddress, expFound bool) types.Validator {
@@ -76,7 +77,7 @@ func TestStakingMsgs(t *testing.T) {
 	simapp.CheckBalance(t, app, addr1, sdk.Coins{genCoin.Sub(bondCoin)})
 
 	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	validator := checkValidator(t, app, sdk.ValAddress(addr1), true)
 	require.Equal(t, sdk.ValAddress(addr1).String(), validator.OperatorAddress)
@@ -84,7 +85,7 @@ func TestStakingMsgs(t *testing.T) {
 	require.True(sdk.IntEq(t, bondTokens, validator.BondedTokens()))
 
 	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	// edit the validator
 	description = types.NewDescription("bar_moniker", "", "", "", "")

@@ -10,15 +10,15 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/Finschia/ostracon/libs/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/store/iavl"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/snapshots"
+	snapshottypes "github.com/Finschia/finschia-sdk/snapshots/types"
+	"github.com/Finschia/finschia-sdk/store/iavl"
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	"github.com/Finschia/finschia-sdk/store/types"
 	dbm "github.com/tendermint/tm-db"
 )
 

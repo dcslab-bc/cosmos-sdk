@@ -3,26 +3,27 @@ package upgrade_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	abci "github.com/tendermint/tendermint/abci/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	storetypes "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/module"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/upgrade"
+	"github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 type TestSuite struct {
@@ -98,7 +99,7 @@ func VerifyDoUpgrade(t *testing.T) {
 	t.Log("Verify that a panic happens at the upgrade height")
 	newCtx := s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(time.Now())
 
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	require.Panics(t, func() {
 		s.module.BeginBlock(newCtx, req)
 	})
@@ -116,7 +117,7 @@ func VerifyDoUpgrade(t *testing.T) {
 
 func VerifyDoUpgradeWithCtx(t *testing.T, newCtx sdk.Context, proposalName string) {
 	t.Log("Verify that a panic happens at the upgrade height")
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	require.Panics(t, func() {
 		s.module.BeginBlock(newCtx, req)
 	})
@@ -142,7 +143,7 @@ func TestHaltIfTooNew(t *testing.T) {
 	})
 
 	newCtx := s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(time.Now())
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	require.NotPanics(t, func() {
 		s.module.BeginBlock(newCtx, req)
 	})
@@ -159,7 +160,7 @@ func TestHaltIfTooNew(t *testing.T) {
 	t.Log("Verify we no longer panic if the plan is on time")
 
 	futCtx := s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 3).WithBlockTime(time.Now())
-	req = abci.RequestBeginBlock{Header: futCtx.BlockHeader()}
+	req = ocabci.RequestBeginBlock{Header: futCtx.BlockHeader()}
 	require.NotPanics(t, func() {
 		s.module.BeginBlock(futCtx, req)
 	})
@@ -202,7 +203,7 @@ func TestCantApplySameUpgradeTwice(t *testing.T) {
 func TestNoSpuriousUpgrades(t *testing.T) {
 	s := setupTest(10, map[int64]bool{})
 	t.Log("Verify that no upgrade panic is triggered in the BeginBlocker when we haven't scheduled an upgrade")
-	req := abci.RequestBeginBlock{Header: s.ctx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: s.ctx.BlockHeader()}
 	require.NotPanics(t, func() {
 		s.module.BeginBlock(s.ctx, req)
 	})
@@ -211,13 +212,13 @@ func TestNoSpuriousUpgrades(t *testing.T) {
 func TestPlanStringer(t *testing.T) {
 	require.Equal(t, `Upgrade Plan
   Name: test
-  height: 100
+  Height: 100
   Info: .`, types.Plan{Name: "test", Height: 100, Info: ""}.String())
 
-	require.Equal(t, fmt.Sprintf(`Upgrade Plan
+	require.Equal(t, `Upgrade Plan
   Name: test
-  height: 100
-  Info: .`), types.Plan{Name: "test", Height: 100, Info: ""}.String())
+  Height: 100
+  Info: .`, types.Plan{Name: "test", Height: 100, Info: ""}.String())
 }
 
 func VerifyNotDone(t *testing.T, newCtx sdk.Context, name string) {
@@ -261,7 +262,7 @@ func TestSkipUpgradeSkippingAll(t *testing.T) {
 
 	newCtx := s.ctx
 
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "prop", Plan: types.Plan{Name: "test", Height: skipOne}})
 	require.NoError(t, err)
 
@@ -298,7 +299,7 @@ func TestUpgradeSkippingOne(t *testing.T) {
 
 	newCtx := s.ctx
 
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "prop", Plan: types.Plan{Name: "test", Height: skipOne}})
 	require.NoError(t, err)
 
@@ -333,7 +334,7 @@ func TestUpgradeSkippingOnlyTwo(t *testing.T) {
 
 	newCtx := s.ctx
 
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "prop", Plan: types.Plan{Name: "test", Height: skipOne}})
 	require.NoError(t, err)
 
@@ -370,7 +371,7 @@ func TestUpgradeSkippingOnlyTwo(t *testing.T) {
 func TestUpgradeWithoutSkip(t *testing.T) {
 	s := setupTest(10, map[int64]bool{})
 	newCtx := s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(time.Now())
-	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+	req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "prop", Plan: types.Plan{Name: "test", Height: s.ctx.BlockHeight() + 1}})
 	require.NoError(t, err)
 	t.Log("Verify if upgrade happens without skip upgrade")
@@ -416,20 +417,20 @@ func TestBinaryVersion(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		preRun      func() (sdk.Context, abci.RequestBeginBlock)
+		preRun      func() (sdk.Context, ocabci.RequestBeginBlock)
 		expectPanic bool
 	}{
 		{
 			"test not panic: no scheduled upgrade or applied upgrade is present",
-			func() (sdk.Context, abci.RequestBeginBlock) {
-				req := abci.RequestBeginBlock{Header: s.ctx.BlockHeader()}
+			func() (sdk.Context, ocabci.RequestBeginBlock) {
+				req := ocabci.RequestBeginBlock{Header: s.ctx.BlockHeader()}
 				return s.ctx, req
 			},
 			false,
 		},
 		{
 			"test not panic: upgrade handler is present for last applied upgrade",
-			func() (sdk.Context, abci.RequestBeginBlock) {
+			func() (sdk.Context, ocabci.RequestBeginBlock) {
 				s.keeper.SetUpgradeHandler("test0", func(_ sdk.Context, _ types.Plan, vm module.VersionMap) (module.VersionMap, error) {
 					return vm, nil
 				})
@@ -443,19 +444,19 @@ func TestBinaryVersion(t *testing.T) {
 					Height: 12,
 				})
 
-				req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+				req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 				return newCtx, req
 			},
 			false,
 		},
 		{
 			"test panic: upgrade needed",
-			func() (sdk.Context, abci.RequestBeginBlock) {
+			func() (sdk.Context, ocabci.RequestBeginBlock) {
 				err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "Upgrade test", Plan: types.Plan{Name: "test2", Height: 13}})
 				require.NoError(t, err)
 
 				newCtx := s.ctx.WithBlockHeight(13)
-				req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
+				req := ocabci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 				return newCtx, req
 			},
 			true,

@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/testutil"
 )
 
 func TestValidateCmd(t *testing.T) {

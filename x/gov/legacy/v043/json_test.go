@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	v043gov "github.com/cosmos/cosmos-sdk/x/gov/legacy/v043"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	v043gov "github.com/Finschia/finschia-sdk/x/gov/legacy/v043"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 func TestMigrateJSON(t *testing.T) {
@@ -21,7 +21,7 @@ func TestMigrateJSON(t *testing.T) {
 		WithTxConfig(encodingConfig.TxConfig).
 		WithCodec(encodingConfig.Marshaler)
 
-	voter, err := sdk.AccAddressFromBech32("cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh")
+	voter, err := sdk.AccAddressFromBech32("link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl")
 	require.NoError(t, err)
 	govGenState := &types.GenesisState{
 		Votes: types.Votes{
@@ -70,7 +70,7 @@ func TestMigrateJSON(t *testing.T) {
 				}
 			],
 			"proposal_id": "1",
-			"voter": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+			"voter": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl"
 		},
 		{
 			"option": "VOTE_OPTION_UNSPECIFIED",
@@ -81,7 +81,7 @@ func TestMigrateJSON(t *testing.T) {
 				}
 			],
 			"proposal_id": "2",
-			"voter": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+			"voter": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl"
 		},
 		{
 			"option": "VOTE_OPTION_UNSPECIFIED",
@@ -92,7 +92,7 @@ func TestMigrateJSON(t *testing.T) {
 				}
 			],
 			"proposal_id": "3",
-			"voter": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+			"voter": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl"
 		},
 		{
 			"option": "VOTE_OPTION_UNSPECIFIED",
@@ -103,7 +103,7 @@ func TestMigrateJSON(t *testing.T) {
 				}
 			],
 			"proposal_id": "4",
-			"voter": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+			"voter": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl"
 		},
 		{
 			"option": "VOTE_OPTION_UNSPECIFIED",
@@ -114,7 +114,7 @@ func TestMigrateJSON(t *testing.T) {
 				}
 			],
 			"proposal_id": "5",
-			"voter": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh"
+			"voter": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl"
 		}
 	],
 	"voting_params": {

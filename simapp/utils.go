@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
 )
 
 // SetupSimulation creates the config, db (levelDB), temporary directory and logger for

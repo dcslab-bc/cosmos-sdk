@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/iavl"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cosmos/iavl"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cache"
-	iavlstore "github.com/cosmos/cosmos-sdk/store/iavl"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/cache"
+	iavlstore "github.com/Finschia/finschia-sdk/store/iavl"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 func TestGetOrSetStoreCache(t *testing.T) {
 	db := dbm.NewMemDB()
-	mngr := cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize)
+	mngr := cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize, cache.NopMetricsProvider())
 
 	sKey := types.NewKVStoreKey("test")
 	tree, err := iavl.NewMutableTree(db, 100, false)
@@ -29,7 +30,7 @@ func TestGetOrSetStoreCache(t *testing.T) {
 
 func TestUnwrap(t *testing.T) {
 	db := dbm.NewMemDB()
-	mngr := cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize)
+	mngr := cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize, cache.NopMetricsProvider())
 
 	sKey := types.NewKVStoreKey("test")
 	tree, err := iavl.NewMutableTree(db, 100, false)
@@ -43,7 +44,7 @@ func TestUnwrap(t *testing.T) {
 
 func TestStoreCache(t *testing.T) {
 	db := dbm.NewMemDB()
-	mngr := cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize)
+	mngr := cache.NewCommitKVStoreCacheManager(cache.DefaultCommitKVStoreCacheSize, cache.NopMetricsProvider())
 
 	sKey := types.NewKVStoreKey("test")
 	tree, err := iavl.NewMutableTree(db, 100, false)
@@ -51,7 +52,7 @@ func TestStoreCache(t *testing.T) {
 	store := iavlstore.UnsafeNewStore(tree)
 	kvStore := mngr.GetStoreCache(sKey, store)
 
-	for i := uint(0); i < cache.DefaultCommitKVStoreCacheSize*2; i++ {
+	for i := uint(0); i < 10000; i++ {
 		key := []byte(fmt.Sprintf("key_%d", i))
 		value := []byte(fmt.Sprintf("value_%d", i))
 

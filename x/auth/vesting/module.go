@@ -3,19 +3,18 @@ package vesting
 import (
 	"encoding/json"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/auth/keeper"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/client/cli"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/types"
 )
 
 var (
@@ -53,9 +52,6 @@ func (AppModuleBasic) DefaultGenesis(_ codec.JSONCodec) json.RawMessage {
 func (AppModuleBasic) ValidateGenesis(_ codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	return nil
 }
-
-// RegisterRESTRoutes registers module's REST handlers. Currently, this is a no-op.
-func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the module's gRPC Gateway routes. Currently, this
 // is a no-op.

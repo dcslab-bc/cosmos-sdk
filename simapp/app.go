@@ -11,83 +11,100 @@ import (
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/server/api"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	"github.com/cosmos/cosmos-sdk/store/streaming"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
-	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
-	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
-	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
-	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	ostos "github.com/Finschia/ostracon/libs/os"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	nodeservice "github.com/Finschia/finschia-sdk/client/grpc/node"
+	"github.com/Finschia/finschia-sdk/client/grpc/tmservice"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/server/api"
+	"github.com/Finschia/finschia-sdk/server/config"
+	servertypes "github.com/Finschia/finschia-sdk/server/types"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	"github.com/Finschia/finschia-sdk/store/streaming"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/auth"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	authkeeper "github.com/Finschia/finschia-sdk/x/auth/keeper"
+	authsims "github.com/Finschia/finschia-sdk/x/auth/simulation"
+	authtx "github.com/Finschia/finschia-sdk/x/auth/tx"
+	authtx2 "github.com/Finschia/finschia-sdk/x/auth/tx2"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting"
+	vestingtypes "github.com/Finschia/finschia-sdk/x/auth/vesting/types"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	authzkeeper "github.com/Finschia/finschia-sdk/x/authz/keeper"
+	authzmodule "github.com/Finschia/finschia-sdk/x/authz/module"
+	"github.com/Finschia/finschia-sdk/x/bank"
+	bankkeeper "github.com/Finschia/finschia-sdk/x/bank/keeper"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/bankplus"
+	bankpluskeeper "github.com/Finschia/finschia-sdk/x/bankplus/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability"
+	capabilitykeeper "github.com/Finschia/finschia-sdk/x/capability/keeper"
+	capabilitytypes "github.com/Finschia/finschia-sdk/x/capability/types"
+	"github.com/Finschia/finschia-sdk/x/collection"
+	collectionkeeper "github.com/Finschia/finschia-sdk/x/collection/keeper"
+	collectionmodule "github.com/Finschia/finschia-sdk/x/collection/module"
+	"github.com/Finschia/finschia-sdk/x/crisis"
+	crisiskeeper "github.com/Finschia/finschia-sdk/x/crisis/keeper"
+	crisistypes "github.com/Finschia/finschia-sdk/x/crisis/types"
+	distr "github.com/Finschia/finschia-sdk/x/distribution"
+	distrclient "github.com/Finschia/finschia-sdk/x/distribution/client"
+	distrkeeper "github.com/Finschia/finschia-sdk/x/distribution/keeper"
+	distrtypes "github.com/Finschia/finschia-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/x/evidence"
+	evidencekeeper "github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	evidencetypes "github.com/Finschia/finschia-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	feegrantkeeper "github.com/Finschia/finschia-sdk/x/feegrant/keeper"
+	feegrantmodule "github.com/Finschia/finschia-sdk/x/feegrant/module"
+	"github.com/Finschia/finschia-sdk/x/foundation"
+	foundationclient "github.com/Finschia/finschia-sdk/x/foundation/client"
+	foundationkeeper "github.com/Finschia/finschia-sdk/x/foundation/keeper"
+	foundationmodule "github.com/Finschia/finschia-sdk/x/foundation/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutiltypes "github.com/Finschia/finschia-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/x/gov"
+	govkeeper "github.com/Finschia/finschia-sdk/x/gov/keeper"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/mint"
+	mintkeeper "github.com/Finschia/finschia-sdk/x/mint/keeper"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/x/params"
+	paramsclient "github.com/Finschia/finschia-sdk/x/params/client"
+	paramskeeper "github.com/Finschia/finschia-sdk/x/params/keeper"
+	paramstypes "github.com/Finschia/finschia-sdk/x/params/types"
+	paramproposal "github.com/Finschia/finschia-sdk/x/params/types/proposal"
+	"github.com/Finschia/finschia-sdk/x/slashing"
+	slashingkeeper "github.com/Finschia/finschia-sdk/x/slashing/keeper"
+	slashingtypes "github.com/Finschia/finschia-sdk/x/slashing/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	stakingkeeper "github.com/Finschia/finschia-sdk/x/staking/keeper"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
+	stakingplusmodule "github.com/Finschia/finschia-sdk/x/stakingplus/module"
+	"github.com/Finschia/finschia-sdk/x/token"
+	"github.com/Finschia/finschia-sdk/x/token/class"
+	classkeeper "github.com/Finschia/finschia-sdk/x/token/class/keeper"
+	tokenkeeper "github.com/Finschia/finschia-sdk/x/token/keeper"
+	tokenmodule "github.com/Finschia/finschia-sdk/x/token/module"
+	"github.com/Finschia/finschia-sdk/x/upgrade"
+	upgradeclient "github.com/Finschia/finschia-sdk/x/upgrade/client"
+	upgradekeeper "github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/Finschia/finschia-sdk/x/upgrade/types"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	_ "github.com/Finschia/finschia-sdk/client/docs/statik"
 )
 
 const appName = "SimApp"
@@ -104,11 +121,16 @@ var (
 		genutil.AppModuleBasic{},
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
-		staking.AppModuleBasic{},
+		stakingplusmodule.AppModuleBasic{},
 		mint.AppModuleBasic{},
 		distr.AppModuleBasic{},
+		foundationmodule.AppModuleBasic{},
 		gov.NewAppModuleBasic(
-			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
+			paramsclient.ProposalHandler,
+			distrclient.ProposalHandler,
+			upgradeclient.ProposalHandler,
+			upgradeclient.CancelProposalHandler,
+			foundationclient.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -118,16 +140,25 @@ var (
 		evidence.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		vesting.AppModuleBasic{},
+		tokenmodule.AppModuleBasic{},
+		collectionmodule.AppModuleBasic{},
 	)
 
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:     nil,
 		distrtypes.ModuleName:          nil,
+		foundation.ModuleName:          nil,
+		foundation.TreasuryName:        nil,
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
+	}
+
+	// module accounts that are allowed to receive tokens
+	allowedReceivingModAcc = map[string]bool{
+		// govtypes.ModuleName: true, // TODO: uncomment it when authority is ready
 	}
 )
 
@@ -149,7 +180,6 @@ type SimApp struct {
 
 	// keys to access the substores
 	keys    map[string]*sdk.KVStoreKey
-	tkeys   map[string]*sdk.TransientStoreKey
 	memKeys map[string]*sdk.MemoryStoreKey
 
 	// keepers
@@ -160,6 +190,7 @@ type SimApp struct {
 	SlashingKeeper   slashingkeeper.Keeper
 	MintKeeper       mintkeeper.Keeper
 	DistrKeeper      distrkeeper.Keeper
+	FoundationKeeper foundationkeeper.Keeper
 	GovKeeper        govkeeper.Keeper
 	CrisisKeeper     crisiskeeper.Keeper
 	UpgradeKeeper    upgradekeeper.Keeper
@@ -167,6 +198,9 @@ type SimApp struct {
 	AuthzKeeper      authzkeeper.Keeper
 	EvidenceKeeper   evidencekeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
+	ClassKeeper      classkeeper.Keeper
+	TokenKeeper      tokenkeeper.Keeper
+	CollectionKeeper collectionkeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -174,7 +208,7 @@ type SimApp struct {
 	// simulation manager
 	sm *module.SimulationManager
 
-	// module configurator
+	// the configurator
 	configurator module.Configurator
 }
 
@@ -203,10 +237,22 @@ func NewSimApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
 	keys := sdk.NewKVStoreKeys(
-		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
-		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
-		govtypes.StoreKey, paramstypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
-		evidencetypes.StoreKey, capabilitytypes.StoreKey,
+		authtypes.StoreKey,
+		banktypes.StoreKey,
+		stakingtypes.StoreKey,
+		minttypes.StoreKey,
+		distrtypes.StoreKey,
+		slashingtypes.StoreKey,
+		govtypes.StoreKey,
+		paramstypes.StoreKey,
+		upgradetypes.StoreKey,
+		evidencetypes.StoreKey,
+		capabilitytypes.StoreKey,
+		feegrant.StoreKey,
+		foundation.StoreKey,
+		class.StoreKey,
+		token.StoreKey,
+		collection.StoreKey,
 		authzkeeper.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -217,7 +263,7 @@ func NewSimApp(
 	// configure state listening capabilities using AppOptions
 	// we are doing nothing with the returned streamingServices and waitGroup in this case
 	if _, _, err := streaming.LoadStreamingServices(bApp, appOpts, appCodec, keys); err != nil {
-		tmos.Exit(err.Error())
+		ostos.Exit(err.Error())
 	}
 
 	app := &SimApp{
@@ -227,7 +273,6 @@ func NewSimApp(
 		interfaceRegistry: interfaceRegistry,
 		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
-		tkeys:             tkeys,
 		memKeys:           memKeys,
 	}
 
@@ -236,7 +281,9 @@ func NewSimApp(
 	// set the BaseApp's parameter store
 	bApp.SetParamStore(app.ParamsKeeper.Subspace(baseapp.Paramspace).WithKeyTable(paramskeeper.ConsensusParamsKeyTable()))
 
+	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
+
 	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
 	// their scoped modules in `NewApp` with `ScopeToModule`
 	app.CapabilityKeeper.Seal()
@@ -245,9 +292,8 @@ func NewSimApp(
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
 	)
-	app.BankKeeper = bankkeeper.NewBaseKeeper(
-		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.ModuleAccountAddrs(),
-	)
+	app.BankKeeper = bankpluskeeper.NewBaseKeeper(
+		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(), false)
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
@@ -269,6 +315,13 @@ func NewSimApp(
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(appCodec, keys[feegrant.StoreKey], app.AccountKeeper)
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(skipUpgradeHeights, keys[upgradetypes.StoreKey], appCodec, homePath, app.BaseApp)
 
+	foundationConfig := foundation.DefaultConfig()
+	app.FoundationKeeper = foundationkeeper.NewKeeper(appCodec, keys[foundation.StoreKey], app.BaseApp.MsgServiceRouter(), app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName, foundationConfig, foundation.DefaultAuthority().String())
+
+	app.ClassKeeper = classkeeper.NewKeeper(appCodec, keys[class.StoreKey])
+	app.TokenKeeper = tokenkeeper.NewKeeper(appCodec, keys[token.StoreKey], app.ClassKeeper)
+	app.CollectionKeeper = collectionkeeper.NewKeeper(appCodec, keys[collection.StoreKey], app.ClassKeeper)
+
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
 	app.StakingKeeper = *stakingKeeper.SetHooks(
@@ -282,7 +335,9 @@ func NewSimApp(
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
-		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper))
+		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
+		AddRoute(foundation.RouterKey, foundationkeeper.NewFoundationProposalsHandler(app.FoundationKeeper))
+
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, govRouter,
@@ -316,18 +371,21 @@ func NewSimApp(
 		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
+		bankplus.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
+		foundationmodule.NewAppModule(appCodec, app.FoundationKeeper),
 		gov.NewAppModule(appCodec, app.GovKeeper, app.AccountKeeper, app.BankKeeper),
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
+		stakingplusmodule.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.FoundationKeeper),
 		upgrade.NewAppModule(app.UpgradeKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		params.NewAppModule(app.ParamsKeeper),
+		tokenmodule.NewAppModule(appCodec, app.TokenKeeper),
+		collectionmodule.NewAppModule(appCodec, app.CollectionKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 	)
 
@@ -337,19 +395,46 @@ func NewSimApp(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName, capabilitytypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		evidencetypes.ModuleName, stakingtypes.ModuleName,
-		authtypes.ModuleName, banktypes.ModuleName, govtypes.ModuleName, crisistypes.ModuleName, genutiltypes.ModuleName,
-		authz.ModuleName, feegrant.ModuleName,
-		paramstypes.ModuleName, vestingtypes.ModuleName,
+		upgradetypes.ModuleName,
+		capabilitytypes.ModuleName,
+		minttypes.ModuleName,
+		foundation.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
+		stakingtypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		govtypes.ModuleName,
+		crisistypes.ModuleName,
+		genutiltypes.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
+		paramstypes.ModuleName,
+		vestingtypes.ModuleName,
+		token.ModuleName,
+		collection.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
-		crisistypes.ModuleName, govtypes.ModuleName, stakingtypes.ModuleName,
-		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName,
-		slashingtypes.ModuleName, minttypes.ModuleName,
-		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
+		crisistypes.ModuleName,
+		govtypes.ModuleName,
+		stakingtypes.ModuleName,
+		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		minttypes.ModuleName,
+		genutiltypes.ModuleName,
+		evidencetypes.ModuleName,
+		authz.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
+		paramstypes.ModuleName,
+		upgradetypes.ModuleName,
+		vestingtypes.ModuleName,
+		foundation.ModuleName,
+		token.ModuleName,
+		collection.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -358,11 +443,25 @@ func NewSimApp(
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
 	app.mm.SetOrderInitGenesis(
-		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
-		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName, crisistypes.ModuleName,
-		genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName,
+		capabilitytypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		distrtypes.ModuleName,
+		stakingtypes.ModuleName,
+		slashingtypes.ModuleName,
+		govtypes.ModuleName,
+		minttypes.ModuleName,
+		foundation.ModuleName,
+		crisistypes.ModuleName,
+		genutiltypes.ModuleName,
+		evidencetypes.ModuleName,
+		authz.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
+		paramstypes.ModuleName,
+		upgradetypes.ModuleName,
+		vestingtypes.ModuleName,
+		token.ModuleName,
+		collection.ModuleName,
 	)
 
 	// Uncomment if you want to set a custom migration order here.
@@ -381,7 +480,8 @@ func NewSimApp(
 	// NOTE: this is not required apps that don't use the simulator for fuzz testing
 	// transactions
 	overrideModules := map[string]module.AppModuleSimulation{
-		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
+		authtypes.ModuleName:    auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
+		stakingtypes.ModuleName: staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 	}
 	app.sm = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
 
@@ -389,7 +489,6 @@ func NewSimApp(
 
 	// initialize stores
 	app.MountKVStores(keys)
-	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
 	// initialize BaseApp
@@ -414,8 +513,11 @@ func NewSimApp(
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
-			tmos.Exit(err.Error())
+			ostos.Exit(err.Error())
 		}
+
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
+		app.BankKeeper.(bankpluskeeper.Keeper).InitializeBankPlus(ctx)
 	}
 
 	return app
@@ -425,7 +527,7 @@ func NewSimApp(
 func (app *SimApp) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
-func (app *SimApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (app *SimApp) BeginBlocker(ctx sdk.Context, req ocabci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -459,12 +561,45 @@ func (app *SimApp) ModuleAccountAddrs() map[string]bool {
 	return modAccAddrs
 }
 
+// BlockedAddrs returns all the app's module account addresses that are not
+// allowed to receive external tokens.
+func (app *SimApp) BlockedAddrs() map[string]bool {
+	blockedAddrs := make(map[string]bool)
+	for acc := range maccPerms {
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+	}
+
+	return blockedAddrs
+}
+
+// GetModuleManager returns the app module manager
+// NOTE: used for testing purposes
+func (app *SimApp) GetModuleManager() *module.Manager {
+	return app.mm
+}
+
 // LegacyAmino returns SimApp's amino codec.
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
 func (app *SimApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
+}
+
+// TestingApp functions
+// GetBaseApp implements the TestingApp interface.
+func (app *SimApp) GetBaseApp() *baseapp.BaseApp {
+	return app.BaseApp
+}
+
+// GetStakingKeeper implements the TestingApp interface.
+func (app *SimApp) GetStakingKeeper() stakingkeeper.Keeper {
+	return app.StakingKeeper
+}
+
+// GetTxConfig implements the TestingApp interface.
+func (app *SimApp) GetTxConfig() client.TxConfig {
+	return MakeTestEncodingConfig().TxConfig
 }
 
 // AppCodec returns SimApp's app codec.
@@ -485,13 +620,6 @@ func (app *SimApp) InterfaceRegistry() types.InterfaceRegistry {
 // NOTE: This is solely to be used for testing purposes.
 func (app *SimApp) GetKey(storeKey string) *sdk.KVStoreKey {
 	return app.keys[storeKey]
-}
-
-// GetTKey returns the TransientStoreKey for the provided store key.
-//
-// NOTE: This is solely to be used for testing purposes.
-func (app *SimApp) GetTKey(storeKey string) *sdk.TransientStoreKey {
-	return app.tkeys[storeKey]
 }
 
 // GetMemKey returns the MemStoreKey for the provided mem key.
@@ -518,16 +646,17 @@ func (app *SimApp) SimulationManager() *module.SimulationManager {
 // API server.
 func (app *SimApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
-	// Register legacy tx routes.
-	authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
+
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	authtx2.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// Register legacy and grpc-gateway routes for all modules.
-	ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
+	// Register node gRPC service for grpc-gateway.
+	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+
+	// Register grpc-gateway routes for all modules.
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register swagger API from root so that other applications can override easily
@@ -539,6 +668,7 @@ func (app *SimApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 // RegisterTxService implements the Application.RegisterTxService method.
 func (app *SimApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
+	authtx2.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.

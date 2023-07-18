@@ -4,20 +4,20 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/Finschia/ostracon/crypto"
+	"github.com/Finschia/ostracon/crypto/armor"
+	"github.com/Finschia/ostracon/crypto/xsalsa20symmetric"
 	"github.com/tendermint/crypto/bcrypt"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/armor"
-	"github.com/tendermint/tendermint/crypto/xsalsa20symmetric"
 
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
-	blockTypePrivKey = "TENDERMINT PRIVATE KEY"
-	blockTypeKeyInfo = "TENDERMINT KEY INFO"
-	blockTypePubKey  = "TENDERMINT PUBLIC KEY"
+	blockTypePrivKey = "OSTRACON PRIVATE KEY"
+	blockTypeKeyInfo = "OSTRACON KEY INFO"
+	blockTypePubKey  = "OSTRACON PUBLIC KEY"
 
 	defaultAlgo = "secp256k1"
 

@@ -6,11 +6,11 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis/client/cli"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/crisis/client/cli"
 )
 
 type IntegrationTestSuite struct {

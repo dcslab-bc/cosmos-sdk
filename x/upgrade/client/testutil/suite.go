@@ -3,14 +3,15 @@ package testutil
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/upgrade/client/cli"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 func NewIntegrationTestSuite(cfg network.Config) *IntegrationTestSuite {
@@ -80,7 +81,8 @@ func (s *IntegrationTestSuite) TestModuleVersionsCLI() {
 	mv := s.app.UpgradeKeeper.GetModuleVersions(s.ctx)
 	s.Require().NotEmpty(vm)
 
-	for _, tc := range testCases {
+	for _, stc := range testCases {
+		tc := stc
 		s.Run(fmt.Sprintf("Case %s", tc.msg), func() {
 			expect := mv
 			if tc.expPass {

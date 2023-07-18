@@ -3,9 +3,9 @@ package common
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/client"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 // QueryDelegationRewards queries a delegation rewards between a delegator and a

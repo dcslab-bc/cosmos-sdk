@@ -10,14 +10,14 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	rpcclient "github.com/Finschia/ostracon/rpc/client"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // Context implements a typical context created in SDK modules for transaction
@@ -71,7 +71,7 @@ func (ctx Context) WithKeyringOptions(opts ...keyring.Option) Context {
 
 // WithInput returns a copy of the context with an updated input.
 func (ctx Context) WithInput(r io.Reader) Context {
-	// convert to a bufio.Reader to have a shared buffer between the keyring and the
+	// convert to a bufio.Reader to have a shared buffer between the keyring and
 	// the Commands, ensuring a read from one advance the read pointer for the other.
 	// see https://github.com/cosmos/cosmos-sdk/issues/9566.
 	ctx.Input = bufio.NewReader(r)
@@ -112,6 +112,13 @@ func (ctx Context) WithOutput(w io.Writer) Context {
 // WithFrom returns a copy of the context with an updated from address or name.
 func (ctx Context) WithFrom(from string) Context {
 	ctx.From = from
+	return ctx
+}
+
+// WithFeeGranterAddress returns a copy of the context with an updated fee granter account
+// address.
+func (ctx Context) WithFeeGranterAddress(addr sdk.AccAddress) Context {
+	ctx.FeeGranter = addr
 	return ctx
 }
 
@@ -194,13 +201,6 @@ func (ctx Context) WithFromName(name string) Context {
 // address.
 func (ctx Context) WithFromAddress(addr sdk.AccAddress) Context {
 	ctx.FromAddress = addr
-	return ctx
-}
-
-// WithFeeGranterAddress returns a copy of the context with an updated fee granter account
-// address.
-func (ctx Context) WithFeeGranterAddress(addr sdk.AccAddress) Context {
-	ctx.FeeGranter = addr
 	return ctx
 }
 
@@ -366,7 +366,7 @@ func GetFromFields(kr keyring.Keyring, from string, genOnly bool) (sdk.AccAddres
 // NewKeyringFromBackend gets a Keyring object from a backend
 func NewKeyringFromBackend(ctx Context, backend string) (keyring.Keyring, error) {
 	if ctx.GenerateOnly || ctx.Simulate {
-		return keyring.New(sdk.KeyringServiceName(), keyring.BackendMemory, ctx.KeyringDir, ctx.Input, ctx.KeyringOptions...)
+		return keyring.New(sdk.KeyringServiceName(), keyring.BackendMemory, ctx.KeyringDir, ctx.Input)
 	}
 
 	return keyring.New(sdk.KeyringServiceName(), backend, ctx.KeyringDir, ctx.Input, ctx.KeyringOptions...)

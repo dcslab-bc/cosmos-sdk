@@ -8,14 +8,16 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	types1 "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	codecTypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var (
@@ -27,8 +29,8 @@ var (
 
 	// test abci message types
 	mockHash          = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	testBeginBlockReq = abci.RequestBeginBlock{
-		Header: types1.Header{
+	testBeginBlockReq = ocabci.RequestBeginBlock{
+		Header: tmproto.Header{
 			Height: 1,
 		},
 		ByzantineValidators: []abci.Evidence{},
@@ -127,7 +129,7 @@ func TestFileStreamingService(t *testing.T) {
 	if os.Getenv("CI") != "" {
 		t.Skip("Skipping TestFileStreamingService in CI environment")
 	}
-	err := os.Mkdir(testDir, 0o700)
+	err := os.Mkdir(testDir, 0700)
 	require.Nil(t, err)
 	defer os.RemoveAll(testDir)
 

@@ -5,19 +5,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	"github.com/cosmos/cosmos-sdk/crypto/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	"github.com/Finschia/finschia-sdk/crypto/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
 )
 
 var (

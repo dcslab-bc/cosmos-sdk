@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/store"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 type SubspaceTestSuite struct {
@@ -31,7 +32,6 @@ func (suite *SubspaceTestSuite) SetupTest() {
 
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(key, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(tkey, sdk.StoreTypeTransient, db)
 	suite.NoError(ms.LoadLatestVersion())
 
 	encCfg := simapp.MakeTestEncodingConfig()
@@ -100,16 +100,6 @@ func (suite *SubspaceTestSuite) TestHas() {
 		suite.ss.Set(suite.ctx, keyUnbondingTime, t)
 	})
 	suite.Require().True(suite.ss.Has(suite.ctx, keyUnbondingTime))
-}
-
-func (suite *SubspaceTestSuite) TestModified() {
-	t := time.Hour * 48
-
-	suite.Require().False(suite.ss.Modified(suite.ctx, keyUnbondingTime))
-	suite.Require().NotPanics(func() {
-		suite.ss.Set(suite.ctx, keyUnbondingTime, t)
-	})
-	suite.Require().True(suite.ss.Modified(suite.ctx, keyUnbondingTime))
 }
 
 func (suite *SubspaceTestSuite) TestUpdate() {

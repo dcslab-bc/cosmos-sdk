@@ -1,10 +1,10 @@
 package keys
 
 import (
+	"github.com/Finschia/ostracon/libs/cli"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/flags"
 )
 
 // Commands registers a sub-tree of commands to interact with
@@ -46,7 +46,6 @@ The pass backend requires GnuPG: https://gnupg.org/
 		ShowKeysCmd(),
 		DeleteKeyCommand(),
 		ParseKeyStringCommand(),
-		MigrateCommand(),
 	)
 
 	cmd.PersistentFlags().String(flags.FlagHome, defaultNodeHome, "The application home directory")

@@ -9,14 +9,15 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
 	"gopkg.in/yaml.v2"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
@@ -110,7 +111,7 @@ func (v Validators) Swap(i, j int) {
 // ValidatorsByVotingPower implements sort.Interface for []Validator based on
 // the VotingPower and Address fields.
 // The validators are sorted first by their voting power (descending). Secondary index - Address (ascending).
-// Copied from tendermint/types/validator_set.go
+// Copied from ostracon/types/validator_set.go
 type ValidatorsByVotingPower []Validator
 
 func (valz ValidatorsByVotingPower) Len() int { return len(valz) }
@@ -257,13 +258,13 @@ func (d Description) EnsureLength() (Description, error) {
 // ABCIValidatorUpdate returns an abci.ValidatorUpdate from a staking validator type
 // with the full validator power
 func (v Validator) ABCIValidatorUpdate(r sdk.Int) abci.ValidatorUpdate {
-	tmProtoPk, err := v.TmConsPublicKey()
+	ocProtoPk, err := v.OcConsPublicKey()
 	if err != nil {
 		panic(err)
 	}
 
 	return abci.ValidatorUpdate{
-		PubKey: tmProtoPk,
+		PubKey: ocProtoPk,
 		Power:  v.ConsensusPower(r),
 	}
 }
@@ -271,13 +272,13 @@ func (v Validator) ABCIValidatorUpdate(r sdk.Int) abci.ValidatorUpdate {
 // ABCIValidatorUpdateZero returns an abci.ValidatorUpdate from a staking validator type
 // with zero power used for validator updates.
 func (v Validator) ABCIValidatorUpdateZero() abci.ValidatorUpdate {
-	tmProtoPk, err := v.TmConsPublicKey()
+	ocprotoPk, err := v.OcConsPublicKey()
 	if err != nil {
 		panic(err)
 	}
 
 	return abci.ValidatorUpdate{
-		PubKey: tmProtoPk,
+		PubKey: ocprotoPk,
 		Power:  0,
 	}
 }
@@ -478,14 +479,14 @@ func (v Validator) ConsPubKey() (cryptotypes.PubKey, error) {
 	return pk, nil
 }
 
-// TmConsPublicKey casts Validator.ConsensusPubkey to tmprotocrypto.PubKey.
-func (v Validator) TmConsPublicKey() (tmprotocrypto.PublicKey, error) {
+// OcConsPublicKey casts Validator.ConsensusPubkey to tmprotocrypto.PubKey.
+func (v Validator) OcConsPublicKey() (tmprotocrypto.PublicKey, error) {
 	pk, err := v.ConsPubKey()
 	if err != nil {
 		return tmprotocrypto.PublicKey{}, err
 	}
 
-	tmPk, err := cryptocodec.ToTmProtoPublicKey(pk)
+	tmPk, err := cryptocodec.ToOcProtoPublicKey(pk)
 	if err != nil {
 		return tmprotocrypto.PublicKey{}, err
 	}

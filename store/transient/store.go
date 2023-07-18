@@ -3,8 +3,8 @@ package transient
 import (
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/dbadapter"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/dbadapter"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 var (
@@ -12,12 +12,12 @@ var (
 	_ types.KVStore   = (*Store)(nil)
 )
 
-// Store is a wrapper for a MemDB with Commiter implementation
+// Store is a wrapper for a dbm with Commiter implementation
 type Store struct {
 	dbadapter.Store
 }
 
-// Constructs new MemDB adapter
+// Constructs new dbm adapter
 func NewStore() *Store {
 	return &Store{Store: dbadapter.Store{DB: dbm.NewMemDB()}}
 }

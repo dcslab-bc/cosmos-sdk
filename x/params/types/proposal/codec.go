@@ -1,9 +1,9 @@
 package proposal
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 // RegisterLegacyAminoCodec registers all necessary param module types with a given LegacyAmino codec.

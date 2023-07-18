@@ -8,23 +8,25 @@ import (
 
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	txtypes "github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	xauthsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 var blockMaxGas = uint64(simapp.DefaultConsensusParams.Block.MaxGas)
@@ -104,7 +106,7 @@ func TestBaseApp_BlockGas(t *testing.T) {
 			_, txBytes, err := createTestTx(encCfg.TxConfig, txBuilder, privs, accNums, accSeqs, ctx.ChainID())
 			require.NoError(t, err)
 
-			app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
+			app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
 			rsp := app.DeliverTx(abci.RequestDeliverTx{Tx: txBytes})
 
 			// check result
@@ -123,7 +125,7 @@ func TestBaseApp_BlockGas(t *testing.T) {
 				require.Equal(t, []byte("ok"), okValue)
 			}
 			// check block gas is always consumed
-			baseGas := uint64(59142) // baseGas is the gas consumed before tx msg
+			baseGas := uint64(37352) // baseGas is the gas consumed before tx msg
 			expGasConsumed := addUint64Saturating(tc.gasToConsume, baseGas)
 			if expGasConsumed > txtypes.MaxGasWanted {
 				// capped by gasLimit

@@ -2,23 +2,20 @@ package rpc
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/p2p"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/Finschia/ostracon/libs/bytes"
+	"github.com/Finschia/ostracon/p2p"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
 )
 
-// ValidatorInfo is info about the node's validator, same as Tendermint,
+// ValidatorInfo is info about the node's validator, same as Ostracon,
 // except that we use our own PubKey.
 type validatorInfo struct {
 	Address     bytes.HexBytes
@@ -26,7 +23,7 @@ type validatorInfo struct {
 	VotingPower int64
 }
 
-// ResultStatus is node's info, same as Tendermint, except that we use our own
+// ResultStatus is node's info, same as Ostracon, except that we use our own
 // PubKey.
 type resultStatus struct {
 	NodeInfo      p2p.DefaultNodeInfo
@@ -50,8 +47,8 @@ func StatusCommand() *cobra.Command {
 				return err
 			}
 
-			// `status` has TM pubkeys, we need to convert them to our pubkeys.
-			pk, err := cryptocodec.FromTmPubKeyInterface(status.ValidatorInfo.PubKey)
+			// `status` has OC pubkeys, we need to convert them to our pubkeys.
+			pk, err := cryptocodec.FromOcPubKeyInterface(status.ValidatorInfo.PubKey)
 			if err != nil {
 				return err
 			}
@@ -87,46 +84,4 @@ func getNodeStatus(clientCtx client.Context) (*ctypes.ResultStatus, error) {
 	}
 
 	return node.Status(context.Background())
-}
-
-// NodeInfoResponse defines a response type that contains node status and version
-// information.
-type NodeInfoResponse struct {
-	p2p.DefaultNodeInfo `json:"node_info"`
-
-	ApplicationVersion version.Info `json:"application_version"`
-}
-
-// REST handler for node info
-func NodeInfoRequestHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		status, err := getNodeStatus(clientCtx)
-		if rest.CheckInternalServerError(w, err) {
-			return
-		}
-
-		resp := NodeInfoResponse{
-			DefaultNodeInfo:    status.NodeInfo,
-			ApplicationVersion: version.NewInfo(),
-		}
-
-		rest.PostProcessResponseBare(w, clientCtx, resp)
-	}
-}
-
-// SyncingResponse defines a response type that contains node syncing information.
-type SyncingResponse struct {
-	Syncing bool `json:"syncing"`
-}
-
-// REST handler for node syncing
-func NodeSyncingRequestHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		status, err := getNodeStatus(clientCtx)
-		if rest.CheckInternalServerError(w, err) {
-			return
-		}
-
-		rest.PostProcessResponseBare(w, clientCtx, SyncingResponse{Syncing: status.SyncInfo.CatchingUp})
-	}
 }

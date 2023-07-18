@@ -7,21 +7,20 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/params/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/params/keeper"
-	"github.com/cosmos/cosmos-sdk/x/params/simulation"
-	"github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/params/client/cli"
+	"github.com/Finschia/finschia-sdk/x/params/keeper"
+	"github.com/Finschia/finschia-sdk/x/params/simulation"
+	"github.com/Finschia/finschia-sdk/x/params/types"
+	"github.com/Finschia/finschia-sdk/x/params/types/proposal"
 )
 
 var (
@@ -52,12 +51,11 @@ func (AppModuleBasic) ValidateGenesis(_ codec.JSONCodec, config client.TxEncodin
 	return nil
 }
 
-// RegisterRESTRoutes registers the REST routes for the params module.
-func (AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the params module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	proposal.RegisterQueryHandlerClient(context.Background(), mux, proposal.NewQueryClient(clientCtx))
+	if err := proposal.RegisterQueryHandlerClient(context.Background(), mux, proposal.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd returns no root tx command for the params module.
@@ -111,6 +109,11 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 // module-specific gRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	proposal.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	// m := keeper.NewMigrator(am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/params from version 1 to 2: %v", err))
+	// }
 }
 
 // ProposalContents returns all the params content functions used to

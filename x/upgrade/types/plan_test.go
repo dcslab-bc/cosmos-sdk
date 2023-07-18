@@ -6,12 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 func mustParseTime(s string) time.Time {
@@ -33,13 +34,13 @@ func TestPlanString(t *testing.T) {
 				Info:   "https://foo.bar/baz",
 				Height: 7890,
 			},
-			expect: "Upgrade Plan\n  Name: by height\n  height: 7890\n  Info: https://foo.bar/baz.",
+			expect: "Upgrade Plan\n  Name: by height\n  Height: 7890\n  Info: https://foo.bar/baz.",
 		},
 		"neither": {
 			p: types.Plan{
 				Name: "almost-empty",
 			},
-			expect: "Upgrade Plan\n  Name: almost-empty\n  height: 0\n  Info: .",
+			expect: "Upgrade Plan\n  Name: almost-empty\n  Height: 0\n  Info: .",
 		},
 	}
 
@@ -67,11 +68,6 @@ func TestPlanValid(t *testing.T) {
 		"no name": {
 			p: types.Plan{
 				Height: 123450000,
-			},
-		},
-		"time-base upgrade": {
-			p: types.Plan{
-				Time: time.Now(),
 			},
 		},
 		"IBC upgrade": {

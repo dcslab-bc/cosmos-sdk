@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"math/rand"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 // Simulation parameter constants

@@ -5,23 +5,23 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simcmd "github.com/cosmos/cosmos-sdk/simapp/simd/cmd"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltest "github.com/cosmos/cosmos-sdk/x/genutil/client/testutil"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/simapp"
+	simcmd "github.com/Finschia/finschia-sdk/simapp/simd/cmd"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutiltest "github.com/Finschia/finschia-sdk/x/genutil/client/testutil"
 )
 
 var testMbm = module.NewBasicManager(genutil.AppModuleBasic{})

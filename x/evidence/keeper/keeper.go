@@ -3,15 +3,15 @@ package keeper
 import (
 	"fmt"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
+	ostbytes "github.com/Finschia/ostracon/libs/bytes"
+	"github.com/Finschia/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 // Keeper defines the evidence module's keeper. The keeper is responsible for
@@ -106,7 +106,7 @@ func (k Keeper) SetEvidence(ctx sdk.Context, evidence exported.Evidence) {
 
 // GetEvidence retrieves Evidence by hash if it exists. If no Evidence exists for
 // the given hash, (nil, false) is returned.
-func (k Keeper) GetEvidence(ctx sdk.Context, hash tmbytes.HexBytes) (exported.Evidence, bool) {
+func (k Keeper) GetEvidence(ctx sdk.Context, hash ostbytes.HexBytes) (exported.Evidence, bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefixEvidence)
 
 	bz := store.Get(hash)

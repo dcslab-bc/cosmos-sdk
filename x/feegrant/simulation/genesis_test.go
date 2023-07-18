@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/cosmos/cosmos-sdk/x/feegrant/simulation"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/x/feegrant/simulation"
 )
 
 func TestRandomizedGenState(t *testing.T) {

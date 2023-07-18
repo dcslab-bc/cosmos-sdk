@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 const (
@@ -18,7 +18,6 @@ var _ govtypes.Content = &CommunityPoolSpendProposal{}
 
 func init() {
 	govtypes.RegisterProposalType(ProposalTypeCommunityPoolSpend)
-	govtypes.RegisterProposalTypeCodec(&CommunityPoolSpendProposal{}, "cosmos-sdk/CommunityPoolSpendProposal")
 }
 
 // NewCommunityPoolSpendProposal creates a new community pool spned proposal.

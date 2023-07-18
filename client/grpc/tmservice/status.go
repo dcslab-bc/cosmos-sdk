@@ -3,9 +3,9 @@ package tmservice
 import (
 	"context"
 
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/Finschia/finschia-sdk/client"
 )
 
 func getNodeStatus(ctx context.Context, clientCtx client.Context) (*ctypes.ResultStatus, error) {

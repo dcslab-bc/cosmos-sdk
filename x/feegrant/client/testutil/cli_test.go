@@ -6,9 +6,9 @@ package testutil
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-
 	"github.com/stretchr/testify/suite"
+
+	"github.com/Finschia/finschia-sdk/testutil/network"
 )
 
 func TestIntegrationTestSuite(t *testing.T) {

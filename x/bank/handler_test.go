@@ -7,16 +7,16 @@ import (
 	"github.com/stretchr/testify/require"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/bank"
+	bankkeeper "github.com/Finschia/finschia-sdk/x/bank/keeper"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func TestInvalidMsg(t *testing.T) {

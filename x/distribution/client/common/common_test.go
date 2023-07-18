@@ -5,12 +5,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
 )
 
 func TestQueryDelegationRewardsAddrValidation(t *testing.T) {
-	clientCtx := client.Context{}.WithLegacyAmino(types.ModuleCdc.LegacyAmino)
+	clientCtx := client.Context{}.WithLegacyAmino(legacy.Cdc)
 
 	type args struct {
 		delAddr string
@@ -25,8 +25,8 @@ func TestQueryDelegationRewardsAddrValidation(t *testing.T) {
 	}{
 		{"invalid delegator address", args{"invalid", ""}, nil, true},
 		{"empty delegator address", args{"", ""}, nil, true},
-		{"invalid validator address", args{"cosmos1zxcsu7l5qxs53lvp0fqgd09a9r2g6kqrk2cdpa", "invalid"}, nil, true},
-		{"empty validator address", args{"cosmos1zxcsu7l5qxs53lvp0fqgd09a9r2g6kqrk2cdpa", ""}, nil, true},
+		{"invalid validator address", args{"link1zxcsu7l5qxs53lvp0fqgd09a9r2g6kqrk2cdpa", "invalid"}, nil, true},
+		{"empty validator address", args{"link1zxcsu7l5qxs53lvp0fqgd09a9r2g6kqrk2cdpa", ""}, nil, true},
 	}
 
 	for _, tt := range tests {

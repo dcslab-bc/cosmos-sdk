@@ -5,12 +5,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	signingtypes "github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
+	"github.com/Finschia/finschia-sdk/x/auth/signing"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 func MakeTestHandlerMap() signing.SignModeHandler {

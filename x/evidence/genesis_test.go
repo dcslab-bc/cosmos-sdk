@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Finschia/ostracon/types/time"
 	"github.com/stretchr/testify/suite"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"github.com/tendermint/tendermint/types/time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
+	"github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 type GenesisTestSuite struct {

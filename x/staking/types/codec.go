@@ -1,22 +1,31 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/msgservice"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	authzcodec "github.com/Finschia/finschia-sdk/x/authz/codec"
+	fdncodec "github.com/Finschia/finschia-sdk/x/foundation/codec"
+	govcodec "github.com/Finschia/finschia-sdk/x/gov/codec"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/staking interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(&MsgCreateValidator{}, "cosmos-sdk/MsgCreateValidator", nil)
-	cdc.RegisterConcrete(&MsgEditValidator{}, "cosmos-sdk/MsgEditValidator", nil)
-	cdc.RegisterConcrete(&MsgDelegate{}, "cosmos-sdk/MsgDelegate", nil)
-	cdc.RegisterConcrete(&MsgUndelegate{}, "cosmos-sdk/MsgUndelegate", nil)
-	cdc.RegisterConcrete(&MsgBeginRedelegate{}, "cosmos-sdk/MsgBeginRedelegate", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgCreateValidator{}, "cosmos-sdk/MsgCreateValidator")
+	legacy.RegisterAminoMsg(cdc, &MsgEditValidator{}, "cosmos-sdk/MsgEditValidator")
+	legacy.RegisterAminoMsg(cdc, &MsgDelegate{}, "cosmos-sdk/MsgDelegate")
+	legacy.RegisterAminoMsg(cdc, &MsgUndelegate{}, "cosmos-sdk/MsgUndelegate")
+	legacy.RegisterAminoMsg(cdc, &MsgBeginRedelegate{}, "cosmos-sdk/MsgBeginRedelegate")
+
+	cdc.RegisterInterface((*isStakeAuthorization_Validators)(nil), nil)
+	cdc.RegisterConcrete(&StakeAuthorization_AllowList{}, "cosmos-sdk/StakeAuthorization/AllowList", nil)
+	cdc.RegisterConcrete(&StakeAuthorization_DenyList{}, "cosmos-sdk/StakeAuthorization/DenyList", nil)
+	cdc.RegisterConcrete(&StakeAuthorization{}, "cosmos-sdk/StakeAuthorization", nil)
 }
 
 // RegisterInterfaces registers the x/staking interfaces types with the interface registry
@@ -37,19 +46,18 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 }
 
 var (
-	amino = codec.NewLegacyAmino()
-
-	// ModuleCdc references the global x/staking module codec. Note, the codec should
-	// ONLY be used in certain instances of tests and for JSON encoding as Amino is
-	// still used for that purpose.
-	//
-	// The actual codec used for serialization should be provided to x/staking and
-	// defined at the application level.
+	amino     = codec.NewLegacyAmino()
 	ModuleCdc = codec.NewAminoCodec(amino)
 )
 
 func init() {
 	RegisterLegacyAminoCodec(amino)
 	cryptocodec.RegisterCrypto(amino)
-	amino.Seal()
+	sdk.RegisterLegacyAminoCodec(amino)
+
+	// Register all Amino interfaces and concrete types on the authz  and gov Amino codec so that this can later be
+	// used to properly serialize MsgGrant, MsgExec and MsgSubmitProposal instances
+	RegisterLegacyAminoCodec(authzcodec.Amino)
+	RegisterLegacyAminoCodec(govcodec.Amino)
+	RegisterLegacyAminoCodec(fdncodec.Amino)
 }

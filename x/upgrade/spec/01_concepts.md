@@ -30,6 +30,7 @@ for more info.
 ```go
 type Plan struct {
   Name   string
+  Time   Time
   Height int64
   Info   string
 }

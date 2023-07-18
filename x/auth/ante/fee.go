@@ -3,9 +3,9 @@ package ante
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 // MempoolFeeDecorator will check if the transaction's fee is at least as large
@@ -78,7 +78,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
 	}
 
-	if addr := dfd.ak.GetModuleAddress(types.FeeCollectorName); addr == nil {
+	if addr := dfd.ak.GetModuleAddress(types.FeeCollectorName); addr.Empty() {
 		return ctx, fmt.Errorf("fee collector module account (%s) has not been set", types.FeeCollectorName)
 	}
 

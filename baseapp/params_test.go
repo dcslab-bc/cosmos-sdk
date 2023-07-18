@@ -7,7 +7,7 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/baseapp"
 )
 
 func TestValidateBlockParams(t *testing.T) {
@@ -58,6 +58,7 @@ func TestValidateValidatorParams(t *testing.T) {
 		{tmproto.ValidatorParams{}, true},
 		{tmproto.ValidatorParams{PubKeyTypes: []string{}}, true},
 		{tmproto.ValidatorParams{PubKeyTypes: []string{"secp256k1"}}, false},
+		{tmproto.ValidatorParams{PubKeyTypes: []string{"invalidPubKeyType"}}, true},
 	}
 
 	for _, tc := range testCases {

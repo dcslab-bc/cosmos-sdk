@@ -3,13 +3,13 @@ package tx
 import (
 	"fmt"
 
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	signingtypes "github.com/Finschia/finschia-sdk/types/tx/signing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/client"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/signing"
 )
 
 type config struct {

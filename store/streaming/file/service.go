@@ -10,10 +10,12 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var _ baseapp.StreamingService = &StreamingService{}
@@ -87,7 +89,7 @@ func (fss *StreamingService) Listeners() map[types.StoreKey][]types.WriteListene
 // ListenBeginBlock satisfies the baseapp.ABCIListener interface
 // It writes the received BeginBlock request and response and the resulting state changes
 // out to a file as described in the above the naming schema
-func (fss *StreamingService) ListenBeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
+func (fss *StreamingService) ListenBeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock, res abci.ResponseBeginBlock) error {
 	// generate the new file
 	dstFile, err := fss.openBeginBlockFile(req)
 	if err != nil {
@@ -125,7 +127,7 @@ func (fss *StreamingService) ListenBeginBlock(ctx sdk.Context, req abci.RequestB
 	return dstFile.Close()
 }
 
-func (fss *StreamingService) openBeginBlockFile(req abci.RequestBeginBlock) (*os.File, error) {
+func (fss *StreamingService) openBeginBlockFile(req ocabci.RequestBeginBlock) (*os.File, error) {
 	fss.currentBlockNumber = req.GetHeader().Height
 	fss.currentTxIndex = 0
 	fileName := fmt.Sprintf("block-%d-begin", fss.currentBlockNumber)

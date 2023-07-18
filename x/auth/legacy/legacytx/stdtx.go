@@ -1,13 +1,13 @@
 package legacytx
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	txtypes "github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
 )
 
 // Interface implementation checks

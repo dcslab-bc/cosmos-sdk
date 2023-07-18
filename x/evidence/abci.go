@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"time"
 
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 // BeginBlocker iterates through and handles any newly discovered evidence of
 // misbehavior submitted by Tendermint. Currently, only equivocation is handled.
-func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper) {
+func BeginBlocker(ctx sdk.Context, req ocabci.RequestBeginBlock, k keeper.Keeper) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	for _, tmEvidence := range req.ByzantineValidators {

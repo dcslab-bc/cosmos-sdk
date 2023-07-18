@@ -7,8 +7,23 @@ import (
 
 	"github.com/spf13/pflag"
 
-	govutils "github.com/cosmos/cosmos-sdk/x/gov/client/utils"
+	govutils "github.com/Finschia/finschia-sdk/x/gov/client/utils"
 )
+
+func (p proposal) validate() error {
+	if p.Type == "" {
+		return fmt.Errorf("proposal type is required")
+	}
+
+	if p.Title == "" {
+		return fmt.Errorf("proposal title is required")
+	}
+
+	if p.Description == "" {
+		return fmt.Errorf("proposal description is required")
+	}
+	return nil
+}
 
 func parseSubmitProposalFlags(fs *pflag.FlagSet) (*proposal, error) {
 	proposal := &proposal{}
@@ -16,11 +31,20 @@ func parseSubmitProposalFlags(fs *pflag.FlagSet) (*proposal, error) {
 
 	if proposalFile == "" {
 		proposalType, _ := fs.GetString(FlagProposalType)
+		title, _ := fs.GetString(FlagTitle)
+		description, _ := fs.GetString(FlagDescription)
+		if proposalType == "" && title == "" && description == "" {
+			return nil, fmt.Errorf("one of the --proposal or (--title, --description and --type) flags are required")
+		}
 
 		proposal.Title, _ = fs.GetString(FlagTitle)
 		proposal.Description, _ = fs.GetString(FlagDescription)
 		proposal.Type = govutils.NormalizeProposalType(proposalType)
 		proposal.Deposit, _ = fs.GetString(FlagDeposit)
+		if err := proposal.validate(); err != nil {
+			return nil, err
+		}
+
 		return proposal, nil
 	}
 

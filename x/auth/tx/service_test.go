@@ -7,29 +7,30 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	authtest "github.com/cosmos/cosmos-sdk/x/auth/client/testutil"
-	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/testutil"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	clienttx "github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	"github.com/Finschia/finschia-sdk/testutil/rest"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	authclient "github.com/Finschia/finschia-sdk/x/auth/client"
+	authtest "github.com/Finschia/finschia-sdk/x/auth/client/testutil"
+	bankcli "github.com/Finschia/finschia-sdk/x/bank/client/testutil"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 var bankMsgSendEventAction = fmt.Sprintf("message.action='%s'", sdk.MsgTypeURL(&banktypes.MsgSend{}))
@@ -355,7 +356,8 @@ func (s IntegrationTestSuite) TestGetTx_GRPC() {
 	}{
 		{"nil request", nil, true, "request cannot be nil"},
 		{"empty request", &tx.GetTxRequest{}, true, "tx hash cannot be empty"},
-		{"request with dummy hash", &tx.GetTxRequest{Hash: "deadbeef"}, true, "code = NotFound desc = tx not found: deadbeef"},
+		{"request with dummy hash of wrong length", &tx.GetTxRequest{Hash: "deadbeef"}, true, "The length of tx hash must be 64"},
+		{"request with dummy hash of correct length but invalid", &tx.GetTxRequest{Hash: "2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02"}, true, "tx not found: 2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02"},
 		{"good request", &tx.GetTxRequest{Hash: s.txRes.TxHash}, false, ""},
 	}
 	for _, tc := range testCases {
@@ -387,9 +389,14 @@ func (s IntegrationTestSuite) TestGetTx_GRPCGateway() {
 			true, "tx hash cannot be empty",
 		},
 		{
-			"dummy hash",
+			"dummy hash of wrong length",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", val.APIAddress, "deadbeef"),
-			true, "code = NotFound desc = tx not found: deadbeef",
+			true, "The length of tx hash must be 64",
+		},
+		{
+			"dummy hash of correct length but invalid",
+			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", val.APIAddress, "2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02"),
+			true, "tx not found: 2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02",
 		},
 		{
 			"good hash",
@@ -458,6 +465,7 @@ func (s IntegrationTestSuite) TestBroadcastTx_GRPC() {
 			}
 		})
 	}
+	time.Sleep(1 * time.Second) // wait for block confirm time before executing next test
 }
 
 func (s IntegrationTestSuite) TestBroadcastTx_GRPCGateway() {
@@ -496,6 +504,7 @@ func (s IntegrationTestSuite) TestBroadcastTx_GRPCGateway() {
 			}
 		})
 	}
+	time.Sleep(1 * time.Second) // wait for block confirm time before executing next test
 }
 
 func (s *IntegrationTestSuite) TestSimMultiSigTx() {
@@ -596,12 +605,12 @@ func (s IntegrationTestSuite) TestGetBlockWithTxs_GRPC() {
 		expErrMsg string
 	}{
 		{"nil request", nil, true, "request cannot be nil"},
-		{"empty request", &tx.GetBlockWithTxsRequest{}, true, "height must not be less than 1 or greater than the current height"},
-		{"bad height", &tx.GetBlockWithTxsRequest{Height: 99999999}, true, "height must not be less than 1 or greater than the current height"},
-		{"bad pagination", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 1000, Limit: 100}}, true, "out of range"},
-		{"good request", &tx.GetBlockWithTxsRequest{Height: s.txHeight}, false, ""},
-		{"with pagination request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 1}}, false, ""},
-		{"page all request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 100}}, false, ""},
+		{"empty request", &tx.GetBlockWithTxsRequest{}, true, "service not supported"},
+		{"bad height", &tx.GetBlockWithTxsRequest{Height: 99999999}, true, "service not supported"},
+		{"bad pagination", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 1000, Limit: 100}}, true, "service not supported"},
+		{"good request", &tx.GetBlockWithTxsRequest{Height: s.txHeight}, true, "service not supported"},
+		{"with pagination request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 1}}, true, "service not supported"},
+		{"page all request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 100}}, true, "service not supported"},
 	}
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
@@ -633,17 +642,17 @@ func (s IntegrationTestSuite) TestGetBlockWithTxs_GRPCGateway() {
 		{
 			"empty params",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/block/0", val.APIAddress),
-			true, "height must not be less than 1 or greater than the current height",
+			true, "service not supported",
 		},
 		{
 			"bad height",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/block/%d", val.APIAddress, 9999999),
-			true, "height must not be less than 1 or greater than the current height",
+			true, "service not supported",
 		},
 		{
 			"good request",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/block/%d", val.APIAddress, s.txHeight),
-			false, "",
+			true, "service not supported",
 		},
 	}
 	for _, tc := range testCases {

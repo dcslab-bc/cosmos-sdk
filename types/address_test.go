@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v2"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/bech32/legacybech32"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/bech32/legacybech32"
 )
 
 type addressTestSuite struct {
@@ -482,7 +482,29 @@ func (s *addressTestSuite) TestGetFromBech32() {
 	_, err := types.GetFromBech32("", "prefix")
 	s.Require().Error(err)
 	s.Require().Equal("decoding Bech32 address failed: must provide a non empty address", err.Error())
-	_, err = types.GetFromBech32("cosmos1qqqsyqcyq5rqwzqfys8f67", "x")
+	_, err = types.GetFromBech32("link1qqqsyqcyq5rqwzqf97tnae", "x")
 	s.Require().Error(err)
-	s.Require().Equal("invalid Bech32 prefix; expected x, got cosmos", err.Error())
+	s.Require().Equal("invalid Bech32 prefix; expected x, got link", err.Error())
+}
+
+func (s *addressTestSuite) TestMustAccAddressFromBech32() {
+	// Create a 10 byte address
+	addr := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	accBech := types.AccAddress(addr).String()
+	res := types.MustAccAddressFromBech32(accBech)
+	s.Require().Equal(types.AccAddress(res).String(), accBech)
+
+	// Set a custom address verifier only accepts 20 byte addresses
+	types.GetConfig().SetAddressVerifier(func(bz []byte) error {
+		n := len(bz)
+		if n == 20 {
+			return nil
+		}
+		return fmt.Errorf("incorrect address length %d", n)
+	})
+
+	s.Require().Panics(func() { types.MustAccAddressFromBech32(accBech) })
+
+	// Reinitialize the global config to default address verifier (nil)
+	types.GetConfig().SetAddressVerifier(nil)
 }

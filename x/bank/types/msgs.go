@@ -1,8 +1,8 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // bank message types
@@ -100,7 +100,7 @@ func (msg MsgMultiSend) GetSignBytes() []byte {
 func (msg MsgMultiSend) GetSigners() []sdk.AccAddress {
 	addrs := make([]sdk.AccAddress, len(msg.Inputs))
 	for i, in := range msg.Inputs {
-		addr, _ := sdk.AccAddressFromBech32(in.Address)
+		addr := sdk.MustAccAddressFromBech32(in.Address)
 		addrs[i] = addr
 	}
 

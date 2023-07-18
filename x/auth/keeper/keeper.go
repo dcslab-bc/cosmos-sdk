@@ -3,15 +3,15 @@ package keeper
 import (
 	"fmt"
 
+	"github.com/Finschia/ostracon/libs/log"
 	gogotypes "github.com/gogo/protobuf/types"
-	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	paramtypes "github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 // AccountKeeperI is the interface contract that x/auth's keeper implements.
@@ -179,7 +179,7 @@ func (ak AccountKeeper) GetModuleAddressAndPermissions(moduleName string) (addr 
 // registered permissions
 func (ak AccountKeeper) GetModuleAccountAndPermissions(ctx sdk.Context, moduleName string) (types.ModuleAccountI, []string) {
 	addr, perms := ak.GetModuleAddressAndPermissions(moduleName)
-	if addr == nil {
+	if addr.Empty() {
 		return nil, []string{}
 	}
 

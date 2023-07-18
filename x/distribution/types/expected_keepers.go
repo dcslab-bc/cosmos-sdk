@@ -1,9 +1,9 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

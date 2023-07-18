@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 type (
@@ -117,7 +117,7 @@ func NewKVStoreKeys(names ...string) map[string]*KVStoreKey {
 
 // Constructs new TransientStoreKey
 // Must return a pointer according to the ocap principle
-func NewTransientStoreKey(name string) *TransientStoreKey {
+func NewTransientStoreKey(name string) *types.TransientStoreKey {
 	return types.NewTransientStoreKey(name)
 }
 

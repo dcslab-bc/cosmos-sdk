@@ -5,17 +5,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/distribution/simulation"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
+	distrtypes "github.com/Finschia/finschia-sdk/x/distribution/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // TestWeightedOperations tests the weights of the operations.
@@ -63,7 +64,7 @@ func (suite *SimTestSuite) TestSimulateMsgSetWithdrawAddress() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgSetWithdrawAddress(suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.DistrKeeper)
@@ -74,8 +75,8 @@ func (suite *SimTestSuite) TestSimulateMsgSetWithdrawAddress() {
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	suite.Require().True(operationMsg.OK)
-	suite.Require().Equal("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.DelegatorAddress)
-	suite.Require().Equal("cosmos1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7u4x9a0", msg.WithdrawAddress)
+	suite.Require().Equal("link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.DelegatorAddress)
+	suite.Require().Equal("link1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7fmx8x8", msg.WithdrawAddress)
 	suite.Require().Equal(types.TypeMsgSetWithdrawAddress, msg.Type())
 	suite.Require().Equal(types.ModuleName, msg.Route())
 	suite.Require().Len(futureOperations, 0)
@@ -104,7 +105,7 @@ func (suite *SimTestSuite) TestSimulateMsgWithdrawDelegatorReward() {
 	suite.setupValidatorRewards(validator0.GetOperator())
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgWithdrawDelegatorReward(suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.DistrKeeper, suite.app.StakingKeeper)
@@ -115,8 +116,8 @@ func (suite *SimTestSuite) TestSimulateMsgWithdrawDelegatorReward() {
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	suite.Require().True(operationMsg.OK)
-	suite.Require().Equal("cosmosvaloper1l4s054098kk9hmr5753c6k3m2kw65h686d3mhr", msg.ValidatorAddress)
-	suite.Require().Equal("cosmos1d6u7zhjwmsucs678d7qn95uqajd4ucl9jcjt26", msg.DelegatorAddress)
+	suite.Require().Equal("linkvaloper1l4s054098kk9hmr5753c6k3m2kw65h68cr83wt", msg.ValidatorAddress)
+	suite.Require().Equal("link1d6u7zhjwmsucs678d7qn95uqajd4ucl98kjf3j", msg.DelegatorAddress)
 	suite.Require().Equal(types.TypeMsgWithdrawDelegatorReward, msg.Type())
 	suite.Require().Equal(types.ModuleName, msg.Route())
 	suite.Require().Len(futureOperations, 0)
@@ -142,7 +143,7 @@ func (suite *SimTestSuite) testSimulateMsgWithdrawValidatorCommission(tokenName 
 
 	// set module account coins
 	distrAcc := suite.app.DistrKeeper.GetDistributionAccount(suite.ctx)
-	suite.Require().NoError(simapp.FundModuleAccount(suite.app.BankKeeper, suite.ctx, distrAcc.GetName(), sdk.NewCoins(
+	suite.Require().NoError(simapp.FundModuleAccount(suite.app, suite.ctx, distrAcc.GetName(), sdk.NewCoins(
 		sdk.NewCoin(tokenName, sdk.NewInt(10)),
 		sdk.NewCoin("stake", sdk.NewInt(5)),
 	)))
@@ -160,7 +161,7 @@ func (suite *SimTestSuite) testSimulateMsgWithdrawValidatorCommission(tokenName 
 	suite.app.DistrKeeper.SetValidatorAccumulatedCommission(suite.ctx, validator0.GetOperator(), types.ValidatorAccumulatedCommission{Commission: valCommission})
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgWithdrawValidatorCommission(suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.DistrKeeper, suite.app.StakingKeeper)
@@ -171,7 +172,7 @@ func (suite *SimTestSuite) testSimulateMsgWithdrawValidatorCommission(tokenName 
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	suite.Require().True(operationMsg.OK)
-	suite.Require().Equal("cosmosvaloper1tnh2q55v8wyygtt9srz5safamzdengsn9dsd7z", msg.ValidatorAddress)
+	suite.Require().Equal("linkvaloper1tnh2q55v8wyygtt9srz5safamzdengsn8rx882", msg.ValidatorAddress)
 	suite.Require().Equal(types.TypeMsgWithdrawValidatorCommission, msg.Type())
 	suite.Require().Equal(types.ModuleName, msg.Route())
 	suite.Require().Len(futureOperations, 0)
@@ -186,7 +187,7 @@ func (suite *SimTestSuite) TestSimulateMsgFundCommunityPool() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgFundCommunityPool(suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.DistrKeeper, suite.app.StakingKeeper)
@@ -198,7 +199,7 @@ func (suite *SimTestSuite) TestSimulateMsgFundCommunityPool() {
 
 	suite.Require().True(operationMsg.OK)
 	suite.Require().Equal("4896096stake", msg.Amount.String())
-	suite.Require().Equal("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.Depositor)
+	suite.Require().Equal("link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.Depositor)
 	suite.Require().Equal(types.TypeMsgFundCommunityPool, msg.Type())
 	suite.Require().Equal(types.ModuleName, msg.Route())
 	suite.Require().Len(futureOperations, 0)
@@ -228,7 +229,7 @@ func (suite *SimTestSuite) getTestingAccounts(r *rand.Rand, n int) []simtypes.Ac
 	for _, account := range accounts {
 		acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, account.Address)
 		suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
-		suite.Require().NoError(simapp.FundAccount(suite.app.BankKeeper, suite.ctx, account.Address, initCoins))
+		suite.Require().NoError(simapp.FundAccount(suite.app, suite.ctx, account.Address, initCoins))
 	}
 
 	return accounts
@@ -244,8 +245,7 @@ func (suite *SimTestSuite) getTestingValidator(accounts []simtypes.Account, comm
 	account := accounts[n]
 	valPubKey := account.PubKey
 	valAddr := sdk.ValAddress(account.PubKey.Address().Bytes())
-	validator, err := stakingtypes.NewValidator(valAddr, valPubKey, stakingtypes.
-		Description{})
+	validator, err := stakingtypes.NewValidator(valAddr, valPubKey, stakingtypes.Description{})
 	require.NoError(err)
 	validator, err = validator.SetInitialCommission(commission)
 	require.NoError(err)

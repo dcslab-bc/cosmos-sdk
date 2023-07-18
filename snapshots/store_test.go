@@ -11,11 +11,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	db "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/Finschia/finschia-sdk/snapshots"
+	"github.com/Finschia/finschia-sdk/snapshots/types"
+	"github.com/Finschia/finschia-sdk/testutil"
 )
 
 func setupStore(t *testing.T) *snapshots.Store {
@@ -26,7 +27,7 @@ func setupStore(t *testing.T) *snapshots.Store {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = os.RemoveAll(tempdir) })
 
-	store, err := snapshots.NewStore(db.NewMemDB(), tempdir)
+	store, err := snapshots.NewStore(dbm.NewMemDB(), tempdir)
 	require.NoError(t, err)
 
 	_, err = store.Save(1, 1, makeChunks([][]byte{
@@ -51,20 +52,20 @@ func setupStore(t *testing.T) *snapshots.Store {
 
 func TestNewStore(t *testing.T) {
 	tempdir := t.TempDir()
-	_, err := snapshots.NewStore(db.NewMemDB(), tempdir)
+	_, err := snapshots.NewStore(dbm.NewMemDB(), tempdir)
 
 	require.NoError(t, err)
 }
 
 func TestNewStore_ErrNoDir(t *testing.T) {
-	_, err := snapshots.NewStore(db.NewMemDB(), "")
+	_, err := snapshots.NewStore(dbm.NewMemDB(), "")
 	require.Error(t, err)
 }
 
 func TestNewStore_ErrDirFailure(t *testing.T) {
 	notADir := filepath.Join(testutil.TempFile(t).Name(), "subdir")
 
-	_, err := snapshots.NewStore(db.NewMemDB(), notADir)
+	_, err := snapshots.NewStore(dbm.NewMemDB(), notADir)
 	require.Error(t, err)
 }
 

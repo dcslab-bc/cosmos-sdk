@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	ostcli "github.com/Finschia/ostracon/libs/cli"
 	"github.com/stretchr/testify/suite"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	"github.com/cosmos/cosmos-sdk/x/params/client/cli"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	"github.com/Finschia/finschia-sdk/x/params/client/cli"
 )
 
 type IntegrationTestSuite struct {
@@ -49,7 +49,7 @@ func (s *IntegrationTestSuite) TestNewQuerySubspaceParamsCmd() {
 			"json output",
 			[]string{
 				"staking", "MaxValidators",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			`{"subspace":"staking","key":"MaxValidators","value":"100"}`,
 		},
@@ -57,7 +57,7 @@ func (s *IntegrationTestSuite) TestNewQuerySubspaceParamsCmd() {
 			"text output",
 			[]string{
 				"staking", "MaxValidators",
-				fmt.Sprintf("--%s=text", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=text", ostcli.OutputFlag),
 			},
 			`key: MaxValidators
 subspace: staking

@@ -8,15 +8,15 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	stakingcli "github.com/cosmos/cosmos-sdk/x/staking/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/simapp"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil/client/cli"
+	stakingcli "github.com/Finschia/finschia-sdk/x/staking/client/cli"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 type IntegrationTestSuite struct {

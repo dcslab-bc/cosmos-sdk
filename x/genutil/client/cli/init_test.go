@@ -6,27 +6,30 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
+	abci_server "github.com/Finschia/ostracon/abci/server"
+	"github.com/Finschia/ostracon/libs/cli"
+	"github.com/Finschia/ostracon/libs/log"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	abci_server "github.com/tendermint/tendermint/abci/server"
-	"github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/server/mock"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	genutiltest "github.com/cosmos/cosmos-sdk/x/genutil/client/testutil"
+	ed255192 "github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/server/mock"
+	"github.com/Finschia/finschia-sdk/testutil"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutilcli "github.com/Finschia/finschia-sdk/x/genutil/client/cli"
+	genutiltest "github.com/Finschia/finschia-sdk/x/genutil/client/testutil"
 )
 
 var testMbm = module.NewBasicManager(genutil.AppModuleBasic{})
@@ -179,7 +182,7 @@ func TestStartStandAlone(t *testing.T) {
 	svrAddr, _, err := server.FreeTCPAddr()
 	require.NoError(t, err)
 
-	svr, err := abci_server.NewServer(svrAddr, "socket", app)
+	svr, err := abci_server.NewServer(svrAddr, "grpc", app)
 	require.NoError(t, err, "error creating listener")
 
 	svr.SetLogger(logger.With("module", "abci-server"))
@@ -201,7 +204,8 @@ func TestInitNodeValidatorFiles(t *testing.T) {
 
 	require.Nil(t, err)
 	require.NotEqual(t, "", nodeID)
-	require.NotEqual(t, 0, len(valPubKey.Bytes()))
+	require.Equal(t, 32, len(valPubKey.Bytes()))
+	require.EqualValues(t, reflect.TypeOf(&ed255192.PubKey{}), reflect.TypeOf(valPubKey))
 }
 
 // custom tx codec

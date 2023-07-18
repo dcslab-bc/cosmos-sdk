@@ -5,7 +5,7 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 // Iterates over iterKVCache items.
@@ -16,6 +16,16 @@ type memIterator struct {
 
 	lastKey []byte
 	deleted map[string]struct{}
+}
+
+func IsKeyInDomain(key, start, end []byte) bool {
+	if bytes.Compare(key, start) < 0 {
+		return false
+	}
+	if end != nil && bytes.Compare(end, key) <= 0 {
+		return false
+	}
+	return true
 }
 
 func newMemIterator(start, end []byte, items *dbm.MemDB, deleted map[string]struct{}, ascending bool) *memIterator {

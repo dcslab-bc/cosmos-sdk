@@ -8,27 +8,27 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdkclient "github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/distribution/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/distribution/client/rest"
-	"github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	"github.com/cosmos/cosmos-sdk/x/distribution/simulation"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	sdkclient "github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/client/cli"
+	"github.com/Finschia/finschia-sdk/x/distribution/keeper"
+	"github.com/Finschia/finschia-sdk/x/distribution/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the distribution module.
@@ -62,14 +62,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 	return types.ValidateGenesis(&data)
 }
 
-// RegisterRESTRoutes registers the REST routes for the distribution module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx sdkclient.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the distribution module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the root tx command for the distribution module.
@@ -141,8 +138,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	m := keeper.NewMigrator(am.keeper)
-	cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	// m := keeper.NewMigrator(am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/distribution from version 1 to 2: %v", err))
+	// }
 }
 
 // InitGenesis performs genesis initialization for the distribution module. It returns
@@ -162,14 +161,12 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock returns the begin blocker for the distribution module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {
 	BeginBlocker(ctx, req, am.keeper)
 }
-
-// AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the distribution module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {

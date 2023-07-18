@@ -8,29 +8,29 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/gov/client/rest"
-	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	"github.com/cosmos/cosmos-sdk/x/gov/simulation"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	govclient "github.com/Finschia/finschia-sdk/x/gov/client"
+	"github.com/Finschia/finschia-sdk/x/gov/client/cli"
+	"github.com/Finschia/finschia-sdk/x/gov/keeper"
+	"github.com/Finschia/finschia-sdk/x/gov/simulation"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.EndBlockAppModule   = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the gov module.
@@ -72,19 +72,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return types.ValidateGenesis(&data)
 }
 
-// RegisterRESTRoutes registers the REST routes for the gov module.
-func (a AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	proposalRESTHandlers := make([]rest.ProposalRESTHandler, 0, len(a.proposalHandlers))
-	for _, proposalHandler := range a.proposalHandlers {
-		proposalRESTHandlers = append(proposalRESTHandlers, proposalHandler.RESTHandler(clientCtx))
-	}
-
-	rest.RegisterHandlers(clientCtx, rtr, proposalRESTHandlers)
-}
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the gov module.
 func (a AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
 }
 
 // GetTxCmd returns the root tx command for the gov module.
@@ -156,11 +148,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	m := keeper.NewMigrator(am.keeper)
-	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
-	if err != nil {
-		panic(err)
-	}
+	// m := keeper.NewMigrator(am.keeper)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/gov from version 1 to 2: %v", err))
+	// }
 }
 
 // InitGenesis performs genesis initialization for the gov module. It returns
@@ -180,7 +171,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // EndBlock returns the end blocker for the gov module. It returns no validator
 // updates.

@@ -5,12 +5,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authclient "github.com/Finschia/finschia-sdk/x/auth/client"
+	authsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
 )
 
 func GetValidateSignaturesCommand() *cobra.Command {
