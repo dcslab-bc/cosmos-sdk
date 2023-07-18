@@ -6,36 +6,34 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/gorilla/mux"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	cdctypes "github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	simtypes "github.com/line/lbm-sdk/types/simulation"
-	"github.com/line/lbm-sdk/x/mint/client/cli"
-	"github.com/line/lbm-sdk/x/mint/client/rest"
-	"github.com/line/lbm-sdk/x/mint/keeper"
-	"github.com/line/lbm-sdk/x/mint/simulation"
-	"github.com/line/lbm-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/mint/client/cli"
+	"github.com/Finschia/finschia-sdk/x/mint/keeper"
+	"github.com/Finschia/finschia-sdk/x/mint/simulation"
+	"github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the mint module.
 type AppModuleBasic struct {
 	cdc codec.Codec
 }
-
-var _ module.AppModuleBasic = AppModuleBasic{}
 
 // Name returns the mint module's name.
 func (AppModuleBasic) Name() string {
@@ -62,11 +60,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	}
 
 	return types.ValidateGenesis(data)
-}
-
-// RegisterRESTRoutes registers the REST routes for the mint module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterRoutes(clientCtx, rtr)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the mint module.
@@ -154,7 +147,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock returns the begin blocker for the mint module.
-func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, _ ocabci.RequestBeginBlock) {
 	BeginBlocker(ctx, am.keeper)
 }
 

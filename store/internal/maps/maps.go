@@ -3,11 +3,12 @@ package maps
 import (
 	"encoding/binary"
 
-	"github.com/line/ostracon/crypto/merkle"
-	"github.com/line/ostracon/crypto/tmhash"
-	occrypto "github.com/line/ostracon/proto/ostracon/crypto"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	"github.com/line/lbm-sdk/types/kv"
+	"github.com/Finschia/ostracon/crypto/merkle"
+	"github.com/Finschia/ostracon/crypto/tmhash"
+
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 // merkleMap defines a merkle-ized tree from a map. Leave values are treated as
@@ -183,7 +184,7 @@ func HashFromMap(m map[string][]byte) []byte {
 // ProofsFromMap generates proofs from a map. The keys/values of the map will be used as the keys/values
 // in the underlying key-value pairs.
 // The keys are sorted before the proofs are computed.
-func ProofsFromMap(m map[string][]byte) ([]byte, map[string]*occrypto.Proof, []string) {
+func ProofsFromMap(m map[string][]byte) ([]byte, map[string]*tmcrypto.Proof, []string) {
 	sm := newSimpleMap()
 	for k, v := range m {
 		sm.Set(k, v)
@@ -197,7 +198,7 @@ func ProofsFromMap(m map[string][]byte) ([]byte, map[string]*occrypto.Proof, []s
 	}
 
 	rootHash, proofList := merkle.ProofsFromByteSlices(kvsBytes)
-	proofs := make(map[string]*occrypto.Proof)
+	proofs := make(map[string]*tmcrypto.Proof)
 	keys := make([]string, len(proofList))
 
 	for i, kvp := range kvs.Pairs {

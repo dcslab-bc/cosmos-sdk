@@ -6,16 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/codec/legacy"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
-var header = ocproto.Header{
+var header = tmproto.Header{
 	ChainID: "hello",
 	Height:  5,
 }

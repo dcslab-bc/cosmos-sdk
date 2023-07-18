@@ -7,24 +7,22 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	"github.com/line/lbm-sdk/telemetry"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	simtypes "github.com/line/lbm-sdk/types/simulation"
-	"github.com/line/lbm-sdk/x/bank/client/cli"
-	"github.com/line/lbm-sdk/x/bank/client/rest"
-	"github.com/line/lbm-sdk/x/bank/keeper"
-	v040 "github.com/line/lbm-sdk/x/bank/legacy/v040"
-	"github.com/line/lbm-sdk/x/bank/simulation"
-	"github.com/line/lbm-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/bank/client/cli"
+	"github.com/Finschia/finschia-sdk/x/bank/keeper"
+	v040 "github.com/Finschia/finschia-sdk/x/bank/legacy/v040"
+	"github.com/Finschia/finschia-sdk/x/bank/simulation"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 var (
@@ -64,11 +62,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 	}
 
 	return data.Validate()
-}
-
-// RegisterRESTRoutes registers the REST routes for the bank module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the bank module.

@@ -14,21 +14,19 @@ import (
 	"syscall"
 	"time"
 
-	ostcmd "github.com/line/ostracon/cmd/ostracon/commands"
-	ostcfg "github.com/line/ostracon/config"
-	ostlog "github.com/line/ostracon/libs/log"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	ostcmd "github.com/Finschia/ostracon/cmd/ostracon/commands"
+	ostcfg "github.com/Finschia/ostracon/config"
+	ostlog "github.com/Finschia/ostracon/libs/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/client/flags"
-	"github.com/line/lbm-sdk/server/config"
-	"github.com/line/lbm-sdk/server/types"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/version"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server/config"
+	"github.com/Finschia/finschia-sdk/server/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
 )
 
 // DONTCOVER
@@ -57,7 +55,7 @@ func NewDefaultContext() *Context {
 	return NewContext(
 		viper.New(),
 		ostcfg.DefaultConfig(),
-		ZeroLogWrapper{log.Logger},
+		ostlog.ZeroLogWrapper{},
 	)
 }
 
@@ -142,23 +140,29 @@ func InterceptConfigsPreRunHandler(cmd *cobra.Command, customAppConfigTemplate s
 		return err
 	}
 
-	var logWriter io.Writer
+	isLogPlain := false
 	if strings.ToLower(serverCtx.Viper.GetString(flags.FlagLogFormat)) == ostcfg.LogFormatPlain {
-		logWriter = zerolog.ConsoleWriter{
-			Out:        os.Stderr,
-			TimeFormat: "2006/01/02-15:04:05.999",
-		}
-	} else {
-		logWriter = os.Stderr
+		isLogPlain = true
 	}
 
-	logLvlStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
-	logLvl, err := zerolog.ParseLevel(logLvlStr)
+	logLevel := serverCtx.Viper.GetString(flags.FlagLogLevel)
+	if logLevel == "" {
+		logLevel = ostcfg.DefaultPackageLogLevels()
+	}
+
+	zerologCfg := ostlog.NewZeroLogConfig(
+		isLogPlain,
+		logLevel,
+		serverCtx.Viper.GetString(flags.FlagLogPath),
+		serverCtx.Viper.GetInt(flags.FlagLogMaxAge),
+		serverCtx.Viper.GetInt(flags.FlagLogMaxSize),
+		serverCtx.Viper.GetInt(flags.FlagLogMaxBackups),
+	)
+
+	serverCtx.Logger, err = ostlog.NewZeroLogLogger(zerologCfg, os.Stderr)
 	if err != nil {
-		return fmt.Errorf("failed to parse log level (%s): %w", logLvlStr, err)
+		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
-
-	serverCtx.Logger = ZeroLogWrapper{zerolog.New(logWriter).Level(logLvl).With().Timestamp().Logger()}
 
 	return SetCmdServerContext(cmd, serverCtx)
 }

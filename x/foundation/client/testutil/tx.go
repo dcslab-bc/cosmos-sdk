@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/line/lbm-sdk/client/flags"
-	clitestutil "github.com/line/lbm-sdk/testutil/cli"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	txtypes "github.com/line/lbm-sdk/types/tx"
-	"github.com/line/lbm-sdk/x/foundation"
-	"github.com/line/lbm-sdk/x/foundation/client/cli"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	txtypes "github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/x/foundation"
+	"github.com/Finschia/finschia-sdk/x/foundation/client/cli"
 )
 
 func (s *IntegrationTestSuite) TestNewTxCmdUpdateParams() {
@@ -599,51 +599,6 @@ func (s *IntegrationTestSuite) TestNewTxCmdRevoke() {
 
 		s.Run(name, func() {
 			cmd := cli.NewTxCmdRevoke()
-			out, err := clitestutil.ExecTestCLICmd(val.ClientCtx, cmd, append(tc.args, commonArgs...))
-			if !tc.valid {
-				s.Require().Error(err)
-				return
-			}
-			s.Require().NoError(err)
-
-			var res txtypes.Tx
-			s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(out.Bytes(), &res), out)
-		})
-	}
-}
-
-func (s *IntegrationTestSuite) TestNewTxCmdGovMint() {
-	val := s.network.Validators[0]
-	commonArgs := []string{
-		fmt.Sprintf("--%s", flags.FlagGenerateOnly),
-	}
-
-	testCases := map[string]struct {
-		args  []string
-		valid bool
-	}{
-		"valid transaction": {
-			[]string{
-				s.authority.String(),
-				sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.OneInt())).String(),
-			},
-			true,
-		},
-		"wrong number of args": {
-			[]string{
-				s.authority.String(),
-				sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.OneInt())).String(),
-				"extra",
-			},
-			false,
-		},
-	}
-
-	for name, tc := range testCases {
-		tc := tc
-
-		s.Run(name, func() {
-			cmd := cli.NewTxCmdGovMint()
 			out, err := clitestutil.ExecTestCLICmd(val.ClientCtx, cmd, append(tc.args, commonArgs...))
 			if !tc.valid {
 				s.Require().Error(err)

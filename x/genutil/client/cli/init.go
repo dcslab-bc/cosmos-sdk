@@ -8,21 +8,22 @@ import (
 	"path/filepath"
 
 	"github.com/cosmos/go-bip39"
-	cfg "github.com/line/ostracon/config"
-	"github.com/line/ostracon/libs/cli"
-	ostos "github.com/line/ostracon/libs/os"
-	ostrand "github.com/line/ostracon/libs/rand"
-	"github.com/line/ostracon/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/flags"
-	"github.com/line/lbm-sdk/client/input"
-	"github.com/line/lbm-sdk/server"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	"github.com/line/lbm-sdk/x/genutil"
+	cfg "github.com/Finschia/ostracon/config"
+	"github.com/Finschia/ostracon/libs/cli"
+	ostos "github.com/Finschia/ostracon/libs/os"
+	ostrand "github.com/Finschia/ostracon/libs/rand"
+	"github.com/Finschia/ostracon/types"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/input"
+	"github.com/Finschia/finschia-sdk/server"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
 )
 
 const (
@@ -149,8 +150,6 @@ func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {
 	cmd.Flags().BoolP(FlagOverwrite, "o", false, "overwrite the genesis.json file")
 	cmd.Flags().Bool(FlagRecover, false, "provide seed phrase to recover existing key instead of creating")
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
-	cmd.Flags().String(flags.FlagPrivKeyType, flags.DefaultPrivKeyType, "specify validator's private key type (ed25519|composite). \n"+
-		"set this to priv_key.type in priv_validator_key.json; default `ed25519`")
 
 	return cmd
 }

@@ -1,9 +1,9 @@
 package keeper
 
 import (
-	sdk "github.com/line/lbm-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 
-	"github.com/line/lbm-sdk/x/collection"
+	"github.com/Finschia/finschia-sdk/x/collection"
 )
 
 var (
@@ -488,16 +488,6 @@ func legacyTokenKey(contractID string, tokenID string) []byte {
 
 	copy(key, prefix)
 	copy(key[len(prefix):], tokenID)
-
-	return key
-}
-
-func legacyTokenKeyPrefixByTokenType(contractID string, tokenType string) []byte {
-	prefix := legacyTokenKeyPrefixByContractID(contractID)
-	key := make([]byte, len(prefix)+len(tokenType))
-
-	copy(key, prefix)
-	copy(key[len(prefix):], tokenType)
 
 	return key
 }

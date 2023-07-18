@@ -6,25 +6,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 func TestBasicFeeValidAllow(t *testing.T) {
 	app := simapp.Setup(false)
 
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 	badTime := ctx.BlockTime().AddDate(0, 0, -1)
 	allowace := &feegrant.BasicAllowance{
 		Expiration: &badTime,
 	}
 	require.Error(t, allowace.ValidateBasic())
 
-	ctx = app.BaseApp.NewContext(false, ocproto.Header{
+	ctx = app.BaseApp.NewContext(false, tmproto.Header{
 		Time: time.Now(),
 	})
 	eth := sdk.NewCoins(sdk.NewInt64Coin("eth", 10))
@@ -133,7 +132,7 @@ func TestBasicFeeValidAllow(t *testing.T) {
 			err := tc.allowance.ValidateBasic()
 			require.NoError(t, err)
 
-			ctx := app.BaseApp.NewContext(false, ocproto.Header{}).WithBlockTime(tc.blockTime)
+			ctx := app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockTime(tc.blockTime)
 
 			// now try to deduct
 			removed, err := tc.allowance.Accept(ctx, tc.fee, []sdk.Msg{})

@@ -3,19 +3,20 @@ package staking_test
 import (
 	"testing"
 
-	abci "github.com/line/ostracon/abci/types"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	authtypes "github.com/line/lbm-sdk/x/auth/types"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	"github.com/line/lbm-sdk/x/staking/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func checkValidator(t *testing.T, app *simapp.SimApp, addr sdk.ValAddress, expFound bool) types.Validator {
-	ctxCheck := app.BaseApp.NewContext(true, ocproto.Header{})
+	ctxCheck := app.BaseApp.NewContext(true, tmproto.Header{})
 	validator, found := app.StakingKeeper.GetValidator(ctxCheck, addr)
 
 	require.Equal(t, expFound, found)
@@ -26,7 +27,7 @@ func checkDelegation(
 	t *testing.T, app *simapp.SimApp, delegatorAddr sdk.AccAddress,
 	validatorAddr sdk.ValAddress, expFound bool, expShares sdk.Dec,
 ) {
-	ctxCheck := app.BaseApp.NewContext(true, ocproto.Header{})
+	ctxCheck := app.BaseApp.NewContext(true, tmproto.Header{})
 	delegation, found := app.StakingKeeper.GetDelegation(ctxCheck, delegatorAddr, validatorAddr)
 	if expFound {
 		require.True(t, found)
@@ -69,28 +70,28 @@ func TestStakingMsgs(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	header := ocproto.Header{Height: app.LastBlockHeight() + 1}
+	header := tmproto.Header{Height: app.LastBlockHeight() + 1}
 	txGen := simapp.MakeTestEncodingConfig().TxConfig
 	_, _, err = simapp.SignCheckDeliver(t, txGen, app.BaseApp, header, []sdk.Msg{createValidatorMsg}, "", []uint64{0}, []uint64{0}, true, true, priv1)
 	require.NoError(t, err)
 	simapp.CheckBalance(t, app, addr1, sdk.Coins{genCoin.Sub(bondCoin)})
 
-	header = ocproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	validator := checkValidator(t, app, sdk.ValAddress(addr1), true)
 	require.Equal(t, sdk.ValAddress(addr1).String(), validator.OperatorAddress)
 	require.Equal(t, types.Bonded, validator.Status)
 	require.True(sdk.IntEq(t, bondTokens, validator.BondedTokens()))
 
-	header = ocproto.Header{Height: app.LastBlockHeight() + 1}
-	app.BeginBlock(abci.RequestBeginBlock{Header: header})
+	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: header})
 
 	// edit the validator
 	description = types.NewDescription("bar_moniker", "", "", "", "")
 	editValidatorMsg := types.NewMsgEditValidator(sdk.ValAddress(addr1), description, nil, nil)
 
-	header = ocproto.Header{Height: app.LastBlockHeight() + 1}
+	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
 	_, _, err = simapp.SignCheckDeliver(t, txGen, app.BaseApp, header, []sdk.Msg{editValidatorMsg}, "", []uint64{0}, []uint64{1}, true, true, priv1)
 	require.NoError(t, err)
 
@@ -101,7 +102,7 @@ func TestStakingMsgs(t *testing.T) {
 	simapp.CheckBalance(t, app, addr2, sdk.Coins{genCoin})
 	delegateMsg := types.NewMsgDelegate(addr2, sdk.ValAddress(addr1), bondCoin)
 
-	header = ocproto.Header{Height: app.LastBlockHeight() + 1}
+	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
 	_, _, err = simapp.SignCheckDeliver(t, txGen, app.BaseApp, header, []sdk.Msg{delegateMsg}, "", []uint64{1}, []uint64{0}, true, true, priv2)
 	require.NoError(t, err)
 
@@ -110,7 +111,7 @@ func TestStakingMsgs(t *testing.T) {
 
 	// begin unbonding
 	beginUnbondingMsg := types.NewMsgUndelegate(addr2, sdk.ValAddress(addr1), bondCoin)
-	header = ocproto.Header{Height: app.LastBlockHeight() + 1}
+	header = tmproto.Header{Height: app.LastBlockHeight() + 1}
 	_, _, err = simapp.SignCheckDeliver(t, txGen, app.BaseApp, header, []sdk.Msg{beginUnbondingMsg}, "", []uint64{1}, []uint64{1}, true, true, priv2)
 	require.NoError(t, err)
 

@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/line/lbm-sdk/codec"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/rest"
-	"github.com/line/lbm-sdk/x/params/types/proposal"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/x/params/types/proposal"
 )
 
 type (
@@ -30,17 +28,6 @@ type (
 		Description string           `json:"description" yaml:"description"`
 		Changes     ParamChangesJSON `json:"changes" yaml:"changes"`
 		Deposit     string           `json:"deposit" yaml:"deposit"`
-	}
-
-	// ParamChangeProposalReq defines a parameter change proposal request body.
-	ParamChangeProposalReq struct {
-		BaseReq rest.BaseReq `json:"base_req" yaml:"base_req"`
-
-		Title       string           `json:"title" yaml:"title"`
-		Description string           `json:"description" yaml:"description"`
-		Changes     ParamChangesJSON `json:"changes" yaml:"changes"`
-		Proposer    sdk.AccAddress   `json:"proposer" yaml:"proposer"`
-		Deposit     sdk.Coins        `json:"deposit" yaml:"deposit"`
 	}
 )
 

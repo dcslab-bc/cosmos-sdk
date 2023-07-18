@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/line/ostracon/libs/bytes"
+	"github.com/Finschia/ostracon/libs/bytes"
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/line/lbm-sdk/client/grpc/tmservice"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/testutil/network"
-	qtypes "github.com/line/lbm-sdk/types/query"
-	"github.com/line/lbm-sdk/types/rest"
-	"github.com/line/lbm-sdk/version"
+	"github.com/Finschia/finschia-sdk/client/grpc/tmservice"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	"github.com/Finschia/finschia-sdk/testutil/rest"
+	qtypes "github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/version"
 )
 
 type IntegrationTestSuite struct {
@@ -117,6 +117,11 @@ func (s IntegrationTestSuite) TestQueryBlockByHash() {
 	s.Require().NoError(err)
 	var blockInfoRes tmservice.GetBlockByHashResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &blockInfoRes))
+	blockId := blockInfoRes.GetBlockId()
+	s.Require().Equal(blkhash, bytes.HexBytes(blockId.Hash))
+
+	block := blockInfoRes.GetBlock()
+	s.Require().Equal(val.ClientCtx.ChainID, block.Header.ChainID)
 }
 
 func (s IntegrationTestSuite) TestQueryBlockByHeight() {
@@ -128,6 +133,9 @@ func (s IntegrationTestSuite) TestQueryBlockByHeight() {
 	s.Require().NoError(err)
 	var blockInfoRes tmservice.GetBlockByHeightResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &blockInfoRes))
+
+	block := blockInfoRes.GetBlock()
+	s.Require().Equal(int64(1), block.Header.Height)
 }
 
 func (s IntegrationTestSuite) TestQueryBlockResultsByHeight() {
@@ -139,6 +147,15 @@ func (s IntegrationTestSuite) TestQueryBlockResultsByHeight() {
 	s.Require().NoError(err)
 	var blockResultsRes tmservice.GetBlockResultsByHeightResponse
 	s.Require().NoError(val.ClientCtx.JSONCodec.UnmarshalJSON(restRes, &blockResultsRes))
+
+	txResult := blockResultsRes.GetTxsResults()
+	s.Require().Equal(0, len(txResult))
+
+	beginBlock := blockResultsRes.GetResBeginBlock()
+	s.Require().Equal(11, len(beginBlock.Events)) // coinbase event (6) + transfer mintModule to feeCollectorName(5)
+
+	endBlock := blockResultsRes.GetResEndBlock()
+	s.Require().Equal(0, len(endBlock.Events))
 }
 
 func (s IntegrationTestSuite) TestQueryLatestValidatorSet() {

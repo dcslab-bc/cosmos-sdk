@@ -3,11 +3,11 @@ package keeper
 import (
 	"fmt"
 
-	abci "github.com/line/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/distribution/types"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // AllocateTokens handles distribution of the collected fees
@@ -94,7 +94,7 @@ func (k Keeper) AllocateTokens(
 		// TODO: Consider micro-slashing for missing votes.
 		//
 		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2525#issuecomment-430838701
-		powerFraction := sdk.NewDec(vote.Validator.VotingWeight).QuoTruncate(sdk.NewDec(totalPreviousPower))
+		powerFraction := sdk.NewDec(vote.Validator.Power).QuoTruncate(sdk.NewDec(totalPreviousPower))
 		reward := feeMultiplier.MulDecTruncate(powerFraction)
 
 		k.AllocateTokensToValidator(ctx, validator, reward)

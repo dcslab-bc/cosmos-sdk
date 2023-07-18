@@ -7,25 +7,26 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	abci "github.com/line/ostracon/abci/types"
-	"github.com/line/ostracon/libs/log"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/baseapp"
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/tx"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	txtypes "github.com/line/lbm-sdk/types/tx"
-	"github.com/line/lbm-sdk/types/tx/signing"
-	xauthsigning "github.com/line/lbm-sdk/x/auth/signing"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	minttypes "github.com/line/lbm-sdk/x/mint/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	txtypes "github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	xauthsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 var blockMaxGas = uint64(simapp.DefaultConsensusParams.Block.MaxGas)
@@ -67,7 +68,7 @@ func TestBaseApp_BlockGas(t *testing.T) {
 			encCfg.InterfaceRegistry.RegisterImplementations((*sdk.Msg)(nil),
 				&testdata.TestMsg{},
 			)
-			app = simapp.NewSimApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, "", 0, encCfg, simapp.EmptyAppOptions{}, nil, routerOpt)
+			app = simapp.NewSimApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, map[int64]bool{}, "", 0, encCfg, simapp.EmptyAppOptions{}, routerOpt)
 			genState := simapp.NewDefaultGenesisState(encCfg.Marshaler)
 			stateBytes, err := json.MarshalIndent(genState, "", " ")
 			require.NoError(t, err)
@@ -77,7 +78,7 @@ func TestBaseApp_BlockGas(t *testing.T) {
 				AppStateBytes:   stateBytes,
 			})
 
-			ctx := app.NewContext(false, ocproto.Header{})
+			ctx := app.NewContext(false, tmproto.Header{})
 
 			// tx fee
 			feeCoin := sdk.NewCoin("atom", sdk.NewInt(150))
@@ -101,11 +102,11 @@ func TestBaseApp_BlockGas(t *testing.T) {
 			txBuilder.SetFeeAmount(feeAmount)
 			txBuilder.SetGasLimit(txtypes.MaxGasWanted) // tx validation checks that gasLimit can't be bigger than this
 
-			privs, accNums, accSeqs := []cryptotypes.PrivKey{priv1}, []uint64{7}, []uint64{0}
+			privs, accNums, accSeqs := []cryptotypes.PrivKey{priv1}, []uint64{6}, []uint64{0}
 			_, txBytes, err := createTestTx(encCfg.TxConfig, txBuilder, privs, accNums, accSeqs, ctx.ChainID())
 			require.NoError(t, err)
 
-			app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 1}})
+			app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
 			rsp := app.DeliverTx(abci.RequestDeliverTx{Tx: txBytes})
 
 			// check result

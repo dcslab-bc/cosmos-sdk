@@ -35,7 +35,7 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 # Changelog
 
-## [Unreleased](https://github.com/line/lbm-sdk/compare/v0.46.0...HEAD)
+## [Unreleased](https://github.com/Finschia/finschia-sdk/compare/v0.47.0...HEAD)
 
 ### Features
 
@@ -43,8 +43,11 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ### Bug Fixes
 
+### Removed
+
 ### Breaking Changes
 
 ### Build, CI
 
 ### Document Updates
+

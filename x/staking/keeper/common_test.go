@@ -4,13 +4,13 @@ import (
 	"math/big"
 	"testing"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/staking/keeper"
-	"github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/keeper"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var PKs = simapp.CreateTestPubKeys(500)
@@ -23,7 +23,7 @@ func init() {
 // to avoid messing with the hooks.
 func createTestInput() (*codec.LegacyAmino, *simapp.SimApp, sdk.Context) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	app.StakingKeeper = keeper.NewKeeper(
 		app.AppCodec(),

@@ -9,14 +9,15 @@ import (
 	"github.com/spf13/cobra"
 	dbm "github.com/tendermint/tm-db"
 
-	abci "github.com/line/ostracon/abci/types"
-	"github.com/line/ostracon/libs/log"
-	octypes "github.com/line/ostracon/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	octypes "github.com/Finschia/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/server/api"
-	"github.com/line/lbm-sdk/server/config"
-	sdk "github.com/line/lbm-sdk/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/server/api"
+	"github.com/Finschia/finschia-sdk/server/config"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // ServerStartTime defines the time duration that the server need to stay running after startup
@@ -39,7 +40,7 @@ type (
 	// The interface defines the necessary contracts to be implemented in order
 	// to fully bootstrap and start an application.
 	Application interface {
-		abci.Application
+		ocabci.Application
 
 		RegisterAPIRoutes(*api.Server, config.APIConfig)
 

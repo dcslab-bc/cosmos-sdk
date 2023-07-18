@@ -3,14 +3,14 @@ package distribution_test
 import (
 	"testing"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/crypto/keys/ed25519"
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/distribution"
-	"github.com/line/lbm-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/distribution"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 var (
@@ -26,7 +26,7 @@ func testProposal(recipient sdk.AccAddress, amount sdk.Coins) *types.CommunityPo
 
 func TestProposalHandlerPassed(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	recipient := delAddr1
 
@@ -55,7 +55,7 @@ func TestProposalHandlerPassed(t *testing.T) {
 
 func TestProposalHandlerFailed(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	recipient := delAddr1
 

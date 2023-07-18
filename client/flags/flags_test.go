@@ -3,9 +3,10 @@ package flags_test
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
-	"github.com/line/lbm-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/flags"
 )
 
 func TestParseGasSetting(t *testing.T) {
@@ -35,4 +36,15 @@ func TestParseGasSetting(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddFlagsToCmd(t *testing.T) {
+	cmd := cobra.Command{}
+	flags.AddQueryFlagsToCmd(&cmd)
+
+	cmd = cobra.Command{}
+	flags.AddTxFlagsToCmd(&cmd)
+
+	cmd = cobra.Command{}
+	flags.AddPaginationFlagsToCmd(&cmd, "")
 }

@@ -9,18 +9,18 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/line/lbm-sdk/crypto/keys/ed25519"
-	kmultisig "github.com/line/lbm-sdk/crypto/keys/multisig"
-	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/types/tx/signing"
-	"github.com/line/lbm-sdk/x/auth/ante"
-	"github.com/line/lbm-sdk/x/auth/types"
-	minttypes "github.com/line/lbm-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 // Test that simulate transaction accurately estimates gas cost
@@ -480,7 +480,7 @@ func (suite *AnteTestSuite) TestAnteHandlerFees() {
 		{
 			"signer as enough funds, should pass",
 			func() {
-				accNums = []uint64{7}
+				accNums = []uint64{acc1.GetAccountNumber()}
 				modAcc := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, types.FeeCollectorName)
 
 				suite.Require().True(suite.app.BankKeeper.GetAllBalances(suite.ctx, modAcc.GetAddress()).Empty())

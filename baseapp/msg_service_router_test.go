@@ -4,18 +4,20 @@ import (
 	"os"
 	"testing"
 
-	abci "github.com/line/ostracon/abci/types"
-	"github.com/line/ostracon/libs/log"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/baseapp"
-	"github.com/line/lbm-sdk/client/tx"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	"github.com/line/lbm-sdk/types/tx/signing"
-	authsigning "github.com/line/lbm-sdk/x/auth/signing"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	authsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
 )
 
 func TestRegisterMsgService(t *testing.T) {
@@ -78,7 +80,7 @@ func TestMsgService(t *testing.T) {
 		app.MsgServiceRouter(),
 		testdata.MsgServerImpl{},
 	)
-	_ = app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 1}})
+	_ = app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
 
 	msg := testdata.MsgCreateDog{Dog: &testdata.Dog{Name: "Spot"}}
 	txBuilder := encCfg.TxConfig.NewTxBuilder()

@@ -4,20 +4,19 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	abci "github.com/line/ostracon/abci/types"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/x/slashing/keeper"
-	"github.com/line/lbm-sdk/x/slashing/testslashing"
-	"github.com/line/lbm-sdk/x/slashing/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/x/slashing/keeper"
+	"github.com/Finschia/finschia-sdk/x/slashing/testslashing"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 func TestNewQuerier(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 	app.SlashingKeeper.SetParams(ctx, testslashing.TestParams())
 	legacyQuerierCdc := codec.NewAminoCodec(app.LegacyAmino())
 	querier := keeper.NewQuerier(app.SlashingKeeper, legacyQuerierCdc.LegacyAmino)
@@ -35,7 +34,7 @@ func TestQueryParams(t *testing.T) {
 	cdc := codec.NewLegacyAmino()
 	legacyQuerierCdc := codec.NewAminoCodec(cdc)
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 	app.SlashingKeeper.SetParams(ctx, testslashing.TestParams())
 
 	querier := keeper.NewQuerier(app.SlashingKeeper, legacyQuerierCdc.LegacyAmino)

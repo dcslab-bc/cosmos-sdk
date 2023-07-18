@@ -14,37 +14,36 @@ import (
 	"testing"
 	"time"
 
-	ostcfg "github.com/line/ostracon/config"
-	ostflags "github.com/line/ostracon/libs/cli/flags"
-	"github.com/line/ostracon/libs/log"
-	ostrand "github.com/line/ostracon/libs/rand"
-	"github.com/line/ostracon/node"
-	ostclient "github.com/line/ostracon/rpc/client"
+	ostcfg "github.com/Finschia/ostracon/config"
+	"github.com/Finschia/ostracon/libs/log"
+	ostrand "github.com/Finschia/ostracon/libs/rand"
+	"github.com/Finschia/ostracon/node"
+	ostclient "github.com/Finschia/ostracon/rpc/client"
 	"github.com/stretchr/testify/require"
 	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
 
-	"github.com/line/lbm-sdk/baseapp"
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/tx"
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	"github.com/line/lbm-sdk/crypto/hd"
-	"github.com/line/lbm-sdk/crypto/keyring"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/server"
-	"github.com/line/lbm-sdk/server/api"
-	srvconfig "github.com/line/lbm-sdk/server/config"
-	servertypes "github.com/line/lbm-sdk/server/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/simapp/params"
-	storetypes "github.com/line/lbm-sdk/store/types"
-	"github.com/line/lbm-sdk/testutil"
-	sdk "github.com/line/lbm-sdk/types"
-	authtypes "github.com/line/lbm-sdk/x/auth/types"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	"github.com/line/lbm-sdk/x/genutil"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/server/api"
+	srvconfig "github.com/Finschia/finschia-sdk/server/config"
+	servertypes "github.com/Finschia/finschia-sdk/server/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/simapp/params"
+	storetypes "github.com/Finschia/finschia-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/testutil"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -61,7 +60,6 @@ func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
 			val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
 			encodingCfg,
 			simapp.EmptyAppOptions{},
-			nil,
 			baseapp.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 		)
@@ -245,7 +243,7 @@ func New(t *testing.T, cfg Config) *Network {
 		logger := log.NewNopLogger()
 		if cfg.EnableLogging {
 			logger = log.NewOCLogger(log.NewSyncWriter(os.Stdout))
-			logger, _ = ostflags.ParseLogLevel("info", logger, ostcfg.DefaultLogLevel)
+			logger, _ = log.ParseLogLevel("info", logger, ostcfg.DefaultLogLevel)
 		}
 
 		ctx.Logger = logger
@@ -378,12 +376,10 @@ func New(t *testing.T, cfg Config) *Network {
 
 	require.NoError(t, initGenFiles(cfg, genAccounts, genBalances, genFiles))
 	require.NoError(t, collectGenFiles(cfg, network.Validators, network.BaseDir))
-
 	t.Log("starting test network...")
 	for _, v := range network.Validators {
 		require.NoError(t, startInProcess(cfg, v))
 	}
-
 	t.Log("started test network")
 
 	// Ensure we cleanup incase any test was abruptly halted (e.g. SIGINT) as any

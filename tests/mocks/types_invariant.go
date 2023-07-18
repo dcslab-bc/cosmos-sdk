@@ -5,10 +5,10 @@
 package mocks
 
 import (
-	"reflect"
+	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	types "github.com/line/lbm-sdk/types"
+	types "github.com/Finschia/finschia-sdk/types"
 )
 
 // MockInvariantRegistry is a mock of InvariantRegistry interface.

@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	gov "github.com/line/lbm-sdk/x/gov/types"
-	"github.com/line/lbm-sdk/x/upgrade/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	gov "github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 type ProposalWrapper struct {
@@ -26,9 +26,9 @@ func TestContentAccessors(t *testing.T) {
 	}{
 		"upgrade": {
 			p: types.NewSoftwareUpgradeProposal("Title", "desc", types.Plan{
-				Name: "due_time",
-				Info: "https://foo.bar",
-				Time: mustParseTime("2019-07-08T11:33:55Z"),
+				Name:   "due_height",
+				Info:   "https://foo.bar",
+				Height: 99999999999,
 			}),
 			title: "Title",
 			desc:  "desc",

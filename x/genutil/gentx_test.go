@@ -7,19 +7,19 @@ import (
 	"testing"
 	"time"
 
-	octypes "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/simapp/helpers"
-	simappparams "github.com/line/lbm-sdk/simapp/params"
-	sdk "github.com/line/lbm-sdk/types"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	"github.com/line/lbm-sdk/x/genutil"
-	"github.com/line/lbm-sdk/x/genutil/types"
-	"github.com/line/lbm-sdk/x/staking"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/simapp/helpers"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (
@@ -47,7 +47,7 @@ type GenTxTestSuite struct {
 func (suite *GenTxTestSuite) SetupTest() {
 	checkTx := false
 	app := simapp.Setup(checkTx)
-	suite.ctx = app.BaseApp.NewContext(checkTx, octypes.Header{})
+	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{})
 	suite.app = app
 	suite.encodingConfig = simapp.MakeTestEncodingConfig()
 

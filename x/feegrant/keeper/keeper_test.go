@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/feegrant"
-	"github.com/line/lbm-sdk/x/feegrant/keeper"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/x/feegrant/keeper"
 )
 
 type KeeperTestSuite struct {
@@ -32,7 +31,7 @@ func TestKeeperTestSuite(t *testing.T) {
 
 func (suite *KeeperTestSuite) SetupTest() {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	suite.app = app
 	suite.sdkCtx = ctx

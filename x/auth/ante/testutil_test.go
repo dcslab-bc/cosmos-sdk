@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"testing"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/tx"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/tx/signing"
-	"github.com/line/lbm-sdk/x/auth/ante"
-	xauthsigning "github.com/line/lbm-sdk/x/auth/signing"
-	"github.com/line/lbm-sdk/x/auth/types"
-	authtypes "github.com/line/lbm-sdk/x/auth/types"
-	minttypes "github.com/line/lbm-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/tx"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	xauthsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 // TestAccount represents an account used in the tests in x/auth/ante.
@@ -42,7 +42,7 @@ type AnteTestSuite struct {
 // returns context and app with params set on account keeper
 func createTestApp(isCheckTx bool) (*simapp.SimApp, sdk.Context) {
 	app := simapp.Setup(isCheckTx)
-	ctx := app.BaseApp.NewContext(isCheckTx, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(isCheckTx, tmproto.Header{})
 	app.AccountKeeper.SetParams(ctx, authtypes.DefaultParams())
 
 	return app, ctx

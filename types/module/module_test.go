@@ -5,19 +5,19 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/line/lbm-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/codec/types"
 
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/golang/mock/gomock"
-	"github.com/gorilla/mux"
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/tests/mocks"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/tests/mocks"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
 )
 
 var errFoo = errors.New("dummy")
@@ -38,7 +38,6 @@ func TestBasicManager(t *testing.T) {
 	mockAppModuleBasic1.EXPECT().Name().AnyTimes().Return("mockAppModuleBasic1")
 	mockAppModuleBasic1.EXPECT().DefaultGenesis(gomock.Eq(cdc)).Times(1).Return(json.RawMessage(``))
 	mockAppModuleBasic1.EXPECT().ValidateGenesis(gomock.Eq(cdc), gomock.Eq(nil), gomock.Eq(wantDefaultGenesis["mockAppModuleBasic1"])).Times(1).Return(errFoo)
-	mockAppModuleBasic1.EXPECT().RegisterRESTRoutes(gomock.Eq(client.Context{}), gomock.Eq(&mux.Router{})).Times(1)
 	mockAppModuleBasic1.EXPECT().RegisterLegacyAminoCodec(gomock.Eq(legacyAmino)).Times(1)
 	mockAppModuleBasic1.EXPECT().RegisterInterfaces(gomock.Eq(interfaceRegistry)).Times(1)
 	mockAppModuleBasic1.EXPECT().GetTxCmd().Times(1).Return(nil)
@@ -56,8 +55,6 @@ func TestBasicManager(t *testing.T) {
 	require.Equal(t, map[string]string(nil), data)
 
 	require.True(t, errors.Is(errFoo, mm.ValidateGenesis(cdc, nil, wantDefaultGenesis)))
-
-	mm.RegisterRESTRoutes(client.Context{}, &mux.Router{})
 
 	mockCmd := &cobra.Command{Use: "root"}
 	mm.AddTxCommands(mockCmd)
@@ -253,7 +250,7 @@ func TestManager_BeginBlock(t *testing.T) {
 	require.NotNil(t, mm)
 	require.Equal(t, 2, len(mm.Modules))
 
-	req := abci.RequestBeginBlock{Hash: []byte("test")}
+	req := ocabci.RequestBeginBlock{Hash: []byte("test")}
 
 	mockAppModule1.EXPECT().BeginBlock(gomock.Any(), gomock.Eq(req)).Times(1)
 	mockAppModule2.EXPECT().BeginBlock(gomock.Any(), gomock.Eq(req)).Times(1)

@@ -2,7 +2,6 @@ package simapp
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -11,123 +10,101 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
-
-	abci "github.com/line/ostracon/abci/types"
-	"github.com/line/ostracon/libs/log"
-	ostos "github.com/line/ostracon/libs/os"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/baseapp"
-	"github.com/line/lbm-sdk/client"
-	nodeservice "github.com/line/lbm-sdk/client/grpc/node"
-	"github.com/line/lbm-sdk/client/grpc/tmservice"
-	"github.com/line/lbm-sdk/client/rpc"
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/codec/types"
-	"github.com/line/lbm-sdk/server/api"
-	"github.com/line/lbm-sdk/server/config"
-	servertypes "github.com/line/lbm-sdk/server/types"
-	simappparams "github.com/line/lbm-sdk/simapp/params"
-	"github.com/line/lbm-sdk/store/streaming"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	"github.com/line/lbm-sdk/version"
-	"github.com/line/lbm-sdk/x/auth"
-	"github.com/line/lbm-sdk/x/auth/ante"
-	authrest "github.com/line/lbm-sdk/x/auth/client/rest"
-	authkeeper "github.com/line/lbm-sdk/x/auth/keeper"
-	authsims "github.com/line/lbm-sdk/x/auth/simulation"
-	authtx "github.com/line/lbm-sdk/x/auth/tx"
-	authtypes "github.com/line/lbm-sdk/x/auth/types"
-	"github.com/line/lbm-sdk/x/auth/vesting"
-	vestingtypes "github.com/line/lbm-sdk/x/auth/vesting/types"
-	"github.com/line/lbm-sdk/x/authz"
-	authzkeeper "github.com/line/lbm-sdk/x/authz/keeper"
-	authzmodule "github.com/line/lbm-sdk/x/authz/module"
-	"github.com/line/lbm-sdk/x/bank"
-	bankkeeper "github.com/line/lbm-sdk/x/bank/keeper"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	"github.com/line/lbm-sdk/x/bankplus"
-	bankpluskeeper "github.com/line/lbm-sdk/x/bankplus/keeper"
-	"github.com/line/lbm-sdk/x/capability"
-	capabilitykeeper "github.com/line/lbm-sdk/x/capability/keeper"
-	capabilitytypes "github.com/line/lbm-sdk/x/capability/types"
-	"github.com/line/lbm-sdk/x/collection"
-	collectionkeeper "github.com/line/lbm-sdk/x/collection/keeper"
-	collectionmodule "github.com/line/lbm-sdk/x/collection/module"
-	"github.com/line/lbm-sdk/x/crisis"
-	crisiskeeper "github.com/line/lbm-sdk/x/crisis/keeper"
-	crisistypes "github.com/line/lbm-sdk/x/crisis/types"
-	distr "github.com/line/lbm-sdk/x/distribution"
-	distrclient "github.com/line/lbm-sdk/x/distribution/client"
-	distrkeeper "github.com/line/lbm-sdk/x/distribution/keeper"
-	distrtypes "github.com/line/lbm-sdk/x/distribution/types"
-	"github.com/line/lbm-sdk/x/evidence"
-	evidencekeeper "github.com/line/lbm-sdk/x/evidence/keeper"
-	evidencetypes "github.com/line/lbm-sdk/x/evidence/types"
-	"github.com/line/lbm-sdk/x/feegrant"
-	feegrantkeeper "github.com/line/lbm-sdk/x/feegrant/keeper"
-	feegrantmodule "github.com/line/lbm-sdk/x/feegrant/module"
-	"github.com/line/lbm-sdk/x/foundation"
-	foundationkeeper "github.com/line/lbm-sdk/x/foundation/keeper"
-	foundationmodule "github.com/line/lbm-sdk/x/foundation/module"
-	"github.com/line/lbm-sdk/x/genutil"
-	genutiltypes "github.com/line/lbm-sdk/x/genutil/types"
-	"github.com/line/lbm-sdk/x/gov"
-	govkeeper "github.com/line/lbm-sdk/x/gov/keeper"
-	govtypes "github.com/line/lbm-sdk/x/gov/types"
-	ica "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts"
-	icacontroller "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/controller"
-	icacontrollerkeeper "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/controller/keeper"
-	icacontrollertypes "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/controller/types"
-	icahost "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/host"
-	icahostkeeper "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/host/types"
-	icatypes "github.com/line/lbm-sdk/x/ibc/applications/27-interchain-accounts/types"
-	transfer "github.com/line/lbm-sdk/x/ibc/applications/transfer"
-	ibctransferkeeper "github.com/line/lbm-sdk/x/ibc/applications/transfer/keeper"
-	ibctransfertypes "github.com/line/lbm-sdk/x/ibc/applications/transfer/types"
-	ibc "github.com/line/lbm-sdk/x/ibc/core"
-	ibcclient "github.com/line/lbm-sdk/x/ibc/core/02-client"
-	ibcclientclient "github.com/line/lbm-sdk/x/ibc/core/02-client/client"
-	ibcclienttypes "github.com/line/lbm-sdk/x/ibc/core/02-client/types"
-	porttypes "github.com/line/lbm-sdk/x/ibc/core/05-port/types"
-	ibchost "github.com/line/lbm-sdk/x/ibc/core/24-host"
-	ibckeeper "github.com/line/lbm-sdk/x/ibc/core/keeper"
-	ibcmock "github.com/line/lbm-sdk/x/ibc/testing/mock"
-	"github.com/line/lbm-sdk/x/mint"
-	mintkeeper "github.com/line/lbm-sdk/x/mint/keeper"
-	minttypes "github.com/line/lbm-sdk/x/mint/types"
-	"github.com/line/lbm-sdk/x/params"
-	paramsclient "github.com/line/lbm-sdk/x/params/client"
-	paramskeeper "github.com/line/lbm-sdk/x/params/keeper"
-	paramstypes "github.com/line/lbm-sdk/x/params/types"
-	paramproposal "github.com/line/lbm-sdk/x/params/types/proposal"
-	"github.com/line/lbm-sdk/x/slashing"
-	slashingkeeper "github.com/line/lbm-sdk/x/slashing/keeper"
-	slashingtypes "github.com/line/lbm-sdk/x/slashing/types"
-	"github.com/line/lbm-sdk/x/staking"
-	stakingkeeper "github.com/line/lbm-sdk/x/staking/keeper"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
-	stakingplusmodule "github.com/line/lbm-sdk/x/stakingplus/module"
-	"github.com/line/lbm-sdk/x/token"
-	"github.com/line/lbm-sdk/x/token/class"
-	classkeeper "github.com/line/lbm-sdk/x/token/class/keeper"
-	tokenkeeper "github.com/line/lbm-sdk/x/token/keeper"
-	tokenmodule "github.com/line/lbm-sdk/x/token/module"
-	"github.com/line/lbm-sdk/x/upgrade"
-	upgradeclient "github.com/line/lbm-sdk/x/upgrade/client"
-	upgradekeeper "github.com/line/lbm-sdk/x/upgrade/keeper"
-	upgradetypes "github.com/line/lbm-sdk/x/upgrade/types"
-	"github.com/line/lbm-sdk/x/wasm"
-	wasmclient "github.com/line/lbm-sdk/x/wasm/client"
-	wasmkeeper "github.com/line/lbm-sdk/x/wasm/keeper"
-	wasmlbmtypes "github.com/line/lbm-sdk/x/wasm/lbmtypes"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	ostos "github.com/Finschia/ostracon/libs/os"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/client"
+	nodeservice "github.com/Finschia/finschia-sdk/client/grpc/node"
+	"github.com/Finschia/finschia-sdk/client/grpc/tmservice"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/server/api"
+	"github.com/Finschia/finschia-sdk/server/config"
+	servertypes "github.com/Finschia/finschia-sdk/server/types"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	"github.com/Finschia/finschia-sdk/store/streaming"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/auth"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	authkeeper "github.com/Finschia/finschia-sdk/x/auth/keeper"
+	authsims "github.com/Finschia/finschia-sdk/x/auth/simulation"
+	authtx "github.com/Finschia/finschia-sdk/x/auth/tx"
+	authtx2 "github.com/Finschia/finschia-sdk/x/auth/tx2"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting"
+	vestingtypes "github.com/Finschia/finschia-sdk/x/auth/vesting/types"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	authzkeeper "github.com/Finschia/finschia-sdk/x/authz/keeper"
+	authzmodule "github.com/Finschia/finschia-sdk/x/authz/module"
+	"github.com/Finschia/finschia-sdk/x/bank"
+	bankkeeper "github.com/Finschia/finschia-sdk/x/bank/keeper"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/bankplus"
+	bankpluskeeper "github.com/Finschia/finschia-sdk/x/bankplus/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability"
+	capabilitykeeper "github.com/Finschia/finschia-sdk/x/capability/keeper"
+	capabilitytypes "github.com/Finschia/finschia-sdk/x/capability/types"
+	"github.com/Finschia/finschia-sdk/x/collection"
+	collectionkeeper "github.com/Finschia/finschia-sdk/x/collection/keeper"
+	collectionmodule "github.com/Finschia/finschia-sdk/x/collection/module"
+	"github.com/Finschia/finschia-sdk/x/crisis"
+	crisiskeeper "github.com/Finschia/finschia-sdk/x/crisis/keeper"
+	crisistypes "github.com/Finschia/finschia-sdk/x/crisis/types"
+	distr "github.com/Finschia/finschia-sdk/x/distribution"
+	distrclient "github.com/Finschia/finschia-sdk/x/distribution/client"
+	distrkeeper "github.com/Finschia/finschia-sdk/x/distribution/keeper"
+	distrtypes "github.com/Finschia/finschia-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/x/evidence"
+	evidencekeeper "github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	evidencetypes "github.com/Finschia/finschia-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	feegrantkeeper "github.com/Finschia/finschia-sdk/x/feegrant/keeper"
+	feegrantmodule "github.com/Finschia/finschia-sdk/x/feegrant/module"
+	"github.com/Finschia/finschia-sdk/x/foundation"
+	foundationclient "github.com/Finschia/finschia-sdk/x/foundation/client"
+	foundationkeeper "github.com/Finschia/finschia-sdk/x/foundation/keeper"
+	foundationmodule "github.com/Finschia/finschia-sdk/x/foundation/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutiltypes "github.com/Finschia/finschia-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/x/gov"
+	govkeeper "github.com/Finschia/finschia-sdk/x/gov/keeper"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/mint"
+	mintkeeper "github.com/Finschia/finschia-sdk/x/mint/keeper"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/x/params"
+	paramsclient "github.com/Finschia/finschia-sdk/x/params/client"
+	paramskeeper "github.com/Finschia/finschia-sdk/x/params/keeper"
+	paramstypes "github.com/Finschia/finschia-sdk/x/params/types"
+	paramproposal "github.com/Finschia/finschia-sdk/x/params/types/proposal"
+	"github.com/Finschia/finschia-sdk/x/slashing"
+	slashingkeeper "github.com/Finschia/finschia-sdk/x/slashing/keeper"
+	slashingtypes "github.com/Finschia/finschia-sdk/x/slashing/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	stakingkeeper "github.com/Finschia/finschia-sdk/x/staking/keeper"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
+	stakingplusmodule "github.com/Finschia/finschia-sdk/x/stakingplus/module"
+	"github.com/Finschia/finschia-sdk/x/token"
+	"github.com/Finschia/finschia-sdk/x/token/class"
+	classkeeper "github.com/Finschia/finschia-sdk/x/token/class/keeper"
+	tokenkeeper "github.com/Finschia/finschia-sdk/x/token/keeper"
+	tokenmodule "github.com/Finschia/finschia-sdk/x/token/module"
+	"github.com/Finschia/finschia-sdk/x/upgrade"
+	upgradeclient "github.com/Finschia/finschia-sdk/x/upgrade/client"
+	upgradekeeper "github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/Finschia/finschia-sdk/x/upgrade/types"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/line/lbm-sdk/client/docs/statik"
+	_ "github.com/Finschia/finschia-sdk/client/docs/statik"
 )
 
 const appName = "SimApp"
@@ -149,31 +126,22 @@ var (
 		distr.AppModuleBasic{},
 		foundationmodule.AppModuleBasic{},
 		gov.NewAppModuleBasic(
-			append(
-				wasmclient.ProposalHandlers,
-				paramsclient.ProposalHandler,
-				distrclient.ProposalHandler,
-				upgradeclient.ProposalHandler,
-				upgradeclient.CancelProposalHandler,
-				ibcclientclient.UpdateClientProposalHandler,
-				ibcclientclient.UpgradeProposalHandler,
-			)...,
+			paramsclient.ProposalHandler,
+			distrclient.ProposalHandler,
+			upgradeclient.ProposalHandler,
+			upgradeclient.CancelProposalHandler,
+			foundationclient.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
-		ibc.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
-		ibcmock.AppModuleBasic{},
-		ica.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		tokenmodule.AppModuleBasic{},
 		collectionmodule.AppModuleBasic{},
-		wasm.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -182,13 +150,10 @@ var (
 		distrtypes.ModuleName:          nil,
 		foundation.ModuleName:          nil,
 		foundation.TreasuryName:        nil,
-		foundation.GovMinterName:       {authtypes.Minter},
 		minttypes.ModuleName:           {authtypes.Minter},
 		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		icatypes.ModuleName:            nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -218,41 +183,24 @@ type SimApp struct {
 	memKeys map[string]*sdk.MemoryStoreKey
 
 	// keepers
-	AccountKeeper       authkeeper.AccountKeeper
-	BankKeeper          bankkeeper.Keeper
-	CapabilityKeeper    *capabilitykeeper.Keeper
-	StakingKeeper       stakingkeeper.Keeper
-	SlashingKeeper      slashingkeeper.Keeper
-	MintKeeper          mintkeeper.Keeper
-	DistrKeeper         distrkeeper.Keeper
-	FoundationKeeper    foundationkeeper.Keeper
-	GovKeeper           govkeeper.Keeper
-	CrisisKeeper        crisiskeeper.Keeper
-	UpgradeKeeper       upgradekeeper.Keeper
-	ParamsKeeper        paramskeeper.Keeper
-	AuthzKeeper         authzkeeper.Keeper
-	IBCKeeper           *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	ICAControllerKeeper icacontrollerkeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
-	EvidenceKeeper      evidencekeeper.Keeper
-	TransferKeeper      ibctransferkeeper.Keeper
-	FeeGrantKeeper      feegrantkeeper.Keeper
-	TokenKeeper         tokenkeeper.Keeper
-	CollectionKeeper    collectionkeeper.Keeper
-	WasmKeeper          wasm.Keeper
-
-	// make scoped keepers public for test purposes
-	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
-	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
-	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
-	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
-	ScopedIBCMockKeeper       capabilitykeeper.ScopedKeeper
-	ScopedICAMockKeeper       capabilitykeeper.ScopedKeeper
-	ScopedWasmKeeper          capabilitykeeper.ScopedKeeper
-
-	// make IBC modules public for test purposes
-	// these modules are never directly routed to by the IBC Router
-	ICAAuthModule ibcmock.IBCModule
+	AccountKeeper    authkeeper.AccountKeeper
+	BankKeeper       bankkeeper.Keeper
+	CapabilityKeeper *capabilitykeeper.Keeper
+	StakingKeeper    stakingkeeper.Keeper
+	SlashingKeeper   slashingkeeper.Keeper
+	MintKeeper       mintkeeper.Keeper
+	DistrKeeper      distrkeeper.Keeper
+	FoundationKeeper foundationkeeper.Keeper
+	GovKeeper        govkeeper.Keeper
+	CrisisKeeper     crisiskeeper.Keeper
+	UpgradeKeeper    upgradekeeper.Keeper
+	ParamsKeeper     paramskeeper.Keeper
+	AuthzKeeper      authzkeeper.Keeper
+	EvidenceKeeper   evidencekeeper.Keeper
+	FeeGrantKeeper   feegrantkeeper.Keeper
+	ClassKeeper      classkeeper.Keeper
+	TokenKeeper      tokenkeeper.Keeper
+	CollectionKeeper collectionkeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -277,7 +225,7 @@ func init() {
 func NewSimApp(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig simappparams.EncodingConfig,
-	appOpts servertypes.AppOptions, wasmOpts []wasm.Option, baseAppOptions ...func(*baseapp.BaseApp),
+	appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *SimApp {
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
@@ -297,12 +245,8 @@ func NewSimApp(
 		slashingtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
-		ibchost.StoreKey,
 		upgradetypes.StoreKey,
 		evidencetypes.StoreKey,
-		ibctransfertypes.StoreKey,
-		icacontrollertypes.StoreKey,
-		icahosttypes.StoreKey,
 		capabilitytypes.StoreKey,
 		feegrant.StoreKey,
 		foundation.StoreKey,
@@ -310,7 +254,6 @@ func NewSimApp(
 		token.StoreKey,
 		collection.StoreKey,
 		authzkeeper.StoreKey,
-		wasm.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	// NOTE: The testingkey is just mounted for testing purposes. Actual applications should
@@ -340,16 +283,6 @@ func NewSimApp(
 
 	// add capability keeper and ScopeToModule for ibc module
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
-	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
-	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
-	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
-	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	scopedWasmKeeper := app.CapabilityKeeper.ScopeToModule(wasm.ModuleName)
-
-	// NOTE: the IBC mock keeper and application module is used only for testing core IBC. Do
-	// note replicate if you do not need to test core IBC or light clients.
-	scopedIBCMockKeeper := app.CapabilityKeeper.ScopeToModule(ibcmock.ModuleName)
-	scopedICAMockKeeper := app.CapabilityKeeper.ScopeToModule(ibcmock.ModuleName + icacontrollertypes.SubModuleName)
 
 	// Applications that wish to enforce statically created ScopedKeepers should call `Seal` after creating
 	// their scoped modules in `NewApp` with `ScopeToModule`
@@ -360,7 +293,7 @@ func NewSimApp(
 		appCodec, keys[authtypes.StoreKey], app.GetSubspace(authtypes.ModuleName), authtypes.ProtoBaseAccount, maccPerms,
 	)
 	app.BankKeeper = bankpluskeeper.NewBaseKeeper(
-		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs())
+		appCodec, keys[banktypes.StoreKey], app.AccountKeeper, app.GetSubspace(banktypes.ModuleName), app.BlockedAddrs(), false)
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
@@ -385,9 +318,9 @@ func NewSimApp(
 	foundationConfig := foundation.DefaultConfig()
 	app.FoundationKeeper = foundationkeeper.NewKeeper(appCodec, keys[foundation.StoreKey], app.BaseApp.MsgServiceRouter(), app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName, foundationConfig, foundation.DefaultAuthority().String())
 
-	classKeeper := classkeeper.NewKeeper(appCodec, keys[class.StoreKey])
-	app.TokenKeeper = tokenkeeper.NewKeeper(appCodec, keys[token.StoreKey], app.AccountKeeper, classKeeper)
-	app.CollectionKeeper = collectionkeeper.NewKeeper(appCodec, keys[collection.StoreKey], app.AccountKeeper, classKeeper)
+	app.ClassKeeper = classkeeper.NewKeeper(appCodec, keys[class.StoreKey])
+	app.TokenKeeper = tokenkeeper.NewKeeper(appCodec, keys[token.StoreKey], app.ClassKeeper)
+	app.CollectionKeeper = collectionkeeper.NewKeeper(appCodec, keys[collection.StoreKey], app.ClassKeeper)
 
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
@@ -395,79 +328,7 @@ func NewSimApp(
 		stakingtypes.NewMultiStakingHooks(app.DistrKeeper.Hooks(), app.SlashingKeeper.Hooks()),
 	)
 
-	// Create IBC Keeper
-	app.IBCKeeper = ibckeeper.NewKeeper(
-		appCodec, keys[ibchost.StoreKey], app.GetSubspace(ibchost.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
-	)
-
 	app.AuthzKeeper = authzkeeper.NewKeeper(keys[authzkeeper.StoreKey], appCodec, app.BaseApp.MsgServiceRouter())
-
-	// Create Transfer Keepers
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
-	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
-
-	// NOTE: the IBC mock keeper and application module is used only for testing core IBC. Do
-	// note replicate if you do not need to test core IBC or light clients.
-	mockModule := ibcmock.NewAppModule(&app.IBCKeeper.PortKeeper)
-	mockIBCModule := ibcmock.NewIBCModule(&mockModule, ibcmock.NewMockIBCApp(ibcmock.ModuleName, scopedIBCMockKeeper))
-
-	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
-		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, // may be replaced with middleware such as ics29 fee
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		scopedICAControllerKeeper, app.MsgServiceRouter(),
-	)
-
-	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
-	)
-
-	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
-
-	// initialize ICA module with mock module as the authentication module on the controller side
-	icaAuthModule := ibcmock.NewIBCModule(&mockModule, ibcmock.NewMockIBCApp("", scopedICAMockKeeper))
-	app.ICAAuthModule = icaAuthModule
-
-	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, icaAuthModule)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
-
-	wasmDir := filepath.Join(homePath, "wasm")
-	wasmConfig, err := wasm.ReadWasmConfig(appOpts)
-	if err != nil {
-		panic("error while reading wasm config: " + err.Error())
-	}
-
-	// The last arguments can contain custom message handlers, and custom query handlers,
-	// if we want to allow any custom callbacks
-	supportedFeatures := "iterator,staking,stargate"
-	app.WasmKeeper = wasmkeeper.NewKeeper(
-		appCodec,
-		keys[wasm.StoreKey],
-		app.GetSubspace(wasm.ModuleName),
-		app.AccountKeeper,
-		app.BankKeeper,
-		app.StakingKeeper,
-		app.DistrKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		scopedWasmKeeper,
-		app.TransferKeeper,
-		app.MsgServiceRouter(),
-		app.GRPCQueryRouter(),
-		wasmDir,
-		wasmConfig,
-		supportedFeatures,
-		nil,
-		nil,
-		wasmOpts...,
-	)
 
 	// register the proposal types
 	govRouter := govtypes.NewRouter()
@@ -475,8 +336,7 @@ func NewSimApp(
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
-		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(wasm.RouterKey, wasmkeeper.NewWasmProposalHandler(app.WasmKeeper, wasmlbmtypes.EnableAllProposals))
+		AddRoute(foundation.RouterKey, foundationkeeper.NewFoundationProposalsHandler(app.FoundationKeeper))
 
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.GetSubspace(govtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
@@ -488,16 +348,6 @@ func NewSimApp(
 		// register the governance hooks
 		),
 	)
-
-	// Create static IBC router, add transfer route, then set and seal it
-	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule)
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
-	ibcRouter.AddRoute(ibcmock.ModuleName+icacontrollertypes.SubModuleName, icaControllerIBCModule) // ica with mock auth module stack route to ica (top level of middleware stack)
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
-	ibcRouter.AddRoute(ibcmock.ModuleName, mockIBCModule)
-	ibcRouter.AddRoute(wasm.ModuleName, wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper))
-	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -532,16 +382,11 @@ func NewSimApp(
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		stakingplusmodule.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.FoundationKeeper),
 		upgrade.NewAppModule(app.UpgradeKeeper),
-		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
-		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		tokenmodule.NewAppModule(appCodec, app.TokenKeeper),
 		collectionmodule.NewAppModule(appCodec, app.CollectionKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		transferModule,
-		icaModule,
-		mockModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -558,8 +403,6 @@ func NewSimApp(
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
-		ibchost.ModuleName,
-		ibctransfertypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		govtypes.ModuleName,
@@ -569,18 +412,13 @@ func NewSimApp(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		icatypes.ModuleName,
-		ibcmock.ModuleName,
 		token.ModuleName,
 		collection.ModuleName,
-		wasm.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		ibchost.ModuleName,
-		ibctransfertypes.ModuleName,
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -594,12 +432,9 @@ func NewSimApp(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
-		icatypes.ModuleName,
-		ibcmock.ModuleName,
 		foundation.ModuleName,
 		token.ModuleName,
 		collection.ModuleName,
-		wasm.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -618,21 +453,15 @@ func NewSimApp(
 		minttypes.ModuleName,
 		foundation.ModuleName,
 		crisistypes.ModuleName,
-		ibchost.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		authz.ModuleName,
-		ibctransfertypes.ModuleName,
-		icatypes.ModuleName,
-		ibcmock.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		token.ModuleName,
 		collection.ModuleName,
-		// wasm after ibc transfer
-		wasm.ModuleName,
 	)
 
 	// Uncomment if you want to set a custom migration order here.
@@ -682,42 +511,14 @@ func NewSimApp(
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)
 
-	// must be before Loading version
-	// requires the snapshot store to be created and registered as a BaseAppOption
-	// see simapp/simd/cmd/root.go: 257 - 261 approx
-	if manager := app.SnapshotManager(); manager != nil {
-		err := manager.RegisterExtensions(
-			wasmkeeper.NewWasmSnapshotter(app.CommitMultiStore(), &app.WasmKeeper),
-		)
-		if err != nil {
-			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
-		}
-	}
-
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			ostos.Exit(err.Error())
 		}
 
-		ctx := app.BaseApp.NewUncachedContext(true, ocproto.Header{})
-		// Initialize pinned codes in wasmvm as they are not persisted there
-		if err := app.WasmKeeper.InitializePinnedCodes(ctx); err != nil {
-			panic(err)
-		}
-		// Initialize the keeper of bankkeeper
+		ctx := app.BaseApp.NewUncachedContext(true, tmproto.Header{})
 		app.BankKeeper.(bankpluskeeper.Keeper).InitializeBankPlus(ctx)
 	}
-
-	app.ScopedIBCKeeper = scopedIBCKeeper
-	app.ScopedTransferKeeper = scopedTransferKeeper
-	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
-	app.ScopedICAHostKeeper = scopedICAHostKeeper
-	app.ScopedWasmKeeper = scopedWasmKeeper
-
-	// NOTE: the IBC mock keeper and application module is used only for testing core IBC. Do
-	// note replicate if you do not need to test core IBC or light clients.
-	app.ScopedIBCMockKeeper = scopedIBCMockKeeper
-	app.ScopedICAMockKeeper = scopedICAMockKeeper
 
 	return app
 }
@@ -726,7 +527,7 @@ func NewSimApp(
 func (app *SimApp) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
-func (app *SimApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+func (app *SimApp) BeginBlocker(ctx sdk.Context, req ocabci.RequestBeginBlock) abci.ResponseBeginBlock {
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -796,16 +597,6 @@ func (app *SimApp) GetStakingKeeper() stakingkeeper.Keeper {
 	return app.StakingKeeper
 }
 
-// GetIBCKeeper implements the TestingApp interface.
-func (app *SimApp) GetIBCKeeper() *ibckeeper.Keeper {
-	return app.IBCKeeper
-}
-
-// GetScopedIBCKeeper implements the TestingApp interface.
-func (app *SimApp) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
-	return app.ScopedIBCKeeper
-}
-
 // GetTxConfig implements the TestingApp interface.
 func (app *SimApp) GetTxConfig() client.TxConfig {
 	return MakeTestEncodingConfig().TxConfig
@@ -855,19 +646,17 @@ func (app *SimApp) SimulationManager() *module.SimulationManager {
 // API server.
 func (app *SimApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
-	rpc.RegisterRoutes(clientCtx, apiSvr.Router)
-	// Register legacy tx routes.
-	authrest.RegisterTxRoutes(clientCtx, apiSvr.Router)
+
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	authtx2.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register node gRPC service for grpc-gateway.
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// Register legacy and grpc-gateway routes for all modules.
-	ModuleBasics.RegisterRESTRoutes(clientCtx, apiSvr.Router)
+	// Register grpc-gateway routes for all modules.
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register swagger API from root so that other applications can override easily
@@ -879,6 +668,7 @@ func (app *SimApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICon
 // RegisterTxService implements the Application.RegisterTxService method.
 func (app *SimApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
+	authtx2.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
@@ -922,11 +712,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable())
 	paramsKeeper.Subspace(crisistypes.ModuleName)
-	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	paramsKeeper.Subspace(ibchost.ModuleName)
-	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
-	paramsKeeper.Subspace(icahosttypes.SubModuleName)
-	paramsKeeper.Subspace(wasm.ModuleName)
 
 	return paramsKeeper
 }

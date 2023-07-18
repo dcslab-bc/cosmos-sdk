@@ -8,27 +8,27 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/gorilla/mux"
-	abci "github.com/line/ostracon/abci/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdkclient "github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	cdctypes "github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	simtypes "github.com/line/lbm-sdk/types/simulation"
-	"github.com/line/lbm-sdk/x/distribution/client/cli"
-	"github.com/line/lbm-sdk/x/distribution/client/rest"
-	"github.com/line/lbm-sdk/x/distribution/keeper"
-	"github.com/line/lbm-sdk/x/distribution/simulation"
-	"github.com/line/lbm-sdk/x/distribution/types"
+	sdkclient "github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/client/cli"
+	"github.com/Finschia/finschia-sdk/x/distribution/keeper"
+	"github.com/Finschia/finschia-sdk/x/distribution/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 var (
 	_ module.AppModule           = AppModule{}
 	_ module.AppModuleBasic      = AppModuleBasic{}
 	_ module.AppModuleSimulation = AppModule{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the distribution module.
@@ -60,11 +60,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.TxEn
 	}
 
 	return types.ValidateGenesis(&data)
-}
-
-// RegisterRESTRoutes registers the REST routes for the distribution module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx sdkclient.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the distribution module.
@@ -169,11 +164,9 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock returns the begin blocker for the distribution module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {
 	BeginBlocker(ctx, req, am.keeper)
 }
-
-// AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the distribution module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {

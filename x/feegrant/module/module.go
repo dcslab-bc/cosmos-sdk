@@ -5,22 +5,21 @@ import (
 	"encoding/json"
 	"math/rand"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdkclient "github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	cdctypes "github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/types/module"
-	simtypes "github.com/line/lbm-sdk/types/simulation"
-	"github.com/line/lbm-sdk/x/feegrant"
-	"github.com/line/lbm-sdk/x/feegrant/client/cli"
-	"github.com/line/lbm-sdk/x/feegrant/keeper"
-	"github.com/line/lbm-sdk/x/feegrant/simulation"
+	sdkclient "github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/x/feegrant/client/cli"
+	"github.com/Finschia/finschia-sdk/x/feegrant/keeper"
+	"github.com/Finschia/finschia-sdk/x/feegrant/simulation"
 )
 
 var (
@@ -80,10 +79,6 @@ func (a AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config sdkclient.Tx
 
 	return feegrant.ValidateGenesis(data)
 }
-
-// RegisterRESTRoutes registers the REST routes for the feegrant module.
-// Deprecated: RegisterRESTRoutes is deprecated.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx sdkclient.Context, rtr *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the feegrant module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx sdkclient.Context, mux *runtime.ServeMux) {
@@ -175,12 +170,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
-
-// EndBlock returns the end blocker for the feegrant module. It returns no validator
-// updates.
-func (AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
 
 // AppModuleSimulation functions
 

@@ -4,19 +4,19 @@ import (
 	"testing"
 	"time"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/slashing"
-	"github.com/line/lbm-sdk/x/slashing/testslashing"
-	"github.com/line/lbm-sdk/x/slashing/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/slashing"
+	"github.com/Finschia/finschia-sdk/x/slashing/testslashing"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 func TestExportAndInitGenesis(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 
 	app.SlashingKeeper.SetParams(ctx, testslashing.TestParams())
 

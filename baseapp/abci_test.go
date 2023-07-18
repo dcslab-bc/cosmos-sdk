@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	abci "github.com/line/ostracon/abci/types"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-	ocprototypes "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	sdk "github.com/line/lbm-sdk/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func TestGetBlockRentionHeight(t *testing.T) {
@@ -116,7 +117,7 @@ func TestGetBlockRentionHeight(t *testing.T) {
 		tc.bapp.SetParamStore(&paramStore{db: dbm.NewMemDB()})
 		tc.bapp.InitChain(abci.RequestInitChain{
 			ConsensusParams: &abci.ConsensusParams{
-				Evidence: &ocprototypes.EvidenceParams{
+				Evidence: &tmproto.EvidenceParams{
 					MaxAgeNumBlocks: tc.maxAgeBlocks,
 				},
 			},
@@ -141,10 +142,10 @@ func TestBaseAppCreateQueryContext(t *testing.T) {
 	app := NewBaseApp(name, logger, db, nil)
 	app.init()
 
-	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 1}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
 	app.Commit()
 
-	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 2}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 2}})
 	app.Commit()
 
 	testCases := []struct {
@@ -173,7 +174,7 @@ func TestBaseAppCreateQueryContext(t *testing.T) {
 
 // Test and ensure that consensus params has been updated.
 // See:
-// - https://github.com/line/lbm-sdk/pull/673
+// - https://github.com/Finschia/finschia-sdk/pull/673
 func TestBaseAppBeginBlockConsensusParams(t *testing.T) {
 	t.Parallel()
 
@@ -192,7 +193,7 @@ func TestBaseAppBeginBlockConsensusParams(t *testing.T) {
 	app.init()
 
 	// set block params
-	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 1}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
 	ctx := app.deliverState.ctx
 	maxGas := int64(123456789)
 	app.paramStore.Set(ctx, ParamStoreKeyBlockParams,
@@ -202,7 +203,7 @@ func TestBaseAppBeginBlockConsensusParams(t *testing.T) {
 	app.Commit()
 
 	// confirm consensus params updated into the context
-	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 2}})
+	app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: 2}})
 	newCtx := app.getContextForTx(app.checkState, []byte{})
 	require.Equal(t, maxGas, newCtx.ConsensusParams().Block.MaxGas)
 }

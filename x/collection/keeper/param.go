@@ -1,9 +1,9 @@
 package keeper
 
 import (
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/x/collection"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/collection"
 )
 
 func (k Keeper) GetParams(ctx sdk.Context) collection.Params {
@@ -20,7 +20,7 @@ func (k Keeper) GetParams(ctx sdk.Context) collection.Params {
 	return params
 }
 
-func (k Keeper) setParams(ctx sdk.Context, params collection.Params) {
+func (k Keeper) SetParams(ctx sdk.Context, params collection.Params) {
 	store := ctx.KVStore(k.storeKey)
 	key := paramsKey
 

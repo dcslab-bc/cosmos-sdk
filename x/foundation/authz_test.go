@@ -3,8 +3,8 @@ package foundation_test
 import (
 	"testing"
 
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/foundation"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/foundation"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,15 +25,17 @@ func TestReceiveFromTreasuryAuthorization(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		authorization := &foundation.ReceiveFromTreasuryAuthorization{}
+		t.Run(name, func(t *testing.T) {
+			authorization := &foundation.ReceiveFromTreasuryAuthorization{}
 
-		resp, err := authorization.Accept(sdk.Context{}, tc.msg)
-		if !tc.valid {
-			require.Error(t, err, name)
-			continue
-		}
-		require.NoError(t, err, name)
+			resp, err := authorization.Accept(sdk.Context{}, tc.msg)
+			if !tc.valid {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 
-		require.Equal(t, tc.accept, resp.Accept)
+			require.Equal(t, tc.accept, resp.Accept)
+		})
 	}
 }

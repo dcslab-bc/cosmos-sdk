@@ -2,9 +2,9 @@ package types
 
 import (
 	proto "github.com/gogo/protobuf/proto"
-	abci "github.com/line/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // Converts an ABCI snapshot to a snapshot. Mainly to decode the SDK metadata.

@@ -12,9 +12,9 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	proto "github.com/gogo/protobuf/proto"
-	abci "github.com/line/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec"
 )
 
 // ----------------------------------------------------------------------------

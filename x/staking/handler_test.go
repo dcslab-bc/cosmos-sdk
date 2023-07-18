@@ -5,24 +5,24 @@ import (
 	"testing"
 	"time"
 
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/golang/protobuf/proto"
-	abci "github.com/line/ostracon/abci/types"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-	octypes "github.com/line/ostracon/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
-	"github.com/line/lbm-sdk/crypto/keys/ed25519"
-	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/staking"
-	"github.com/line/lbm-sdk/x/staking/keeper"
-	"github.com/line/lbm-sdk/x/staking/teststaking"
-	"github.com/line/lbm-sdk/x/staking/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/x/staking/keeper"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func bootstrapHandlerGenesisTest(t *testing.T, power int64, numAddrs int, accAmount sdk.Int) (*simapp.SimApp, sdk.Context, []sdk.AccAddress, []sdk.ValAddress) {
@@ -170,7 +170,7 @@ func TestInvalidPubKeyTypeMsgCreateValidator(t *testing.T) {
 	initPower := int64(1000)
 	app, ctx, _, valAddrs := bootstrapHandlerGenesisTest(t, initPower, 1, sdk.TokensFromConsensusPower(initPower, sdk.DefaultPowerReduction))
 	ctx = ctx.WithConsensusParams(&abci.ConsensusParams{
-		Validator: &ocproto.ValidatorParams{PubKeyTypes: []string{octypes.ABCIPubKeyTypeEd25519}},
+		Validator: &tmproto.ValidatorParams{PubKeyTypes: []string{octypes.ABCIPubKeyTypeEd25519}},
 	})
 
 	addr := valAddrs[0]
@@ -184,7 +184,7 @@ func TestInvalidPubKeyTypeMsgCreateValidator(t *testing.T) {
 func TestBothPubKeyTypesMsgCreateValidator(t *testing.T) {
 	app, ctx, _, valAddrs := bootstrapHandlerGenesisTest(t, 1000, 2, sdk.NewInt(1000))
 	ctx = ctx.WithConsensusParams(&abci.ConsensusParams{
-		Validator: &ocproto.ValidatorParams{PubKeyTypes: []string{octypes.ABCIPubKeyTypeEd25519, octypes.ABCIPubKeyTypeSecp256k1}},
+		Validator: &tmproto.ValidatorParams{PubKeyTypes: []string{octypes.ABCIPubKeyTypeEd25519, octypes.ABCIPubKeyTypeSecp256k1}},
 	})
 
 	tstaking := teststaking.NewHelper(t, ctx, app.StakingKeeper)
@@ -1166,7 +1166,7 @@ func TestInvalidMsg(t *testing.T) {
 	k := keeper.Keeper{}
 	h := staking.NewHandler(k)
 
-	res, err := h(sdk.NewContext(nil, ocproto.Header{}, false, nil), testdata.NewTestMsg())
+	res, err := h(sdk.NewContext(nil, tmproto.Header{}, false, nil), testdata.NewTestMsg())
 	require.Error(t, err)
 	require.Nil(t, res)
 	require.True(t, strings.Contains(err.Error(), "unrecognized staking message type"))

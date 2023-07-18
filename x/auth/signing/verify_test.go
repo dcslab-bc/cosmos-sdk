@@ -3,20 +3,20 @@ package signing_test
 import (
 	"testing"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/codec"
-	kmultisig "github.com/line/lbm-sdk/crypto/keys/multisig"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/crypto/types/multisig"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/auth/ante"
-	"github.com/line/lbm-sdk/x/auth/legacy/legacytx"
-	"github.com/line/lbm-sdk/x/auth/signing"
-	"github.com/line/lbm-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/crypto/types/multisig"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/ante"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
+	"github.com/Finschia/finschia-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 func TestVerifySignature(t *testing.T) {
@@ -98,7 +98,7 @@ func TestVerifySignature(t *testing.T) {
 // returns context and app with params set on account keeper
 func createTestApp(isCheckTx bool) (*simapp.SimApp, sdk.Context) {
 	app := simapp.Setup(isCheckTx)
-	ctx := app.BaseApp.NewContext(isCheckTx, ocproto.Header{})
+	ctx := app.BaseApp.NewContext(isCheckTx, tmproto.Header{})
 	app.AccountKeeper.SetParams(ctx, types.DefaultParams())
 
 	return app, ctx

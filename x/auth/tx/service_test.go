@@ -11,26 +11,26 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/flags"
-	clienttx "github.com/line/lbm-sdk/client/tx"
-	"github.com/line/lbm-sdk/crypto/hd"
-	"github.com/line/lbm-sdk/crypto/keyring"
-	kmultisig "github.com/line/lbm-sdk/crypto/keys/multisig"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/testutil"
-	"github.com/line/lbm-sdk/testutil/network"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/types/query"
-	"github.com/line/lbm-sdk/types/rest"
-	"github.com/line/lbm-sdk/types/tx"
-	"github.com/line/lbm-sdk/types/tx/signing"
-	authclient "github.com/line/lbm-sdk/x/auth/client"
-	authtest "github.com/line/lbm-sdk/x/auth/client/testutil"
-	bankcli "github.com/line/lbm-sdk/x/bank/client/testutil"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	clienttx "github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	"github.com/Finschia/finschia-sdk/testutil/rest"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	authclient "github.com/Finschia/finschia-sdk/x/auth/client"
+	authtest "github.com/Finschia/finschia-sdk/x/auth/client/testutil"
+	bankcli "github.com/Finschia/finschia-sdk/x/bank/client/testutil"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 var bankMsgSendEventAction = fmt.Sprintf("message.action='%s'", sdk.MsgTypeURL(&banktypes.MsgSend{}))
@@ -605,12 +605,12 @@ func (s IntegrationTestSuite) TestGetBlockWithTxs_GRPC() {
 		expErrMsg string
 	}{
 		{"nil request", nil, true, "request cannot be nil"},
-		{"empty request", &tx.GetBlockWithTxsRequest{}, true, "height must not be less than 1 or greater than the current height"},
-		{"bad height", &tx.GetBlockWithTxsRequest{Height: 99999999}, true, "height must not be less than 1 or greater than the current height"},
-		{"bad pagination", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 1000, Limit: 100}}, true, "out of range"},
-		{"good request", &tx.GetBlockWithTxsRequest{Height: s.txHeight}, false, ""},
-		{"with pagination request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 1}}, false, ""},
-		{"page all request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 100}}, false, ""},
+		{"empty request", &tx.GetBlockWithTxsRequest{}, true, "service not supported"},
+		{"bad height", &tx.GetBlockWithTxsRequest{Height: 99999999}, true, "service not supported"},
+		{"bad pagination", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 1000, Limit: 100}}, true, "service not supported"},
+		{"good request", &tx.GetBlockWithTxsRequest{Height: s.txHeight}, true, "service not supported"},
+		{"with pagination request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 1}}, true, "service not supported"},
+		{"page all request", &tx.GetBlockWithTxsRequest{Height: s.txHeight, Pagination: &query.PageRequest{Offset: 0, Limit: 100}}, true, "service not supported"},
 	}
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
@@ -642,17 +642,17 @@ func (s IntegrationTestSuite) TestGetBlockWithTxs_GRPCGateway() {
 		{
 			"empty params",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/block/0", val.APIAddress),
-			true, "height must not be less than 1 or greater than the current height",
+			true, "service not supported",
 		},
 		{
 			"bad height",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/block/%d", val.APIAddress, 9999999),
-			true, "height must not be less than 1 or greater than the current height",
+			true, "service not supported",
 		},
 		{
 			"good request",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/block/%d", val.APIAddress, s.txHeight),
-			false, "",
+			true, "service not supported",
 		},
 	}
 	for _, tc := range testCases {

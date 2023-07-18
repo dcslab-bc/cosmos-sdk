@@ -3,23 +3,29 @@ package module
 import (
 	"encoding/json"
 
-	abci "github.com/line/ostracon/abci/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/types/module"
 
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 
-	"github.com/line/lbm-sdk/x/stakingplus"
-	"github.com/line/lbm-sdk/x/stakingplus/keeper"
+	"github.com/Finschia/finschia-sdk/x/stakingplus"
+	"github.com/Finschia/finschia-sdk/x/stakingplus/keeper"
 
-	"github.com/line/lbm-sdk/x/staking"
-	stakingkeeper "github.com/line/lbm-sdk/x/staking/keeper"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	stakingkeeper "github.com/Finschia/finschia-sdk/x/staking/keeper"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
-var _ module.AppModuleBasic = AppModuleBasic{}
+var (
+	_ module.AppModule           = AppModule{}
+	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.BeginBlockAppModule = AppModule{}
+	_ module.EndBlockAppModule   = AppModule{}
+)
 
 // AppModuleBasic defines the basic application module used by the stakingplus module.
 type AppModuleBasic struct {
@@ -32,8 +38,6 @@ func (b AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry
 }
 
 //____________________________________________________________________________
-
-var _ module.AppModule = AppModule{}
 
 // AppModule implements an application module for the stakingplus module.
 type AppModule struct {
@@ -86,14 +90,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	stakingtypes.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper, am.fk))
 	querier := stakingkeeper.Querier{Keeper: am.keeper}
 	stakingtypes.RegisterQueryServer(cfg.QueryServer(), querier)
-
-	// m := keeper.NewMigrator(am.keeper)
-	// migrations := map[uint64]func(sdk.Context) error{}
-	// for ver, handler := range migrations {
-	// 	if err := cfg.RegisterMigration(foundation.ModuleName, ver, handler); err != nil {
-	// 		panic(fmt.Sprintf("failed to migrate x/%s from version %d to %d: %v", stakingplus.ModuleName, ver, ver+1, err))
-	// 	}
-	// }
 }
 
 // InitGenesis performs genesis initialization for the stakingplus module. It returns
@@ -114,7 +110,7 @@ func (am AppModule) ConsensusVersion() uint64 {
 }
 
 // BeginBlock returns the begin blocker for the stakingplus module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {
 	am.impl.BeginBlock(ctx, req)
 }
 

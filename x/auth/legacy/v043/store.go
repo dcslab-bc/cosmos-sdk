@@ -23,18 +23,18 @@ import (
 
 	"github.com/gogo/protobuf/grpc"
 	"github.com/gogo/protobuf/proto"
-	abci "github.com/line/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/line/lbm-sdk/baseapp"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/x/auth/types"
-	"github.com/line/lbm-sdk/x/auth/vesting/exported"
-	vestingtypes "github.com/line/lbm-sdk/x/auth/vesting/types"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/exported"
+	vestingtypes "github.com/Finschia/finschia-sdk/x/auth/vesting/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 const (

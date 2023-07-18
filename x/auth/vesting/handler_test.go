@@ -3,13 +3,13 @@ package vesting_test
 import (
 	"testing"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/auth/vesting"
-	"github.com/line/lbm-sdk/x/auth/vesting/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting/types"
 )
 
 type HandlerTestSuite struct {
@@ -28,7 +28,7 @@ func (suite *HandlerTestSuite) SetupTest() {
 }
 
 func (suite *HandlerTestSuite) TestMsgCreateVestingAccount() {
-	ctx := suite.app.BaseApp.NewContext(false, ocproto.Header{Height: suite.app.LastBlockHeight() + 1})
+	ctx := suite.app.BaseApp.NewContext(false, tmproto.Header{Height: suite.app.LastBlockHeight() + 1})
 
 	balances := sdk.NewCoins(sdk.NewInt64Coin("test", 1000))
 	addr1 := sdk.AccAddress([]byte("addr1_______________"))

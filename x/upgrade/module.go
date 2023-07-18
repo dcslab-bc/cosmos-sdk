@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/gorilla/mux"
+	ocabci "github.com/Finschia/ostracon/abci/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	"github.com/line/lbm-sdk/x/upgrade/client/cli"
-	"github.com/line/lbm-sdk/x/upgrade/client/rest"
-	"github.com/line/lbm-sdk/x/upgrade/keeper"
-	"github.com/line/lbm-sdk/x/upgrade/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/upgrade/client/cli"
+	"github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 func init() {
@@ -25,8 +24,9 @@ func init() {
 }
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule           = AppModule{}
+	_ module.AppModuleBasic      = AppModuleBasic{}
+	_ module.BeginBlockAppModule = AppModule{}
 )
 
 // AppModuleBasic implements the sdk.AppModuleBasic interface
@@ -40,11 +40,6 @@ func (AppModuleBasic) Name() string {
 // RegisterLegacyAminoCodec registers the upgrade types on the LegacyAmino codec
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
-}
-
-// RegisterRESTRoutes registers all REST query handlers
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, r *mux.Router) {
-	rest.RegisterRoutes(clientCtx, r)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the upgrade module.
@@ -133,6 +128,6 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 // BeginBlock calls the upgrade module hooks
 //
 // CONTRACT: this is registered in BeginBlocker *before* all other modules' BeginBlock functions
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context, req ocabci.RequestBeginBlock) {
 	BeginBlocker(am.keeper, ctx, req)
 }

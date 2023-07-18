@@ -7,12 +7,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/codec/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	"github.com/line/lbm-sdk/x/auth/client/cli"
-	"github.com/line/lbm-sdk/x/auth/legacy/legacytx"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	"github.com/Finschia/finschia-sdk/x/auth/client/cli"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
 )
 
 func createTestCodec() *codec.LegacyAmino {
@@ -131,6 +131,7 @@ func TestAminoCodecFullDecodeAndEncode(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, string(marshaledTx), txSigned)
 
+	// The test logic written below is not included in cosmos-sdk
 	// Marshalling/unmarshalling the tx wrapped in a struct should work.
 	txRequest := &cli.BroadcastReq{
 		Mode: "block",

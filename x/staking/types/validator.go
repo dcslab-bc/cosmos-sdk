@@ -7,16 +7,17 @@ import (
 	"strings"
 	"time"
 
-	abci "github.com/line/ostracon/abci/types"
-	ocprotocrypto "github.com/line/ostracon/proto/ostracon/crypto"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+
 	"gopkg.in/yaml.v2"
 
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
@@ -478,16 +479,16 @@ func (v Validator) ConsPubKey() (cryptotypes.PubKey, error) {
 	return pk, nil
 }
 
-// OcConsPublicKey casts Validator.ConsensusPubkey to ocprotocrypto.PubKey.
-func (v Validator) OcConsPublicKey() (ocprotocrypto.PublicKey, error) {
+// OcConsPublicKey casts Validator.ConsensusPubkey to tmprotocrypto.PubKey.
+func (v Validator) OcConsPublicKey() (tmprotocrypto.PublicKey, error) {
 	pk, err := v.ConsPubKey()
 	if err != nil {
-		return ocprotocrypto.PublicKey{}, err
+		return tmprotocrypto.PublicKey{}, err
 	}
 
 	tmPk, err := cryptocodec.ToOcProtoPublicKey(pk)
 	if err != nil {
-		return ocprotocrypto.PublicKey{}, err
+		return tmprotocrypto.PublicKey{}, err
 	}
 
 	return tmPk, nil

@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/bankplus/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/bankplus/types"
 )
 
 // Keys for bankplus store but this prefix must not be overlap with bank key prefix.
@@ -13,8 +13,9 @@ func inactiveAddrKey(addr sdk.AccAddress) []byte {
 	return append(inactiveAddrsKeyPrefix, addr.Bytes()...)
 }
 
-//nolint:deadcode,unused
 // isStoredInactiveAddr checks if the address is stored or not as blocked address
+//
+//nolint:deadcode,unused
 func (keeper BaseKeeper) isStoredInactiveAddr(ctx sdk.Context, address sdk.AccAddress) bool {
 	store := ctx.KVStore(keeper.storeKey)
 	bz := store.Get(inactiveAddrKey(address))

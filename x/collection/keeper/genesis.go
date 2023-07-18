@@ -1,22 +1,80 @@
 package keeper
 
 import (
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/collection"
+	"fmt"
+
+	"github.com/Finschia/ostracon/libs/log"
+
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/collection"
 )
+
+type ProgressReporter struct {
+	logger log.Logger
+
+	workName  string
+	workSize  int
+	workIndex int
+
+	prevPercentage int
+}
+
+func newProgressReporter(logger log.Logger, workName string, workSize int) ProgressReporter {
+	reporter := ProgressReporter{
+		logger:   logger,
+		workName: workName,
+		workSize: workSize,
+	}
+	reporter.report()
+
+	return reporter
+}
+
+func (p ProgressReporter) report() {
+	if p.workSize == 0 {
+		p.logger.Info(fmt.Sprintf("Empty %s", p.workName))
+		return
+	}
+
+	switch p.prevPercentage {
+	case 0:
+		p.logger.Info(fmt.Sprintf("Starting %s ...", p.workName))
+	case 100:
+		p.logger.Info(fmt.Sprintf("Done %s", p.workName))
+	default:
+		p.logger.Info(fmt.Sprintf("Progress: %d%%", p.prevPercentage))
+	}
+}
+
+func (p *ProgressReporter) Tick() {
+	if p.workIndex > p.workSize-1 {
+		return
+	}
+	p.workIndex++
+
+	if percentage := 100 * p.workIndex / p.workSize; percentage != p.prevPercentage {
+		p.prevPercentage = percentage
+		p.report()
+	}
+}
 
 // InitGenesis new collection genesis
 func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
-	k.setParams(ctx, data.Params)
+	k.SetParams(ctx, data.Params)
 
+	reporter := newProgressReporter(k.Logger(ctx), "import contract", len(data.Contracts))
 	for _, contract := range data.Contracts {
 		k.setContract(ctx, contract)
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import next class ids", len(data.NextClassIds))
 	for _, nextClassIDs := range data.NextClassIds {
 		k.setNextClassIDs(ctx, nextClassIDs)
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import classes", len(data.Classes))
 	for _, contractClasses := range data.Classes {
 		contractID := contractClasses.ContractId
 
@@ -30,16 +88,22 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
 				k.setLegacyTokenType(ctx, contractID, nftClass.Id)
 			}
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import next token ids", len(data.NextTokenIds))
 	for _, contractNextTokenIDs := range data.NextTokenIds {
 		contractID := contractNextTokenIDs.ContractId
 
 		for _, nextTokenID := range contractNextTokenIDs.TokenIds {
 			k.setNextTokenID(ctx, contractID, nextTokenID.ClassId, nextTokenID.Id)
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import balances", len(data.Balances))
 	for _, contractBalances := range data.Balances {
 		contractID := contractBalances.ContractId
 
@@ -57,16 +121,22 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
 				}
 			}
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import nfts", len(data.Nfts))
 	for _, contractNFTs := range data.Nfts {
 		contractID := contractNFTs.ContractId
 
 		for _, nft := range contractNFTs.Nfts {
 			k.setNFT(ctx, contractID, nft)
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import parents", len(data.Parents))
 	for _, contractParents := range data.Parents {
 		contractID := contractParents.ContractId
 
@@ -76,8 +146,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
 			k.setParent(ctx, contractID, tokenID, parentID)
 			k.setChild(ctx, contractID, parentID, tokenID)
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import authorizations", len(data.Authorizations))
 	for _, contractAuthorizations := range data.Authorizations {
 		for _, authorization := range contractAuthorizations.Authorizations {
 			holderAddr, err := sdk.AccAddressFromBech32(authorization.Holder)
@@ -90,8 +163,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
 			}
 			k.setAuthorization(ctx, contractAuthorizations.ContractId, holderAddr, operatorAddr)
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import grants", len(data.Grants))
 	for _, contractGrants := range data.Grants {
 		for _, grant := range contractGrants.Grants {
 			granteeAddr, err := sdk.AccAddressFromBech32(grant.Grantee)
@@ -100,15 +176,21 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
 			}
 			k.setGrant(ctx, contractGrants.ContractId, granteeAddr, grant.Permission)
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import statistics (burnt)", len(data.Burnts))
 	for _, contractBurnts := range data.Burnts {
 		contractID := contractBurnts.ContractId
 		for _, burnt := range contractBurnts.Statistics {
 			k.setBurnt(ctx, contractID, burnt.ClassId, burnt.Amount)
 		}
+
+		reporter.Tick()
 	}
 
+	reporter = newProgressReporter(k.Logger(ctx), "import statistics (supply)", len(data.Supplies))
 	for _, contractSupplies := range data.Supplies {
 		contractID := contractSupplies.ContractId
 		for _, supply := range contractSupplies.Statistics {
@@ -119,6 +201,8 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *collection.GenesisState) {
 			minted := supply.Amount.Add(burnt)
 			k.setMinted(ctx, contractID, supply.ClassId, minted)
 		}
+
+		reporter.Tick()
 	}
 }
 
@@ -154,7 +238,7 @@ func (k Keeper) getContracts(ctx sdk.Context) []collection.Contract {
 func (k Keeper) getClasses(ctx sdk.Context, contracts []collection.Contract) []collection.ContractClasses {
 	var classes []collection.ContractClasses
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractClasses := collection.ContractClasses{
 			ContractId: contractID,
 		}
@@ -185,7 +269,7 @@ func (k Keeper) getAllNextClassIDs(ctx sdk.Context) []collection.NextClassIDs {
 func (k Keeper) getNextTokenIDs(ctx sdk.Context, contracts []collection.Contract) []collection.ContractNextTokenIDs {
 	var nextIDs []collection.ContractNextTokenIDs
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractNextIDs := collection.ContractNextTokenIDs{
 			ContractId: contractID,
 		}
@@ -205,7 +289,7 @@ func (k Keeper) getNextTokenIDs(ctx sdk.Context, contracts []collection.Contract
 func (k Keeper) getBalances(ctx sdk.Context, contracts []collection.Contract) []collection.ContractBalances {
 	var balances []collection.ContractBalances
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractBalances := collection.ContractBalances{
 			ContractId: contractID,
 		}
@@ -245,7 +329,7 @@ func (k Keeper) getContractBalances(ctx sdk.Context, contractID string) []collec
 func (k Keeper) getNFTs(ctx sdk.Context, contracts []collection.Contract) []collection.ContractNFTs {
 	var parents []collection.ContractNFTs
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractParents := collection.ContractNFTs{
 			ContractId: contractID,
 		}
@@ -265,7 +349,7 @@ func (k Keeper) getNFTs(ctx sdk.Context, contracts []collection.Contract) []coll
 func (k Keeper) getParents(ctx sdk.Context, contracts []collection.Contract) []collection.ContractTokenRelations {
 	var parents []collection.ContractTokenRelations
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractParents := collection.ContractTokenRelations{
 			ContractId: contractID,
 		}
@@ -289,7 +373,7 @@ func (k Keeper) getParents(ctx sdk.Context, contracts []collection.Contract) []c
 func (k Keeper) getAuthorizations(ctx sdk.Context, contracts []collection.Contract) []collection.ContractAuthorizations {
 	var authorizations []collection.ContractAuthorizations
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractAuthorizations := collection.ContractAuthorizations{
 			ContractId: contractID,
 		}
@@ -309,7 +393,7 @@ func (k Keeper) getAuthorizations(ctx sdk.Context, contracts []collection.Contra
 func (k Keeper) getGrants(ctx sdk.Context, contracts []collection.Contract) []collection.ContractGrants {
 	var grants []collection.ContractGrants
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractGrants := collection.ContractGrants{
 			ContractId: contractID,
 		}
@@ -337,7 +421,7 @@ func (k Keeper) getBurnts(ctx sdk.Context, contracts []collection.Contract) []co
 func (k Keeper) getStatistics(ctx sdk.Context, contracts []collection.Contract, iterator func(ctx sdk.Context, contractID string, cb func(classID string, amount sdk.Int) (stop bool))) []collection.ContractStatistics {
 	var statistics []collection.ContractStatistics
 	for _, contract := range contracts {
-		contractID := contract.ContractId
+		contractID := contract.Id
 		contractStatistics := collection.ContractStatistics{
 			ContractId: contractID,
 		}

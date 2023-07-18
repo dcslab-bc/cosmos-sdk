@@ -6,9 +6,9 @@ package client_test
 import (
 	"fmt"
 
-	abci "github.com/line/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 func (s *IntegrationTestSuite) TestQueryABCIHeight() {

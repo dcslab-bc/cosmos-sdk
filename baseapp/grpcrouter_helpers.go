@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	gogogrpc "github.com/gogo/protobuf/grpc"
-	abci "github.com/line/ostracon/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"google.golang.org/grpc"
 
-	"github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // QueryServiceTestHelper provides a helper for making grpc query service

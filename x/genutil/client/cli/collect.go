@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	octypes "github.com/line/ostracon/types"
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/flags"
-	"github.com/line/lbm-sdk/server"
-	"github.com/line/lbm-sdk/x/genutil"
-	"github.com/line/lbm-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 const flagGenTxDir = "gentx-dir"
@@ -65,8 +65,6 @@ func CollectGenTxsCmd(genBalIterator types.GenesisBalancesIterator, defaultNodeH
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(flagGenTxDir, "", "override default \"gentx\" directory from which collect and execute genesis transactions; default [--home]/config/gentx/")
-	cmd.Flags().String(flags.FlagPrivKeyType, flags.DefaultPrivKeyType, "specify validator's private key type (ed25519|composite). \n"+
-		"set this to priv_key.type in priv_validator_key.json; default `ed25519`")
 
 	return cmd
 }

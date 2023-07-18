@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"math/rand"
 
-	abci "github.com/line/ostracon/abci/types"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-	"github.com/line/ostracon/types"
+	"github.com/Finschia/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/types/simulation"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/types/simulation"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 const (
@@ -164,10 +164,10 @@ func randomConsensusParams(r *rand.Rand, appState json.RawMessage, cdc codec.JSO
 			MaxBytes: int64(simulation.RandIntBetween(r, 20000000, 30000000)),
 			MaxGas:   -1,
 		},
-		Validator: &ocproto.ValidatorParams{
+		Validator: &tmproto.ValidatorParams{
 			PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519},
 		},
-		Evidence: &ocproto.EvidenceParams{
+		Evidence: &tmproto.EvidenceParams{
 			MaxAgeNumBlocks: int64(stakingGenesisState.Params.UnbondingTime / AverageBlockTime),
 			MaxAgeDuration:  stakingGenesisState.Params.UnbondingTime,
 		},

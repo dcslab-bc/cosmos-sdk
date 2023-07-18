@@ -6,8 +6,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/line/lbm-sdk/tests/mocks"
-	sdk "github.com/line/lbm-sdk/types"
+	"github.com/Finschia/finschia-sdk/tests/mocks"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 type handlerTestSuite struct {
@@ -36,7 +36,7 @@ func (s *handlerTestSuite) TestChainAnteDecorators() {
 	mockAnteDecorator2 := mocks.NewMockAnteDecorator(mockCtrl)
 	// NOTE: we can't check that mockAnteDecorator2 is passed as the last argument because
 	// ChainAnteDecorators wraps the decorators into closures, so each decorator is
-	// receving a closure.
+	// receiving a closure.
 	mockAnteDecorator1.EXPECT().AnteHandle(gomock.Eq(ctx), gomock.Eq(tx), true, gomock.Any()).Times(1)
 	mockAnteDecorator2.EXPECT().AnteHandle(gomock.Eq(ctx), gomock.Eq(tx), true, gomock.Any()).Times(1)
 

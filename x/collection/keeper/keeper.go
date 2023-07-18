@@ -1,16 +1,17 @@
 package keeper
 
 import (
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/telemetry"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/collection"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/collection"
+	"github.com/Finschia/finschia-sdk/x/token/class"
 )
 
 // Keeper defines the collection module Keeper
 type Keeper struct {
-	accountKeeper collection.AccountKeeper
-	classKeeper   collection.ClassKeeper
+	classKeeper collection.ClassKeeper
 
 	// The (unexposed) keys used to access the stores from the Context.
 	storeKey sdk.StoreKey
@@ -23,20 +24,28 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.Codec,
 	key sdk.StoreKey,
-	ak collection.AccountKeeper,
 	ck collection.ClassKeeper,
 ) Keeper {
 	return Keeper{
-		accountKeeper: ak,
-		classKeeper:   ck,
-		storeKey:      key,
-		cdc:           cdc,
+		classKeeper: ck,
+		storeKey:    key,
+		cdc:         cdc,
 	}
 }
 
-func (k Keeper) createAccountOnAbsence(ctx sdk.Context, address sdk.AccAddress) {
-	if !k.accountKeeper.HasAccount(ctx, address) {
-		defer telemetry.IncrCounter(1, "new", "account")
-		k.accountKeeper.SetAccount(ctx, k.accountKeeper.NewAccountWithAddress(ctx, address))
+// Logger returns a module-specific logger.
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
+	return ctx.Logger().With("module", "x/"+collection.ModuleName)
+}
+
+func ValidateLegacyContract(k Keeper, ctx sdk.Context, contractID string) error {
+	if !k.classKeeper.HasID(ctx, contractID) {
+		return class.ErrContractNotExist.Wrap(contractID)
 	}
+
+	if _, err := k.GetContract(ctx, contractID); err != nil {
+		return err
+	}
+
+	return nil
 }

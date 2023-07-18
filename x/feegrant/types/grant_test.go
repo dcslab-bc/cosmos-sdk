@@ -5,12 +5,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 func TestGrant(t *testing.T) {
@@ -18,7 +17,7 @@ func TestGrant(t *testing.T) {
 	addr, _ := sdk.AccAddressFromBech32("link1qyqszqgpqyqszqgpqyqszqgpqyqszqgp8apuk5")
 	addr2, _ := sdk.AccAddressFromBech32("link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt")
 	atom := sdk.NewCoins(sdk.NewInt64Coin("atom", 555))
-	ctx := app.BaseApp.NewContext(false, ocproto.Header{
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{
 		Time: time.Now(),
 	})
 	now := ctx.BlockTime()

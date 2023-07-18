@@ -3,17 +3,18 @@ package proofs
 import (
 	"sort"
 
-	"github.com/line/ostracon/libs/rand"
-	occrypto "github.com/line/ostracon/proto/ostracon/crypto"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	sdkmaps "github.com/line/lbm-sdk/store/internal/maps"
+	"github.com/Finschia/ostracon/libs/rand"
+
+	sdkmaps "github.com/Finschia/finschia-sdk/store/internal/maps"
 )
 
 // SimpleResult contains a merkle.SimpleProof along with all data needed to build the confio/proof
 type SimpleResult struct {
 	Key      []byte
 	Value    []byte
-	Proof    *occrypto.Proof
+	Proof    *tmcrypto.Proof
 	RootHash []byte
 }
 

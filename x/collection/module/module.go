@@ -5,20 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/spf13/cobra"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	"github.com/line/lbm-sdk/x/collection"
-
-	"github.com/line/lbm-sdk/x/collection/client/cli"
-	"github.com/line/lbm-sdk/x/collection/keeper"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/collection"
+	"github.com/Finschia/finschia-sdk/x/collection/client/cli"
+	"github.com/Finschia/finschia-sdk/x/collection/keeper"
 )
 
 var (
@@ -52,9 +50,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 	return collection.ValidateGenesis(data)
 }
-
-// RegisterRESTRoutes registers all REST query handlers
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, r *mux.Router) {}
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the collection module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
@@ -112,14 +107,6 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	collection.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServer(am.keeper))
 	collection.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
-
-	// m := keeper.NewMigrator(am.keeper)
-	// migrations := map[uint64]func(sdk.Context) error{}
-	// for ver, handler := range migrations {
-	// 	if err := cfg.RegisterMigration(collection.ModuleName, ver, handler); err != nil {
-	// 		panic(fmt.Sprintf("failed to migrate x/%s from version %d to %d: %v", collection.ModuleName, ver, ver+1, err))
-	// 	}
-	// }
 }
 
 // InitGenesis performs genesis initialization for the collection module. It returns
@@ -140,11 +127,3 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
-
-// BeginBlock performs a no-op.
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
-
-// EndBlock performs a no-op.
-func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}

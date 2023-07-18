@@ -8,13 +8,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/line/ostracon/mempool"
-	octypes "github.com/line/ostracon/types"
+	"github.com/Finschia/ostracon/mempool"
+	octypes "github.com/Finschia/ostracon/types"
 
-	"github.com/line/lbm-sdk/client/flags"
-	sdk "github.com/line/lbm-sdk/types"
-	sdkerrors "github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx"
 )
 
 // BroadcastTx broadcasts a transactions either synchronously or asynchronously
@@ -56,7 +56,8 @@ func CheckTendermintError(err error, tx octypes.Tx) *sdk.TxResponse {
 	txHash := fmt.Sprintf("%X", tx.Hash())
 
 	switch {
-	case strings.Contains(errStr, strings.ToLower(mempool.ErrTxInCache.Error())):
+	case strings.Contains(errStr, strings.ToLower(mempool.ErrTxInCache.Error())),
+		strings.Contains(errStr, strings.ToLower(mempool.ErrTxInMap.Error())):
 		return &sdk.TxResponse{
 			Code:      sdkerrors.ErrTxInMempoolCache.ABCICode(),
 			Codespace: sdkerrors.ErrTxInMempoolCache.Codespace(),

@@ -8,11 +8,11 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	abci "github.com/line/ostracon/abci/types"
-	ctypes "github.com/line/ostracon/rpc/core/types"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/line/lbm-sdk/codec"
-	codectypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
 )
 
 func (gi GasInfo) String() string {
@@ -35,6 +35,7 @@ func (r Result) GetEvents() Events {
 }
 
 // ABCIMessageLogs represents a slice of ABCIMessageLog.
+//
 //easyjson:json
 type ABCIMessageLogs []ABCIMessageLog
 
@@ -80,7 +81,6 @@ func NewResponseResultTx(res *ctypes.ResultTx, anyTx *codectypes.Any, timestamp 
 		Tx:        anyTx,
 		Timestamp: timestamp,
 		Events:    res.TxResult.Events,
-		Index:     res.Index,
 	}
 }
 

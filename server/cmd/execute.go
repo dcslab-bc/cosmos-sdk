@@ -3,14 +3,13 @@ package cmd
 import (
 	"context"
 
-	ostcfg "github.com/line/ostracon/config"
-	ostcli "github.com/line/ostracon/libs/cli"
-	"github.com/rs/zerolog"
+	ostcfg "github.com/Finschia/ostracon/config"
+	ostcli "github.com/Finschia/ostracon/libs/cli"
 	"github.com/spf13/cobra"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/flags"
-	"github.com/line/lbm-sdk/server"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server"
 )
 
 const (
@@ -33,7 +32,7 @@ func Execute(rootCmd *cobra.Command, defaultHome string) error {
 	ctx = context.WithValue(ctx, client.ClientContextKey, &client.Context{})
 	ctx = context.WithValue(ctx, server.ServerContextKey, srvCtx)
 
-	rootCmd.PersistentFlags().String(flags.FlagLogLevel, zerolog.InfoLevel.String(), "The logging level (trace|debug|info|warn|error|fatal|panic)")
+	rootCmd.PersistentFlags().String(flags.FlagLogLevel, ostcfg.DefaultPackageLogLevels(), "The logging level by modules (debug|info|error|none)")
 	rootCmd.PersistentFlags().String(flags.FlagLogFormat, ostcfg.LogFormatPlain, "The logging format (json|plain)")
 
 	executor := ostcli.PrepareBaseCmd(rootCmd, envPrefix, defaultHome)

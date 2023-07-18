@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/line/ostracon/abci/types"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/evidence/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 func TestEquivocation_Valid(t *testing.T) {

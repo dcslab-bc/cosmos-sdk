@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"time"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/baseapp"
-	"github.com/line/lbm-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	authtypes "github.com/line/lbm-sdk/x/auth/types"
-	"github.com/line/lbm-sdk/x/evidence/exported"
-	"github.com/line/lbm-sdk/x/evidence/keeper"
-	"github.com/line/lbm-sdk/x/evidence/types"
-	minttypes "github.com/line/lbm-sdk/x/mint/types"
-	"github.com/line/lbm-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
+	"github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
+	minttypes "github.com/Finschia/finschia-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/x/staking"
 )
 
 var (
@@ -93,7 +93,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	app.EvidenceKeeper = *evidenceKeeper
 
-	suite.ctx = app.BaseApp.NewContext(checkTx, ocproto.Header{Height: 1})
+	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{Height: 1})
 	suite.querier = keeper.NewQuerier(*evidenceKeeper, app.LegacyAmino())
 	suite.app = app
 

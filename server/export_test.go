@@ -12,22 +12,23 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	abci "github.com/line/ostracon/abci/types"
-	ostjson "github.com/line/ostracon/libs/json"
-	"github.com/line/ostracon/libs/log"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-	octypes "github.com/line/ostracon/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	ostjson "github.com/Finschia/ostracon/libs/json"
+	"github.com/Finschia/ostracon/libs/log"
+	octypes "github.com/Finschia/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/flags"
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/server"
-	"github.com/line/lbm-sdk/server/types"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/types/errors"
-	"github.com/line/lbm-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/server/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/genutil"
 )
 
 func TestExportCmd_ConsensusParams(t *testing.T) {
@@ -100,7 +101,7 @@ func TestExportCmd_Height(t *testing.T) {
 
 			// Fast forward to block `tc.fastForward`.
 			for i := int64(2); i <= tc.fastForward; i++ {
-				app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: i}})
+				app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: i}})
 				app.Commit()
 			}
 
@@ -129,7 +130,7 @@ func setupApp(t *testing.T, tempDir string) (*simapp.SimApp, context.Context, *o
 	logger := log.NewOCLogger(log.NewSyncWriter(os.Stdout))
 	db := dbm.NewMemDB()
 	encCfg := simapp.MakeTestEncodingConfig()
-	app := simapp.NewSimApp(logger, db, nil, true, map[int64]bool{}, tempDir, 0, encCfg, simapp.EmptyAppOptions{}, nil)
+	app := simapp.NewSimApp(logger, db, nil, true, map[int64]bool{}, tempDir, 0, encCfg, simapp.EmptyAppOptions{})
 
 	serverCtx := server.NewDefaultContext()
 	serverCtx.Config.RootDir = tempDir
@@ -153,13 +154,13 @@ func setupApp(t *testing.T, tempDir string) (*simapp.SimApp, context.Context, *o
 
 			var simApp *simapp.SimApp
 			if height != -1 {
-				simApp = simapp.NewSimApp(logger, db, nil, false, map[int64]bool{}, "", 0, encCfg, appOptons, nil)
+				simApp = simapp.NewSimApp(logger, db, nil, false, map[int64]bool{}, "", 0, encCfg, appOptons)
 
 				if err := simApp.LoadHeight(height); err != nil {
 					return types.ExportedApp{}, err
 				}
 			} else {
-				simApp = simapp.NewSimApp(logger, db, nil, true, map[int64]bool{}, "", 0, encCfg, appOptons, nil)
+				simApp = simapp.NewSimApp(logger, db, nil, true, map[int64]bool{}, "", 0, encCfg, appOptons)
 			}
 
 			return simApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)

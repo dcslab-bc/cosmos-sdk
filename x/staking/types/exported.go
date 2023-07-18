@@ -1,10 +1,10 @@
 package types
 
 import (
-	ocprotocrypto "github.com/line/ostracon/proto/ostracon/crypto"
+	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	sdk "github.com/line/lbm-sdk/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // DelegationI delegation bond for a delegated proof of stake system
@@ -24,7 +24,7 @@ type ValidatorI interface {
 	IsUnbonding() bool                                      // check if has status unbonding
 	GetOperator() sdk.ValAddress                            // operator address to receive/return validators coins
 	ConsPubKey() (cryptotypes.PubKey, error)                // validation consensus pubkey (cryptotypes.PubKey)
-	OcConsPublicKey() (ocprotocrypto.PublicKey, error)      // validation consensus pubkey (Ostracon)
+	OcConsPublicKey() (tmprotocrypto.PublicKey, error)      // validation consensus pubkey (Ostracon)
 	GetConsAddr() (sdk.ConsAddress, error)                  // validation consensus address
 	GetTokens() sdk.Int                                     // validation tokens
 	GetBondedTokens() sdk.Int                               // validator bonded tokens

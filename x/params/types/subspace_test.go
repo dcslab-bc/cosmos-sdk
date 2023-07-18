@@ -5,16 +5,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/line/ostracon/libs/log"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/codec"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/store"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/params/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/store"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 type SubspaceTestSuite struct {
@@ -38,7 +39,7 @@ func (suite *SubspaceTestSuite) SetupTest() {
 
 	suite.cdc = encCfg.Marshaler
 	suite.amino = encCfg.Amino
-	suite.ctx = sdk.NewContext(ms, ocproto.Header{}, false, log.NewNopLogger())
+	suite.ctx = sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
 	suite.ss = ss.WithKeyTable(paramKeyTable())
 }
 

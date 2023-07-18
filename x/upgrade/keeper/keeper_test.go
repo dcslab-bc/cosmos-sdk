@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/line/lbm-sdk/simapp"
-	store "github.com/line/lbm-sdk/store/types"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/types/module"
-	"github.com/line/lbm-sdk/x/upgrade/keeper"
-	"github.com/line/lbm-sdk/x/upgrade/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	store "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/upgrade/keeper"
+	"github.com/Finschia/finschia-sdk/x/upgrade/types"
 )
 
 type KeeperTestSuite struct {
@@ -33,7 +33,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.T().Log("home dir:", homeDir)
 	s.homeDir = homeDir
 	s.app = app
-	s.ctx = app.BaseApp.NewContext(false, ocproto.Header{
+	s.ctx = app.BaseApp.NewContext(false, tmproto.Header{
 		Time:   time.Now(),
 		Height: 10,
 	})
@@ -94,16 +94,6 @@ func (s *KeeperTestSuite) TestScheduleUpgrade() {
 			name: "unsuccessful schedule: invalid plan",
 			plan: types.Plan{
 				Height: 123450000,
-			},
-			setup:   func() {},
-			expPass: false,
-		},
-		{
-			name: "unsuccessful time schedule: due date in past",
-			plan: types.Plan{
-				Name: "all-good",
-				Info: "some text here",
-				Time: s.ctx.BlockTime(),
 			},
 			setup:   func() {},
 			expPass: false,

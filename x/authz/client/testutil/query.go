@@ -5,19 +5,19 @@ import (
 	"strings"
 	"time"
 
-	ostcli "github.com/line/ostracon/libs/cli"
+	ostcli "github.com/Finschia/ostracon/libs/cli"
 
-	"github.com/line/lbm-sdk/client/flags"
-	clitestutil "github.com/line/lbm-sdk/testutil/cli"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/authz"
-	"github.com/line/lbm-sdk/x/authz/client/cli"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	clitestutil "github.com/Finschia/finschia-sdk/testutil/cli"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	"github.com/Finschia/finschia-sdk/x/authz/client/cli"
 )
 
 func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 	val := s.network.Validators[0]
 
-	grantee := s.grantee
+	grantee := s.grantee[0]
 	twoHours := time.Now().Add(time.Minute * time.Duration(120)).Unix()
 
 	_, err := ExecGrant(
@@ -95,7 +95,7 @@ func (s *IntegrationTestSuite) TestQueryAuthorizations() {
 func (s *IntegrationTestSuite) TestQueryAuthorization() {
 	val := s.network.Validators[0]
 
-	grantee := s.grantee
+	grantee := s.grantee[0]
 	twoHours := time.Now().Add(time.Minute * time.Duration(120)).Unix()
 
 	_, err := ExecGrant(

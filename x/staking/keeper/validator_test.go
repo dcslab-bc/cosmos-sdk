@@ -5,17 +5,17 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/line/ostracon/abci/types"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/staking/keeper"
-	"github.com/line/lbm-sdk/x/staking/teststaking"
-	"github.com/line/lbm-sdk/x/staking/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/keeper"
+	"github.com/Finschia/finschia-sdk/x/staking/teststaking"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func newMonikerValidator(t testing.TB, operator sdk.ValAddress, pubKey cryptotypes.PubKey, moniker string) types.Validator {
@@ -1041,7 +1041,7 @@ func TestApplyAndReturnValidatorSetUpdatesBondTransition(t *testing.T) {
 
 func TestUpdateValidatorCommission(t *testing.T) {
 	app, ctx, _, addrVals := bootstrapValidatorTest(t, 1000, 20)
-	ctx = ctx.WithBlockHeader(ocproto.Header{Time: time.Now().UTC()})
+	ctx = ctx.WithBlockHeader(tmproto.Header{Time: time.Now().UTC()})
 
 	commission1 := types.NewCommissionWithTime(
 		sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(3, 1),

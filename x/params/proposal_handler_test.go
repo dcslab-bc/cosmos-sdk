@@ -4,15 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	govtypes "github.com/line/lbm-sdk/x/gov/types"
-	"github.com/line/lbm-sdk/x/params"
-	"github.com/line/lbm-sdk/x/params/types/proposal"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
+	"github.com/Finschia/finschia-sdk/x/params"
+	"github.com/Finschia/finschia-sdk/x/params/types/proposal"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 type HandlerTestSuite struct {
@@ -25,7 +24,7 @@ type HandlerTestSuite struct {
 
 func (suite *HandlerTestSuite) SetupTest() {
 	suite.app = simapp.Setup(false)
-	suite.ctx = suite.app.BaseApp.NewContext(false, ocproto.Header{})
+	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{})
 	suite.govHandler = params.NewParamChangeProposalHandler(suite.app.ParamsKeeper)
 }
 

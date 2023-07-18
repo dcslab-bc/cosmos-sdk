@@ -2,20 +2,17 @@ package rpc
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/spf13/cobra"
 
-	"github.com/line/ostracon/libs/bytes"
-	"github.com/line/ostracon/p2p"
-	ctypes "github.com/line/ostracon/rpc/core/types"
+	"github.com/Finschia/ostracon/libs/bytes"
+	"github.com/Finschia/ostracon/p2p"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 
-	"github.com/line/lbm-sdk/client"
-	"github.com/line/lbm-sdk/client/flags"
-	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
-	cryptotypes "github.com/line/lbm-sdk/crypto/types"
-	"github.com/line/lbm-sdk/types/rest"
-	"github.com/line/lbm-sdk/version"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
 )
 
 // ValidatorInfo is info about the node's validator, same as Ostracon,
@@ -87,46 +84,4 @@ func getNodeStatus(clientCtx client.Context) (*ctypes.ResultStatus, error) {
 	}
 
 	return node.Status(context.Background())
-}
-
-// NodeInfoResponse defines a response type that contains node status and version
-// information.
-type NodeInfoResponse struct {
-	p2p.DefaultNodeInfo `json:"node_info"`
-
-	ApplicationVersion version.Info `json:"application_version"`
-}
-
-// REST handler for node info
-func NodeInfoRequestHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		status, err := getNodeStatus(clientCtx)
-		if rest.CheckInternalServerError(w, err) {
-			return
-		}
-
-		resp := NodeInfoResponse{
-			DefaultNodeInfo:    status.NodeInfo,
-			ApplicationVersion: version.NewInfo(),
-		}
-
-		rest.PostProcessResponseBare(w, clientCtx, resp)
-	}
-}
-
-// SyncingResponse defines a response type that contains node syncing information.
-type SyncingResponse struct {
-	Syncing bool `json:"syncing"`
-}
-
-// REST handler for node syncing
-func NodeSyncingRequestHandlerFn(clientCtx client.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		status, err := getNodeStatus(clientCtx)
-		if rest.CheckInternalServerError(w, err) {
-			return
-		}
-
-		rest.PostProcessResponseBare(w, clientCtx, SyncingResponse{Syncing: status.SyncInfo.CatchingUp})
-	}
 }

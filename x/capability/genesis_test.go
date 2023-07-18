@@ -1,17 +1,18 @@
 package capability_test
 
 import (
-	"github.com/line/ostracon/libs/log"
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/line/lbm-sdk/simapp"
-	sdk "github.com/line/lbm-sdk/types"
-	banktypes "github.com/line/lbm-sdk/x/bank/types"
-	"github.com/line/lbm-sdk/x/capability"
-	"github.com/line/lbm-sdk/x/capability/keeper"
-	"github.com/line/lbm-sdk/x/capability/types"
-	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
+	"github.com/Finschia/ostracon/libs/log"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/capability"
+	"github.com/Finschia/finschia-sdk/x/capability/keeper"
+	"github.com/Finschia/finschia-sdk/x/capability/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func (suite *CapabilityTestSuite) TestGenesis() {
@@ -35,12 +36,12 @@ func (suite *CapabilityTestSuite) TestGenesis() {
 	// and initialize app from exported genesis state above.
 	db := dbm.NewMemDB()
 	encCdc := simapp.MakeTestEncodingConfig()
-	newApp := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encCdc, simapp.EmptyAppOptions{}, nil)
+	newApp := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, simapp.DefaultNodeHome, 5, encCdc, simapp.EmptyAppOptions{})
 
 	newKeeper := keeper.NewKeeper(suite.cdc, newApp.GetKey(types.StoreKey), newApp.GetMemKey(types.MemStoreKey))
 	newSk1 := newKeeper.ScopeToModule(banktypes.ModuleName)
 	newSk2 := newKeeper.ScopeToModule(stakingtypes.ModuleName)
-	deliverCtx, _ := newApp.BaseApp.NewUncachedContext(false, ocproto.Header{}).WithBlockGasMeter(sdk.NewInfiniteGasMeter()).CacheContext()
+	deliverCtx, _ := newApp.BaseApp.NewUncachedContext(false, tmproto.Header{}).WithBlockGasMeter(sdk.NewInfiniteGasMeter()).CacheContext()
 
 	capability.InitGenesis(deliverCtx, *newKeeper, *genState)
 

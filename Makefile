@@ -9,7 +9,7 @@ BINDIR ?= $(GOPATH)/bin
 BUILDDIR ?= $(CURDIR)/build
 SIMAPP = ./simapp
 MOCKS_DIR = $(CURDIR)/tests/mocks
-HTTPS_GIT := https://github.com/line/lbm-sdk.git
+HTTPS_GIT := https://github.com/Finschia/finschia-sdk.git
 DOCKER := $(shell which docker)
 DOCKER_BUF := $(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace bufbuild/buf
 CGO_ENABLED ?= 1
@@ -93,12 +93,12 @@ build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
 # process linker flags
 
-ldflags = -X github.com/line/lbm-sdk/version.Name=sim \
-		  -X github.com/line/lbm-sdk/version.AppName=simd \
-		  -X github.com/line/lbm-sdk/version.Version=$(VERSION) \
-		  -X github.com/line/lbm-sdk/version.Commit=$(COMMIT) \
-		  -X github.com/line/lbm-sdk/types.DBBackend=$(DB_BACKEND) \
-		  -X "github.com/line/lbm-sdk/version.BuildTags=$(build_tags_comma_sep)"
+ldflags = -X github.com/Finschia/finschia-sdk/version.Name=sim \
+		  -X github.com/Finschia/finschia-sdk/version.AppName=simd \
+		  -X github.com/Finschia/finschia-sdk/version.Version=$(VERSION) \
+		  -X github.com/Finschia/finschia-sdk/version.Commit=$(COMMIT) \
+		  -X github.com/Finschia/finschia-sdk/types.DBBackend=$(DB_BACKEND) \
+		  -X "github.com/Finschia/finschia-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 ifeq (,$(findstring nostrip,$(LBM_BUILD_OPTIONS)))
   ldflags += -w -s
@@ -139,7 +139,7 @@ $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/
 
 cosmovisor:
-	$(MAKE) -C cosmovisor cosmovisor
+	$(MAKE) -C tools/cosmovisor test
 
 .PHONY: build build-linux cosmovisor
 
@@ -151,7 +151,8 @@ mocks: $(MOCKS_DIR)
 	mockgen -source=types/router.go -package mocks -destination tests/mocks/types_router.go
 	mockgen -source=types/handler.go -package mocks -destination tests/mocks/types_handler.go
 	mockgen -package mocks -destination tests/mocks/grpc_server.go github.com/gogo/protobuf/grpc Server
-	mockgen -package mocks -destination tests/mocks/tendermint_tendermint_libs_log_DB.go github.com/line/ostracon/libs/log Logger
+	mockgen -package mocks -destination tests/mocks/tendermint_tendermint_libs_log_DB.go github.com/Finschia/ostracon/libs/log Logger
+	mockgen -source=x/stakingplus/expected_keepers.go -package testutil -destination x/stakingplus/testutil/expected_keepers_mocks.go
 .PHONY: mocks
 
 $(MOCKS_DIR):
@@ -190,7 +191,7 @@ update-swagger-docs: statik
 .PHONY: update-swagger-docs
 
 godocs:
-	@echo "--> Wait a few seconds and visit http://localhost:6060/pkg/github.com/line/lbm-sdk/types"
+	@echo "--> Wait a few seconds and visit http://localhost:6060/pkg/github.com/Finschia/finschia-sdk/types"
 	godoc -http=:6060
 
 # This builds a docs site for each branch/tag in `./docs/versions`
@@ -376,12 +377,12 @@ format:
 DEVDOC_SAVE = docker commit `docker ps -a -n 1 -q` devdoc:local
 
 devdoc-init:
-	$(DOCKER) run -it -v "$(CURDIR):/go/src/github.com/line/lbm-sdk" -w "/go/src/github.com/line/lbm-sdk" tendermint/devdoc echo
+	$(DOCKER) run -it -v "$(CURDIR):/go/src/github.com/Finschia/finschia-sdk" -w "/go/src/github.com/Finschia/finschia-sdk" tendermint/devdoc echo
 	# TODO make this safer
 	$(call DEVDOC_SAVE)
 
 devdoc:
-	$(DOCKER) run -it -v "$(CURDIR):/go/src/github.com/line/lbm-sdk" -w "/go/src/github.com/line/lbm-sdk" devdoc:local bash
+	$(DOCKER) run -it -v "$(CURDIR):/go/src/github.com/Finschia/finschia-sdk" -w "/go/src/github.com/Finschia/finschia-sdk" devdoc:local bash
 
 devdoc-save:
 	# TODO make this safer
@@ -568,3 +569,64 @@ libsodium:
 		$(MAKE) install; \
 	fi
 .PHONY: libsodium
+
+###############################################################################
+###                                release                                  ###
+###############################################################################
+
+GORELEASER_CONFIG ?= .goreleaser.yml
+
+GORELEASER_BUILD_LDF = $(ldflags)
+GORELEASER_BUILD_LDF := $(strip $(GORELEASER_BUILD_LDF))
+
+GORELEASER_SKIP_VALIDATE ?= false
+GORELEASER_DEBUG         ?= false
+GORELEASER_IMAGE         ?= line/goreleaserx:1.13.1-1.19.3
+GORELEASER_RELEASE       ?= false
+GO_MOD_NAME              := github.com/Finschia/finschia-sdk
+
+ifeq ($(GORELEASER_RELEASE),true)
+	GORELEASER_SKIP_VALIDATE := false
+	GORELEASER_SKIP_PUBLISH  := release --skip-publish=false
+else
+	GORELEASER_SKIP_PUBLISH  := --skip-publish=true
+	GORELEASER_SKIP_VALIDATE ?= false
+	GITHUB_TOKEN=
+endif
+
+ifeq ($(GORELEASER_MOUNT_CONFIG),true)
+	GORELEASER_IMAGE := -v $(HOME)/.docker/config.json:/root/.docker/config.json $(GORELEASER_IMAGE)
+endif
+
+release-snapshot:
+	docker run --rm \
+		-e BUILD_TAGS="$(build_tags)" \
+		-e BUILD_VARS='$(GORELEASER_BUILD_LDF)' \
+		-e GITHUB_TOKEN="$(GITHUB_TOKEN)" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(shell pwd):/go/src/$(GO_MOD_NAME) \
+		-w /go/src/$(GO_MOD_NAME) \
+		$(GORELEASER_IMAGE) \
+		build --snapshot \
+		-f "$(GORELEASER_CONFIG)" \
+		--skip-validate=$(GORELEASER_SKIP_VALIDATE) \
+		--debug=$(GORELEASER_DEBUG) \
+		--rm-dist
+
+release:
+	docker run --rm \
+		-e BUILD_TAGS="$(build_tags)" \
+		-e BUILD_VARS='$(GORELEASER_BUILD_LDF)' \
+		-e GITHUB_TOKEN="$(GITHUB_TOKEN)" \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(shell pwd):/go/src/$(GO_MOD_NAME) \
+		-w /go/src/$(GO_MOD_NAME) \
+		$(GORELEASER_IMAGE) \
+		$(GORELEASER_SKIP_PUBLISH) \
+		-f "$(GORELEASER_CONFIG)" \
+		--skip-validate=$(GORELEASER_SKIP_VALIDATE) \
+		--skip-announce=true \
+		--debug=$(GORELEASER_DEBUG) \
+		--rm-dist
+
+.PHONY: release-snapshot release

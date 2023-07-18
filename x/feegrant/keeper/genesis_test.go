@@ -4,16 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	ocproto "github.com/line/ostracon/proto/ostracon/types"
-
-	codectypes "github.com/line/lbm-sdk/codec/types"
-	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
-	"github.com/line/lbm-sdk/simapp"
-	"github.com/line/lbm-sdk/testutil/testdata"
-	sdk "github.com/line/lbm-sdk/types"
-	"github.com/line/lbm-sdk/x/feegrant"
-	"github.com/line/lbm-sdk/x/feegrant/keeper"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/x/feegrant/keeper"
 )
 
 type GenesisTestSuite struct {
@@ -25,7 +24,7 @@ type GenesisTestSuite struct {
 func (suite *GenesisTestSuite) SetupTest() {
 	checkTx := false
 	app := simapp.Setup(checkTx)
-	suite.ctx = app.BaseApp.NewContext(checkTx, ocproto.Header{Height: 1})
+	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{Height: 1})
 	suite.keeper = app.FeeGrantKeeper
 }
 
