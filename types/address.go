@@ -10,13 +10,13 @@ import (
 	"sync"
 
 	"github.com/hashicorp/golang-lru/simplelru"
-	"sigs.k8s.io/yaml"
+	yaml "gopkg.in/yaml.v2"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/internal/conv"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/internal/conv"
+	"github.com/Finschia/finschia-sdk/types/address"
+	"github.com/Finschia/finschia-sdk/types/bech32"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 const (
@@ -33,17 +33,17 @@ const (
 	//	config.Seal()
 
 	// Bech32MainPrefix defines the main SDK Bech32 prefix of an account's address
-	Bech32MainPrefix = "cosmos"
+	Bech32MainPrefix = "link"
 
-	// Purpose is the ATOM purpose as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+	// Purpose is the LINK purpose as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
 	Purpose = 44
 
-	// CoinType is the ATOM coin type as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
-	CoinType = 118
+	// CoinType is the LINK coin type as defined in SLIP44 (https://github.com/satoshilabs/slips/blob/master/slip-0044.md)
+	CoinType = 438
 
 	// FullFundraiserPath is the parts of the BIP44 HD path that are fixed by
-	// what we used during the ATOM fundraiser.
-	FullFundraiserPath = "m/44'/118'/0'/0/0"
+	// what we used during the LINK fundraiser.
+	FullFundraiserPath = "m/44'/438'/0'/0/0"
 
 	// PrefixAccount is the prefix for account keys
 	PrefixAccount = "acc"
@@ -85,11 +85,6 @@ var (
 	valAddrCache  *simplelru.LRU
 )
 
-// sentinel errors
-var (
-	ErrEmptyHexAddress = errors.New("decoding address from hex string failed: empty address")
-)
-
 func init() {
 	var err error
 	// in total the cache size is 61k entries. Key is 32 bytes and value is around 50-70 bytes.
@@ -117,10 +112,17 @@ type Address interface {
 }
 
 // Ensure that different address types implement the interface
+var _ Address = AccAddress{}
+
 var (
-	_ Address = AccAddress{}
 	_ Address = ValAddress{}
 	_ Address = ConsAddress{}
+)
+
+var (
+	_ yaml.Marshaler = AccAddress{}
+	_ yaml.Marshaler = ValAddress{}
+	_ yaml.Marshaler = ConsAddress{}
 )
 
 // ----------------------------------------------------------------------------
@@ -131,21 +133,15 @@ var (
 // When marshaled to a string or JSON, it uses Bech32.
 type AccAddress []byte
 
-// AccAddressFromHexUnsafe creates an AccAddress from a HEX-encoded string.
-//
-// Note, this function is considered unsafe as it may produce an AccAddress from
-// otherwise invalid input, such as a transaction hash. Please use
-// AccAddressFromBech32.
-func AccAddressFromHexUnsafe(address string) (addr AccAddress, err error) {
+// AccAddressFromHex creates an AccAddress from a hex string.
+func AccAddressFromHex(address string) (addr AccAddress, err error) {
 	bz, err := addressBytesFromHexString(address)
 	return AccAddress(bz), err
 }
 
 // VerifyAddressFormat verifies that the provided bytes form a valid address
 // according to the default address rules or a custom address verifier set by
-// GetConfig().SetAddressVerifier().
-// TODO make an issue to get rid of global Config
-// ref: https://github.com/cosmos/cosmos-sdk/issues/9690
+// GetConfig().SetAddressVerifier()
 func VerifyAddressFormat(bz []byte) error {
 	verifier := GetConfig().GetAddressVerifier()
 	if verifier != nil {
@@ -295,7 +291,7 @@ func (aa AccAddress) String() string {
 }
 
 // Format implements the fmt.Formatter interface.
-
+// nolint: errcheck
 func (aa AccAddress) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 's':
@@ -445,7 +441,7 @@ func (va ValAddress) String() string {
 }
 
 // Format implements the fmt.Formatter interface.
-
+// nolint: errcheck
 func (va ValAddress) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 's':
@@ -624,7 +620,7 @@ func MustBech32ifyAddressBytes(prefix string, bs []byte) string {
 }
 
 // Format implements the fmt.Formatter interface.
-
+// nolint: errcheck
 func (ca ConsAddress) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 's':
@@ -662,7 +658,7 @@ func GetFromBech32(bech32str, prefix string) ([]byte, error) {
 
 func addressBytesFromHexString(address string) ([]byte, error) {
 	if len(address) == 0 {
-		return nil, ErrEmptyHexAddress
+		return nil, errors.New("decoding Bech32 address failed: must provide an address")
 	}
 
 	return hex.DecodeString(address)

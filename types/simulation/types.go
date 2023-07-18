@@ -5,23 +5,20 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
 )
 
-// Deprecated: Use WeightedProposalMsg instead.
 type WeightedProposalContent interface {
 	AppParamsKey() string                   // key used to retrieve the value of the weight from the simulation application params
 	DefaultWeight() int                     // default weight
 	ContentSimulatorFn() ContentSimulatorFn // content simulator function
 }
 
-// Deprecated: Use MsgSimulatorFn instead.
 type ContentSimulatorFn func(r *rand.Rand, ctx sdk.Context, accs []Account) Content
 
-// Deprecated: Use MsgSimulatorFn instead.
 type Content interface {
 	GetTitle() string
 	GetDescription() string
@@ -31,17 +28,9 @@ type Content interface {
 	String() string
 }
 
-type WeightedProposalMsg interface {
-	AppParamsKey() string           // key used to retrieve the value of the weight from the simulation application params
-	DefaultWeight() int             // default weight
-	MsgSimulatorFn() MsgSimulatorFn // msg simulator function
-}
-
-type MsgSimulatorFn func(r *rand.Rand, ctx sdk.Context, accs []Account) sdk.Msg
-
 type SimValFn func(r *rand.Rand) string
 
-type LegacyParamChange interface {
+type ParamChange interface {
 	Subspace() string
 	Key() string
 	SimValue() SimValFn
@@ -169,11 +158,6 @@ type SelectOpFn func(r *rand.Rand) Operation
 
 // AppStateFn returns the app state json bytes and the genesis accounts
 type AppStateFn func(r *rand.Rand, accs []Account, config Config) (
-	appState json.RawMessage, accounts []Account, chainId string, genesisTimestamp time.Time,
-)
-
-// AppStateFnWithExtendedCb returns the app state json bytes and the genesis accounts
-type AppStateFnWithExtendedCb func(r *rand.Rand, accs []Account, config Config) (
 	appState json.RawMessage, accounts []Account, chainId string, genesisTimestamp time.Time,
 )
 

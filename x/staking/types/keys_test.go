@@ -7,12 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 var (
@@ -27,7 +26,7 @@ var (
 func TestGetValidatorPowerRank(t *testing.T) {
 	valAddr1 := sdk.ValAddress(keysAddr1)
 	val1 := newValidator(t, valAddr1, keysPK1)
-	val1.Tokens = math.ZeroInt()
+	val1.Tokens = sdk.ZeroInt()
 	val2, val3, val4 := val1, val1, val1
 	val2.Tokens = sdk.TokensFromConsensusPower(1, sdk.DefaultPowerReduction)
 	val3.Tokens = sdk.TokensFromConsensusPower(10, sdk.DefaultPowerReduction)

@@ -5,36 +5,35 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 func TestDelegationEqual(t *testing.T) {
-	d1 := types.NewDelegation(sdk.AccAddress(valAddr1), valAddr2, math.LegacyNewDec(100))
+	d1 := types.NewDelegation(sdk.AccAddress(valAddr1), valAddr2, sdk.NewDec(100))
 	d2 := d1
 
 	ok := d1.String() == d2.String()
 	require.True(t, ok)
 
 	d2.ValidatorAddress = valAddr3.String()
-	d2.Shares = math.LegacyNewDec(200)
+	d2.Shares = sdk.NewDec(200)
 
 	ok = d1.String() == d2.String()
 	require.False(t, ok)
 }
 
 func TestDelegationString(t *testing.T) {
-	d := types.NewDelegation(sdk.AccAddress(valAddr1), valAddr2, math.LegacyNewDec(100))
+	d := types.NewDelegation(sdk.AccAddress(valAddr1), valAddr2, sdk.NewDec(100))
 	require.NotEmpty(t, d.String())
 }
 
 func TestUnbondingDelegationEqual(t *testing.T) {
 	ubd1 := types.NewUnbondingDelegation(sdk.AccAddress(valAddr1), valAddr2, 0,
-		time.Unix(0, 0), sdk.NewInt(0), 1)
+		time.Unix(0, 0), sdk.NewInt(0))
 	ubd2 := ubd1
 
 	ok := ubd1.String() == ubd2.String()
@@ -49,7 +48,7 @@ func TestUnbondingDelegationEqual(t *testing.T) {
 
 func TestUnbondingDelegationString(t *testing.T) {
 	ubd := types.NewUnbondingDelegation(sdk.AccAddress(valAddr1), valAddr2, 0,
-		time.Unix(0, 0), sdk.NewInt(0), 1)
+		time.Unix(0, 0), sdk.NewInt(0))
 
 	require.NotEmpty(t, ubd.String())
 }
@@ -57,34 +56,34 @@ func TestUnbondingDelegationString(t *testing.T) {
 func TestRedelegationEqual(t *testing.T) {
 	r1 := types.NewRedelegation(sdk.AccAddress(valAddr1), valAddr2, valAddr3, 0,
 		time.Unix(0, 0), sdk.NewInt(0),
-		math.LegacyNewDec(0), 1)
+		sdk.NewDec(0))
 	r2 := types.NewRedelegation(sdk.AccAddress(valAddr1), valAddr2, valAddr3, 0,
 		time.Unix(0, 0), sdk.NewInt(0),
-		math.LegacyNewDec(0), 2)
-	require.False(t, r1.String() == r2.String())
-	r2 = types.NewRedelegation(sdk.AccAddress(valAddr1), valAddr2, valAddr3, 0,
-		time.Unix(0, 0), sdk.NewInt(0),
-		math.LegacyNewDec(0), 1)
-	require.True(t, r1.String() == r2.String())
+		sdk.NewDec(0))
 
-	r2.Entries[0].SharesDst = math.LegacyNewDec(10)
+	ok := r1.String() == r2.String()
+	require.True(t, ok)
+
+	r2.Entries[0].SharesDst = sdk.NewDec(10)
 	r2.Entries[0].CompletionTime = time.Unix(20*20*2, 0)
-	require.False(t, r1.String() == r2.String())
+
+	ok = r1.String() == r2.String()
+	require.False(t, ok)
 }
 
 func TestRedelegationString(t *testing.T) {
 	r := types.NewRedelegation(sdk.AccAddress(valAddr1), valAddr2, valAddr3, 0,
 		time.Unix(0, 0), sdk.NewInt(0),
-		math.LegacyNewDec(10), 1)
+		sdk.NewDec(10))
 
 	require.NotEmpty(t, r.String())
 }
 
 func TestDelegationResponses(t *testing.T) {
 	cdc := codec.NewLegacyAmino()
-	dr1 := types.NewDelegationResp(sdk.AccAddress(valAddr1), valAddr2, math.LegacyNewDec(5),
+	dr1 := types.NewDelegationResp(sdk.AccAddress(valAddr1), valAddr2, sdk.NewDec(5),
 		sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(5)))
-	dr2 := types.NewDelegationResp(sdk.AccAddress(valAddr1), valAddr3, math.LegacyNewDec(5),
+	dr2 := types.NewDelegationResp(sdk.AccAddress(valAddr1), valAddr3, sdk.NewDec(5),
 		sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(5)))
 	drs := types.DelegationResponses{dr1, dr2}
 
@@ -112,8 +111,8 @@ func TestDelegationResponses(t *testing.T) {
 func TestRedelegationResponses(t *testing.T) {
 	cdc := codec.NewLegacyAmino()
 	entries := []types.RedelegationEntryResponse{
-		types.NewRedelegationEntryResponse(0, time.Unix(0, 0), math.LegacyNewDec(5), sdk.NewInt(5), sdk.NewInt(5), 0),
-		types.NewRedelegationEntryResponse(0, time.Unix(0, 0), math.LegacyNewDec(5), sdk.NewInt(5), sdk.NewInt(5), 0),
+		types.NewRedelegationEntryResponse(0, time.Unix(0, 0), sdk.NewDec(5), sdk.NewInt(5), sdk.NewInt(5)),
+		types.NewRedelegationEntryResponse(0, time.Unix(0, 0), sdk.NewDec(5), sdk.NewInt(5), sdk.NewInt(5)),
 	}
 	rdr1 := types.NewRedelegationResponse(sdk.AccAddress(valAddr1), valAddr2, valAddr3, entries)
 	rdr2 := types.NewRedelegationResponse(sdk.AccAddress(valAddr2), valAddr1, valAddr3, entries)

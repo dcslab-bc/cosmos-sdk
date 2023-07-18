@@ -1,10 +1,9 @@
 package signing
 
 import (
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
 )
 
 // SigVerifiableTx defines a transaction interface for all signature verification
@@ -17,12 +16,11 @@ type SigVerifiableTx interface {
 }
 
 // Tx defines a transaction interface that supports all standard message, signature
-// fee, memo, tips, and auxiliary interfaces.
+// fee, memo, and auxiliary interfaces.
 type Tx interface {
 	SigVerifiableTx
 
 	types.TxWithMemo
 	types.FeeTx
-	tx.TipTx
 	types.TxWithTimeoutHeight
 }

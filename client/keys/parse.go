@@ -2,18 +2,17 @@ package keys
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/cli"
+	"github.com/Finschia/ostracon/libs/cli"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
+	yaml "gopkg.in/yaml.v2"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/bech32"
 )
 
 func bech32Prefixes(config *sdk.Config) []string {
@@ -141,7 +140,7 @@ func displayParseKeyInfo(w io.Writer, stringer fmt.Stringer, output string) {
 		out, err = yaml.Marshal(&stringer)
 
 	case OutputFormatJSON:
-		out, err = json.Marshal(&stringer)
+		out, err = KeysCdc.MarshalJSON(stringer)
 	}
 
 	if err != nil {

@@ -1,10 +1,10 @@
 package keys
 
 import (
-	"github.com/cometbft/cometbft/libs/cli"
+	"github.com/Finschia/ostracon/libs/cli"
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/client/flags"
 )
 
 // Commands registers a sub-tree of commands to interact with
@@ -45,14 +45,13 @@ The pass backend requires GnuPG: https://gnupg.org/
 		ListKeysCmd(),
 		ShowKeysCmd(),
 		DeleteKeyCommand(),
-		RenameKeyCommand(),
 		ParseKeyStringCommand(),
-		MigrateCommand(),
 	)
 
 	cmd.PersistentFlags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
+	cmd.PersistentFlags().String(flags.FlagKeyringDir, "", "The client Keyring directory; if omitted, the default 'home' directory will be used")
+	cmd.PersistentFlags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|test)")
 	cmd.PersistentFlags().String(cli.OutputFlag, "text", "Output format (text|json)")
-	flags.AddKeyringFlags(cmd.PersistentFlags())
 
 	return cmd
 }

@@ -5,18 +5,19 @@ import (
 	"io"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/grpc"
+	"github.com/gogo/protobuf/grpc"
 	"github.com/spf13/cobra"
+	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server/api"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+	octypes "github.com/Finschia/ostracon/types"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/server/api"
+	"github.com/Finschia/finschia-sdk/server/config"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // ServerStartTime defines the time duration that the server need to stay running after startup
@@ -39,7 +40,7 @@ type (
 	// The interface defines the necessary contracts to be implemented in order
 	// to fully bootstrap and start an application.
 	Application interface {
-		abci.Application
+		ocabci.Application
 
 		RegisterAPIRoutes(*api.Server, config.APIConfig)
 
@@ -51,14 +52,21 @@ type (
 		// simulation, fetching txs by hash...).
 		RegisterTxService(client.Context)
 
-		// RegisterTendermintService registers the gRPC Query service for tendermint queries.
+		// RegisterTendermintService registers the gRPC Query service for ostracon queries.
 		RegisterTendermintService(client.Context)
 
+		// CommitMultiStore Returns the multistore instance
+		CommitMultiStore() sdk.CommitMultiStore
+	}
+
+	// ApplicationQueryService defines an extension of the Application interface
+	// that facilitates gRPC query Services.
+	//
+	// NOTE: This interfaces exists only in the v0.45.x line to ensure the existing
+	// Application interface does not introduce API breaking changes.
+	ApplicationQueryService interface {
 		// RegisterNodeService registers the node gRPC Query service.
 		RegisterNodeService(client.Context)
-
-		// CommitMultiStore return the multistore instance
-		CommitMultiStore() sdk.CommitMultiStore
 	}
 
 	// AppCreator is a function that allows us to lazily initialize an
@@ -74,14 +82,14 @@ type (
 		// AppState is the application state as JSON.
 		AppState json.RawMessage
 		// Validators is the exported validator set.
-		Validators []tmtypes.GenesisValidator
+		Validators []octypes.GenesisValidator
 		// Height is the app's latest block height.
 		Height int64
 		// ConsensusParams are the exported consensus params for ABCI.
-		ConsensusParams *tmproto.ConsensusParams
+		ConsensusParams *abci.ConsensusParams
 	}
 
 	// AppExporter is a function that dumps all app state to
 	// JSON-serializable structure and returns the current validator set.
-	AppExporter func(log.Logger, dbm.DB, io.Writer, int64, bool, []string, AppOptions, []string) (ExportedApp, error)
+	AppExporter func(log.Logger, dbm.DB, io.Writer, int64, bool, []string, AppOptions) (ExportedApp, error)
 )

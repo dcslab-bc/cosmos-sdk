@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/Finschia/finschia-sdk/client"
 )
 
 // Default constants
 const (
 	chainID        = ""
 	keyringBackend = "os"
-	output         = "text"
+	output         = ""
 	node           = "tcp://localhost:26657"
 	broadcastMode  = "sync"
 )
@@ -60,10 +60,6 @@ func ReadFromClientConfig(ctx client.Context) (client.Context, error) {
 	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
 		if err := ensureConfigPath(configPath); err != nil {
 			return ctx, fmt.Errorf("couldn't make client config: %v", err)
-		}
-
-		if ctx.ChainID != "" {
-			conf.ChainID = ctx.ChainID // chain-id will be written to the client.toml while initiating the chain.
 		}
 
 		if err := writeConfigToFile(configFilePath, conf); err != nil {

@@ -1,3 +1,6 @@
+//go:build norace
+// +build norace
+
 package grpc_test
 
 import (
@@ -18,17 +21,11 @@ import (
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc/codes"
 
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	_ "github.com/cosmos/cosmos-sdk/x/auth"
-	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
-	_ "github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	_ "github.com/cosmos/cosmos-sdk/x/genutil"
-	_ "github.com/cosmos/cosmos-sdk/x/params"
-	_ "github.com/cosmos/cosmos-sdk/x/staking"
+	"github.com/Finschia/finschia-sdk/client/grpc/tmservice"
+	"github.com/Finschia/finschia-sdk/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 // https://github.com/improbable-eng/grpc-web/blob/master/go/grpcweb/wrapper_test.go used as a reference
@@ -47,16 +44,13 @@ type GRPCWebTestSuite struct {
 func (s *GRPCWebTestSuite) SetupSuite() {
 	s.T().Log("setting up integration test suite")
 
-	cfg, err := network.DefaultConfigWithAppConfig(network.MinimumAppConfig())
-
-	s.NoError(err)
+	cfg := network.DefaultConfig()
 	cfg.NumValidators = 1
 	s.cfg = cfg
+	s.network = network.New(s.T(), s.cfg)
+	s.Require().NotNil(s.network)
 
-	s.network, err = network.New(s.T(), s.T().TempDir(), s.cfg)
-	s.Require().NoError(err)
-
-	_, err = s.network.WaitForHeight(2)
+	_, err := s.network.WaitForHeight(2)
 	s.Require().NoError(err)
 
 	s.protoCdc = codec.NewProtoCodec(s.cfg.InterfaceRegistry)
@@ -71,7 +65,7 @@ func (s *GRPCWebTestSuite) Test_Latest_Validators() {
 	val := s.network.Validators[0]
 	for _, contentType := range []string{grpcWebContentType} {
 		headers, trailers, responses, err := s.makeGrpcRequest(
-			"/cosmos.base.tendermint.v1beta1.Service/GetLatestValidatorSet",
+			"/lbm.base.ostracon.v1.Service/GetLatestValidatorSet",
 			headerWithFlag(),
 			serializeProtoMessages([]proto.Message{&tmservice.GetLatestValidatorSetRequest{}}), false)
 
@@ -202,9 +196,7 @@ func (s *GRPCWebTestSuite) makeGrpcRequest(
 	if err != nil {
 		return nil, Trailer{}, nil, err
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 	contents, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, Trailer{}, nil, err

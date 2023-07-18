@@ -4,21 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	modulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
-	"cosmossdk.io/core/appmodule"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	"cosmossdk.io/depinject"
-
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	cdctypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 var (
@@ -27,15 +23,7 @@ var (
 )
 
 // AppModuleBasic defines the basic application module used by the genutil module.
-type AppModuleBasic struct {
-	GenTxValidator types.MessageValidator
-}
-
-// NewAppModuleBasic creates AppModuleBasic, validator is a function used to validate genesis
-// transactions.
-func NewAppModuleBasic(validator types.MessageValidator) AppModuleBasic {
-	return AppModuleBasic{validator}
-}
+type AppModuleBasic struct{}
 
 // Name returns the genutil module's name.
 func (AppModuleBasic) Name() string {
@@ -61,11 +49,11 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, txEncodingConfig cl
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
-	return types.ValidateGenesis(&data, txEncodingConfig.TxJSONDecoder(), b.GenTxValidator)
+	return types.ValidateGenesis(&data, txEncodingConfig.TxJSONDecoder())
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the genutil module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *gwruntime.ServeMux) {
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {
 }
 
 // GetTxCmd returns no root tx command for the genutil module.
@@ -88,7 +76,7 @@ type AppModule struct {
 func NewAppModule(accountKeeper types.AccountKeeper,
 	stakingKeeper types.StakingKeeper, deliverTx deliverTxfn,
 	txEncodingConfig client.TxEncodingConfig,
-) module.GenesisOnlyAppModule {
+) module.AppModule {
 	return module.NewGenesisOnlyAppModule(AppModule{
 		AppModuleBasic:   AppModuleBasic{},
 		accountKeeper:    accountKeeper,
@@ -98,15 +86,8 @@ func NewAppModule(accountKeeper types.AccountKeeper,
 	})
 }
 
-var _ appmodule.AppModule = AppModule{}
-
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (AppModule) IsOnePerModuleType() {}
-
-// IsAppModule implements the appmodule.AppModule interface.
-func (AppModule) IsAppModule() {}
-
-// InitGenesis performs genesis initialization for the genutil module.
+// InitGenesis performs genesis initialization for the genutil module. It returns
+// no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
@@ -125,23 +106,3 @@ func (am AppModule) ExportGenesis(_ sdk.Context, cdc codec.JSONCodec) json.RawMe
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return 1 }
-
-func init() {
-	appmodule.Register(&modulev1.Module{},
-		appmodule.Provide(ProvideModule),
-	)
-}
-
-type GenutilInputs struct {
-	depinject.In
-
-	AccountKeeper types.AccountKeeper
-	StakingKeeper types.StakingKeeper
-	DeliverTx     func(abci.RequestDeliverTx) abci.ResponseDeliverTx
-	Config        client.TxConfig
-}
-
-func ProvideModule(in GenutilInputs) appmodule.AppModule {
-	m := NewAppModule(in.AccountKeeper, in.StakingKeeper, in.DeliverTx, in.Config)
-	return m
-}

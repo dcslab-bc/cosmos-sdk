@@ -4,24 +4,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/crisis/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/crisis/types"
+	paramtypes "github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 // Keeper - crisis keeper
 type Keeper struct {
 	routes         []types.InvarRoute
+	paramSpace     paramtypes.Subspace
 	invCheckPeriod uint
-	storeKey       storetypes.StoreKey
-	cdc            codec.BinaryCodec
-
-	// the address capable of executing a MsgUpdateParams message. Typically, this
-	// should be the x/gov module account.
-	authority string
 
 	supplyKeeper types.SupplyKeeper
 
@@ -30,27 +24,25 @@ type Keeper struct {
 
 // NewKeeper creates a new Keeper object
 func NewKeeper(
-	cdc codec.BinaryCodec, storeKey storetypes.StoreKey, invCheckPeriod uint,
-	supplyKeeper types.SupplyKeeper, feeCollectorName string, authority string,
-) *Keeper {
-	return &Keeper{
-		storeKey:         storeKey,
-		cdc:              cdc,
+	paramSpace paramtypes.Subspace, invCheckPeriod uint, supplyKeeper types.SupplyKeeper,
+	feeCollectorName string,
+) Keeper {
+	// set KeyTable if it has not already been set
+	if !paramSpace.HasKeyTable() {
+		paramSpace = paramSpace.WithKeyTable(types.ParamKeyTable())
+	}
+
+	return Keeper{
 		routes:           make([]types.InvarRoute, 0),
+		paramSpace:       paramSpace,
 		invCheckPeriod:   invCheckPeriod,
 		supplyKeeper:     supplyKeeper,
 		feeCollectorName: feeCollectorName,
-		authority:        authority,
 	}
 }
 
-// GetAuthority returns the x/crisis module's authority.
-func (k *Keeper) GetAuthority() string {
-	return k.authority
-}
-
 // Logger returns a module-specific logger.
-func (k *Keeper) Logger(ctx sdk.Context) log.Logger {
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", "x/"+types.ModuleName)
 }
 
@@ -61,12 +53,12 @@ func (k *Keeper) RegisterRoute(moduleName, route string, invar sdk.Invariant) {
 }
 
 // Routes - return the keeper's invariant routes
-func (k *Keeper) Routes() []types.InvarRoute {
+func (k Keeper) Routes() []types.InvarRoute {
 	return k.routes
 }
 
 // Invariants returns a copy of all registered Crisis keeper invariants.
-func (k *Keeper) Invariants() []sdk.Invariant {
+func (k Keeper) Invariants() []sdk.Invariant {
 	invars := make([]sdk.Invariant, len(k.routes))
 	for i, route := range k.routes {
 		invars[i] = route.Invar
@@ -76,7 +68,7 @@ func (k *Keeper) Invariants() []sdk.Invariant {
 
 // AssertInvariants asserts all registered invariants. If any invariant fails,
 // the method panics.
-func (k *Keeper) AssertInvariants(ctx sdk.Context) {
+func (k Keeper) AssertInvariants(ctx sdk.Context) {
 	logger := k.Logger(ctx)
 
 	start := time.Now()
@@ -98,9 +90,9 @@ func (k *Keeper) AssertInvariants(ctx sdk.Context) {
 }
 
 // InvCheckPeriod returns the invariant checks period.
-func (k *Keeper) InvCheckPeriod() uint { return k.invCheckPeriod }
+func (k Keeper) InvCheckPeriod() uint { return k.invCheckPeriod }
 
 // SendCoinsFromAccountToFeeCollector transfers amt to the fee collector account.
-func (k *Keeper) SendCoinsFromAccountToFeeCollector(ctx sdk.Context, senderAddr sdk.AccAddress, amt sdk.Coins) error {
+func (k Keeper) SendCoinsFromAccountToFeeCollector(ctx sdk.Context, senderAddr sdk.AccAddress, amt sdk.Coins) error {
 	return k.supplyKeeper.SendCoinsFromAccountToModule(ctx, senderAddr, k.feeCollectorName, amt)
 }

@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"math"
 
-	db "github.com/cometbft/cometbft-db"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/store/types"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 // DefaultPage is the default `page` number for queries.
@@ -144,7 +145,7 @@ func Paginate(
 	return res, nil
 }
 
-func getIterator(prefixStore types.KVStore, start []byte, reverse bool) db.Iterator {
+func getIterator(prefixStore types.KVStore, start []byte, reverse bool) dbm.Iterator {
 	if reverse {
 		var end []byte
 		if start != nil {

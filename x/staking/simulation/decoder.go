@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // NewDecodeStore returns a decoder function closure that unmarshals the KVPair's
@@ -57,13 +57,6 @@ func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 			cdc.MustUnmarshal(kvB.Value, &redB)
 
 			return fmt.Sprintf("%v\n%v", redA, redB)
-		case bytes.Equal(kvA.Key[:1], types.ParamsKey):
-			var paramsA, paramsB types.Params
-
-			cdc.MustUnmarshal(kvA.Value, &paramsA)
-			cdc.MustUnmarshal(kvB.Value, &paramsB)
-
-			return fmt.Sprintf("%v\n%v", paramsA, paramsB)
 		default:
 			panic(fmt.Sprintf("invalid staking key prefix %X", kvA.Key[:1]))
 		}

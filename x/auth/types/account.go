@@ -7,16 +7,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cosmos/gogoproto/proto"
-	"sigs.k8s.io/yaml"
+	"github.com/Finschia/ostracon/crypto"
+	"github.com/gogo/protobuf/proto"
+	"gopkg.in/yaml.v2"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 var (
@@ -60,7 +58,7 @@ func NewBaseAccountWithAddress(addr sdk.AccAddress) *BaseAccount {
 
 // GetAddress - Implements sdk.AccountI.
 func (acc BaseAccount) GetAddress() sdk.AccAddress {
-	addr, _ := sdk.AccAddressFromBech32(acc.Address)
+	addr := sdk.MustAccAddressFromBech32(acc.Address)
 	return addr
 }
 
@@ -139,12 +137,14 @@ func (acc BaseAccount) Validate() error {
 	return nil
 }
 
+func (acc BaseAccount) String() string {
+	out, _ := acc.MarshalYAML()
+	return out.(string)
+}
+
 // MarshalYAML returns the YAML representation of an account.
 func (acc BaseAccount) MarshalYAML() (interface{}, error) {
-	registry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(registry)
-
-	bz, err := codec.MarshalYAML(codec.NewProtoCodec(registry), &acc)
+	bz, err := codec.MarshalYAML(codec.NewProtoCodec(codectypes.NewInterfaceRegistry()), &acc)
 	if err != nil {
 		return nil, err
 	}
@@ -160,20 +160,9 @@ func (acc BaseAccount) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	return unpacker.UnpackAny(acc.PubKey, &pubKey)
 }
 
-// NewModuleAddressOrAddress gets an input string and returns an AccAddress.
-// If the input is a valid address, it returns the address.
-// If the input is a module name, it returns the module address.
-func NewModuleAddressOrBech32Address(input string) sdk.AccAddress {
-	if addr, err := sdk.AccAddressFromBech32(input); err == nil {
-		return addr
-	}
-
-	return NewModuleAddress(input)
-}
-
 // NewModuleAddress creates an AccAddress from the hash of the module's name
 func NewModuleAddress(name string) sdk.AccAddress {
-	return address.Module(name)
+	return sdk.AccAddress(crypto.AddressHash([]byte(name)))
 }
 
 // NewEmptyModuleAccount creates a empty ModuleAccount from a string
@@ -215,7 +204,7 @@ func (ma ModuleAccount) HasPermission(permission string) bool {
 	return false
 }
 
-// GetName returns the name of the holder's module
+// GetName returns the the name of the holder's module
 func (ma ModuleAccount) GetName() string {
 	return ma.Name
 }
@@ -244,12 +233,17 @@ func (ma ModuleAccount) Validate() error {
 }
 
 type moduleAccountPretty struct {
-	Address       sdk.AccAddress `json:"address"`
-	PubKey        string         `json:"public_key"`
-	AccountNumber uint64         `json:"account_number"`
-	Sequence      uint64         `json:"sequence"`
-	Name          string         `json:"name"`
-	Permissions   []string       `json:"permissions"`
+	Address       sdk.AccAddress `json:"address" yaml:"address"`
+	PubKey        string         `json:"public_key" yaml:"public_key"`
+	AccountNumber uint64         `json:"account_number" yaml:"account_number"`
+	Sequence      uint64         `json:"sequence" yaml:"sequence"`
+	Name          string         `json:"name" yaml:"name"`
+	Permissions   []string       `json:"permissions" yaml:"permissions"`
+}
+
+func (ma ModuleAccount) String() string {
+	out, _ := ma.MarshalYAML()
+	return out.(string)
 }
 
 // MarshalYAML returns the YAML representation of a ModuleAccount.

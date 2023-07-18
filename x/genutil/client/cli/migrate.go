@@ -6,19 +6,15 @@ import (
 	"sort"
 	"time"
 
-	tmjson "github.com/cometbft/cometbft/libs/json"
+	ocjson "github.com/Finschia/ostracon/libs/json"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	v043 "github.com/cosmos/cosmos-sdk/x/genutil/migrations/v043"
-	v046 "github.com/cosmos/cosmos-sdk/x/genutil/migrations/v046"
-	v047 "github.com/cosmos/cosmos-sdk/x/genutil/migrations/v047"
-	"github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 const flagGenesisTime = "genesis-time"
@@ -26,11 +22,7 @@ const flagGenesisTime = "genesis-time"
 // Allow applications to extend and modify the migration process.
 //
 // Ref: https://github.com/cosmos/cosmos-sdk/issues/5041
-var migrationMap = types.MigrationMap{
-	"v0.43": v043.Migrate, // NOTE: v0.43, v0.44 and v0.45 are genesis compatible.
-	"v0.46": v046.Migrate,
-	"v0.47": v047.Migrate,
-}
+var migrationMap = types.MigrationMap{}
 
 // GetMigrationCallback returns a MigrationCallback for a given version.
 func GetMigrationCallback(version string) types.MigrationCallback {
@@ -39,7 +31,15 @@ func GetMigrationCallback(version string) types.MigrationCallback {
 
 // GetMigrationVersions get all migration version in a sorted slice.
 func GetMigrationVersions() []string {
-	versions := maps.Keys(migrationMap)
+	versions := make([]string, len(migrationMap))
+
+	var i int
+
+	for version := range migrationMap {
+		versions[i] = version
+		i++
+	}
+
 	sort.Strings(versions)
 
 	return versions
@@ -53,7 +53,7 @@ func MigrateGenesisCmd() *cobra.Command {
 		Long: fmt.Sprintf(`Migrate the source genesis into the target version and print to STDOUT.
 
 Example:
-$ %s migrate v0.36 /path/to/genesis.json --chain-id=cosmoshub-3 --genesis-time=2019-04-22T17:00:00Z
+$ %s migrate v0.43 /path/to/genesis.json --chain-id=test-chain-1 --genesis-time=2021-11-08T14:00:00Z
 `, version.AppName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -112,7 +112,7 @@ $ %s migrate v0.36 /path/to/genesis.json --chain-id=cosmoshub-3 --genesis-time=2
 				genDoc.ChainID = chainID
 			}
 
-			bz, err := tmjson.Marshal(genDoc)
+			bz, err := ocjson.Marshal(genDoc)
 			if err != nil {
 				return errors.Wrap(err, "failed to marshal genesis doc")
 			}

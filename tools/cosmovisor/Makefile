@@ -1,11 +1,23 @@
 #!/usr/bin/make -f
 
-all: cosmovisor test
+COSMOVISOR_TAG=v1.4.0
 
-cosmovisor:
-	go build -mod=readonly ./cmd/cosmovisor
+DEBUG=true
 
-test:
-	go test -mod=readonly -race ./...
+install:
+	go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@$(COSMOVISOR_TAG)
 
-.PHONY: all cosmovisor test
+install-simd:
+	go install ./../../...
+
+.PHONY: install install-simd
+
+test: test-single
+
+test-single: test-single-manual-download test-single-auto-download
+
+test-single-manual-download: install install-simd
+	DEBUG=$(DEBUG) sh test_single.sh
+
+test-single-auto-download: install install-simd
+	DEBUG=$(DEBUG) DAEMON_ALLOW_DOWNLOAD_BINARIES=true sh test_single.sh

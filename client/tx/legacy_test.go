@@ -6,19 +6,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"cosmossdk.io/depinject"
-	"github.com/cosmos/cosmos-sdk/client"
-	clienttestutil "github.com/cosmos/cosmos-sdk/client/testutil"
-	tx2 "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	"github.com/cosmos/cosmos-sdk/types"
-	typestx "github.com/cosmos/cosmos-sdk/types/tx"
-	signing2 "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	tx2 "github.com/Finschia/finschia-sdk/client/tx"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/simapp/params"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	signing2 "github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
+	"github.com/Finschia/finschia-sdk/x/auth/tx"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 const (
@@ -28,22 +26,18 @@ const (
 )
 
 var (
-	fee            = types.NewCoins(types.NewInt64Coin("bam", 100))
+	fee            = sdk.NewCoins(sdk.NewInt64Coin("bam", 100))
 	_, pub1, addr1 = testdata.KeyTestPubAddr()
 	_, _, addr2    = testdata.KeyTestPubAddr()
-	rawSig         = []byte("dummy")
 	sig            = signing2.SignatureV2{
 		PubKey: pub1,
 		Data: &signing2.SingleSignatureData{
 			SignMode:  signing2.SignMode_SIGN_MODE_LEGACY_AMINO_JSON,
-			Signature: rawSig,
+			Signature: []byte("dummy"),
 		},
 	}
-	msg0 = banktypes.NewMsgSend(addr1, addr2, types.NewCoins(types.NewInt64Coin("wack", 1)))
-	msg1 = banktypes.NewMsgSend(addr1, addr2, types.NewCoins(types.NewInt64Coin("wack", 2)))
-
-	chainID = "test-chain"
-	tip     = &typestx.Tip{Tipper: addr1.String(), Amount: testdata.NewTestFeeAmount()}
+	msg0 = banktypes.NewMsgSend(addr1, addr2, sdk.NewCoins(sdk.NewInt64Coin("wack", 1)))
+	msg1 = banktypes.NewMsgSend(addr1, addr2, sdk.NewCoins(sdk.NewInt64Coin("wack", 2)))
 )
 
 func buildTestTx(t *testing.T, builder client.TxBuilder) {
@@ -59,22 +53,16 @@ func buildTestTx(t *testing.T, builder client.TxBuilder) {
 
 type TestSuite struct {
 	suite.Suite
-	codec    codec.Codec
-	amino    *codec.LegacyAmino
+	encCfg   params.EncodingConfig
 	protoCfg client.TxConfig
 	aminoCfg client.TxConfig
 }
 
 func (s *TestSuite) SetupSuite() {
-	var (
-		reg   codectypes.InterfaceRegistry
-		amino *codec.LegacyAmino
-	)
-	err := depinject.Inject(clienttestutil.TestConfig, &reg, &amino)
-	require.NoError(s.T(), err)
-
-	s.protoCfg = tx.NewTxConfig(codec.NewProtoCodec(reg), tx.DefaultSignModes)
-	s.aminoCfg = legacytx.StdTxConfig{Cdc: amino}
+	encCfg := simapp.MakeTestEncodingConfig()
+	s.encCfg = encCfg
+	s.protoCfg = tx.NewTxConfig(codec.NewProtoCodec(encCfg.InterfaceRegistry), tx.DefaultSignModes)
+	s.aminoCfg = legacytx.StdTxConfig{Cdc: encCfg.Amino}
 }
 
 func (s *TestSuite) TestCopyTx() {
@@ -121,7 +109,7 @@ func (s *TestSuite) TestConvertTxToStdTx() {
 	// proto tx
 	protoBuilder := s.protoCfg.NewTxBuilder()
 	buildTestTx(s.T(), protoBuilder)
-	stdTx, err := tx2.ConvertTxToStdTx(s.amino, protoBuilder.GetTx())
+	stdTx, err := tx2.ConvertTxToStdTx(s.encCfg.Amino, protoBuilder.GetTx())
 	s.Require().NoError(err)
 	s.Require().Equal(memo, stdTx.Memo)
 	s.Require().Equal(gas, stdTx.Fee.Gas)
@@ -141,7 +129,7 @@ func (s *TestSuite) TestConvertTxToStdTx() {
 		},
 	})
 	s.Require().NoError(err)
-	stdTx, err = tx2.ConvertTxToStdTx(s.amino, protoBuilder.GetTx())
+	stdTx, err = tx2.ConvertTxToStdTx(s.encCfg.Amino, protoBuilder.GetTx())
 	s.Require().NoError(err)
 	s.Require().Equal(memo, stdTx.Memo)
 	s.Require().Equal(gas, stdTx.Fee.Gas)
@@ -155,7 +143,7 @@ func (s *TestSuite) TestConvertTxToStdTx() {
 	aminoBuilder := s.aminoCfg.NewTxBuilder()
 	buildTestTx(s.T(), aminoBuilder)
 	stdTx = aminoBuilder.GetTx().(legacytx.StdTx)
-	stdTx2, err := tx2.ConvertTxToStdTx(s.amino, stdTx)
+	stdTx2, err := tx2.ConvertTxToStdTx(s.encCfg.Amino, stdTx)
 	s.Require().NoError(err)
 	s.Require().Equal(stdTx, stdTx2)
 }

@@ -1,8 +1,8 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
 )
 
 // Querier path constants
@@ -33,14 +33,6 @@ func NewQueryAllBalancesRequest(addr sdk.AccAddress, req *query.PageRequest) *Qu
 //nolint:interfacer
 func NewQuerySpendableBalancesRequest(addr sdk.AccAddress, req *query.PageRequest) *QuerySpendableBalancesRequest {
 	return &QuerySpendableBalancesRequest{Address: addr.String(), Pagination: req}
-}
-
-// NewQuerySpendableBalanceByDenomRequest creates a new instance of a
-// QuerySpendableBalanceByDenomRequest.
-//
-//nolint:interfacer
-func NewQuerySpendableBalanceByDenomRequest(addr sdk.AccAddress, denom string) *QuerySpendableBalanceByDenomRequest {
-	return &QuerySpendableBalanceByDenomRequest{Address: addr.String(), Denom: denom}
 }
 
 // QueryTotalSupplyParams defines the params for the following queries:

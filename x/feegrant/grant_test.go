@@ -4,32 +4,29 @@ import (
 	"testing"
 	"time"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/cosmos/cosmos-sdk/x/feegrant/module"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 func TestGrant(t *testing.T) {
-	key := sdk.NewKVStoreKey(feegrant.StoreKey)
-	testCtx := testutil.DefaultContextWithDB(t, key, sdk.NewTransientStoreKey("transient_test"))
-	encCfg := moduletestutil.MakeTestEncodingConfig(module.AppModuleBasic{})
-
-	ctx := testCtx.Ctx.WithBlockHeader(tmproto.Header{Time: time.Now()})
-
-	addr, err := sdk.AccAddressFromBech32("cosmos1qk93t4j0yyzgqgt6k5qf8deh8fq6smpn3ntu3x")
+	app := simapp.Setup(false)
+	addr, err := sdk.AccAddressFromBech32("link1qyqszqgpqyqszqgpqyqszqgpqyqszqgp8apuk5")
 	require.NoError(t, err)
-	addr2, err := sdk.AccAddressFromBech32("cosmos1p9qh4ldfd6n0qehujsal4k7g0e37kel90rc4ts")
+	addr2, err := sdk.AccAddressFromBech32("link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt")
 	require.NoError(t, err)
 	atom := sdk.NewCoins(sdk.NewInt64Coin("atom", 555))
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{
+		Time: time.Now(),
+	})
 	now := ctx.BlockTime()
 	oneYear := now.AddDate(1, 0, 0)
 
 	zeroAtoms := sdk.NewCoins(sdk.NewInt64Coin("atom", 0))
+	cdc := app.AppCodec()
 
 	cases := map[string]struct {
 		granter sdk.AccAddress
@@ -92,10 +89,10 @@ func TestGrant(t *testing.T) {
 			require.NoError(t, err)
 
 			// if it is valid, let's try to serialize, deserialize, and make sure it matches
-			bz, err := encCfg.Codec.Marshal(&grant)
+			bz, err := cdc.Marshal(&grant)
 			require.NoError(t, err)
 			var loaded feegrant.Grant
-			err = encCfg.Codec.Unmarshal(bz, &loaded)
+			err = cdc.Unmarshal(bz, &loaded)
 			require.NoError(t, err)
 
 			err = loaded.ValidateBasic()

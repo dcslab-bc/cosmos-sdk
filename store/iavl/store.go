@@ -6,24 +6,27 @@ import (
 	"io"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
-	tmcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	ics23 "github.com/confio/ics23/go"
 	"github.com/cosmos/iavl"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store/cachekv"
+	"github.com/Finschia/finschia-sdk/store/listenkv"
+	"github.com/Finschia/finschia-sdk/store/tracekv"
+	"github.com/Finschia/finschia-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 const (
-	DefaultIAVLCacheSize = 500000
+	// DefaultIAVLCacheSize is default Iavl cache units size. 1 unit is 128 byte
+	// default 64MB
+	DefaultIAVLCacheSize = 1024 * 512
 )
 
 var (
@@ -36,8 +39,7 @@ var (
 
 // Store Implements types.KVStore and CommitKVStore.
 type Store struct {
-	tree   Tree
-	logger log.Logger
+	tree Tree
 }
 
 // LoadStore returns an IAVL Store as a CommitKVStore. Internally, it will load the
@@ -87,8 +89,7 @@ func LoadStoreWithInitialVersion(db dbm.DB, logger log.Logger, key types.StoreKe
 	}
 
 	return &Store{
-		tree:   tree,
-		logger: logger,
+		tree: tree,
 	}, nil
 }
 
@@ -111,7 +112,7 @@ func UnsafeNewStore(tree *iavl.MutableTree) *Store {
 // Any mutable operations executed will result in a panic.
 func (st *Store) GetImmutable(version int64) (*Store, error) {
 	if !st.VersionExists(version) {
-		return nil, fmt.Errorf("version mismatch on immutable IAVL tree; version does not exist. Version has either been pruned, or is for a future block height")
+		return &Store{tree: &immutableTree{&iavl.ImmutableTree{}}}, nil
 	}
 
 	iTree, err := st.tree.GetImmutable(version)
@@ -155,13 +156,13 @@ func (st *Store) LastCommitID() types.CommitID {
 
 // SetPruning panics as pruning options should be provided at initialization
 // since IAVl accepts pruning options directly.
-func (st *Store) SetPruning(_ pruningtypes.PruningOptions) {
+func (st *Store) SetPruning(_ types.PruningOptions) {
 	panic("cannot set pruning options on an initialized IAVL store")
 }
 
 // SetPruning panics as pruning options should be provided at initialization
 // since IAVl accepts pruning options directly.
-func (st *Store) GetPruning() pruningtypes.PruningOptions {
+func (st *Store) GetPruning() types.PruningOptions {
 	panic("cannot get pruning options on an initialized IAVL store")
 }
 
@@ -172,7 +173,7 @@ func (st *Store) VersionExists(version int64) bool {
 
 // GetAllVersions returns all versions in the iavl tree
 func (st *Store) GetAllVersions() []int {
-	return st.tree.AvailableVersions()
+	return st.tree.(*iavl.MutableTree).AvailableVersions()
 }
 
 // Implements Store.
@@ -190,14 +191,16 @@ func (st *Store) CacheWrapWithTrace(w io.Writer, tc types.TraceContext) types.Ca
 	return cachekv.NewStore(tracekv.NewStore(st, w, tc))
 }
 
+// CacheWrapWithListeners implements the CacheWrapper interface.
+func (st *Store) CacheWrapWithListeners(storeKey types.StoreKey, listeners []types.WriteListener) types.CacheWrap {
+	return cachekv.NewStore(listenkv.NewStore(st, storeKey, listeners))
+}
+
 // Implements types.KVStore.
 func (st *Store) Set(key, value []byte) {
 	types.AssertValidKey(key)
 	types.AssertValidValue(value)
-	_, err := st.tree.Set(key, value)
-	if err != nil && st.logger != nil {
-		st.logger.Error("iavl set error", "error", err.Error())
-	}
+	st.tree.Set(key, value)
 }
 
 // Implements types.KVStore.
@@ -239,11 +242,6 @@ func (st *Store) LoadVersionForOverwriting(targetVersion int64) (int64, error) {
 	return st.tree.LoadVersionForOverwriting(targetVersion)
 }
 
-// LazyLoadVersionForOverwriting is the lazy version of LoadVersionForOverwriting.
-func (st *Store) LazyLoadVersionForOverwriting(targetVersion int64) (int64, error) {
-	return st.tree.LazyLoadVersionForOverwriting(targetVersion)
-}
-
 // Implements types.KVStore.
 func (st *Store) Iterator(start, end []byte) types.Iterator {
 	iterator, err := st.tree.Iterator(start, end, true)
@@ -278,7 +276,7 @@ func (st *Store) Export(version int64) (*iavl.Exporter, error) {
 	if !ok || tree == nil {
 		return nil, fmt.Errorf("iavl export failed: unable to fetch tree for version %v", version)
 	}
-	return tree.Export()
+	return tree.Export(), nil
 }
 
 // Import imports an IAVL tree at the given version, returning an iavl.Importer for importing.
@@ -315,7 +313,7 @@ func (st *Store) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
 	defer telemetry.MeasureSince(time.Now(), "store", "iavl", "query")
 
 	if len(req.Data) == 0 {
-		return sdkerrors.QueryResult(sdkerrors.Wrap(sdkerrors.ErrTxDecode, "query cannot be zero length"), false)
+		return sdkerrors.QueryResult(sdkerrors.Wrap(sdkerrors.ErrTxDecode, "query cannot be zero length"))
 	}
 
 	tree := st.tree
@@ -380,7 +378,7 @@ func (st *Store) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
 		res.Value = bz
 
 	default:
-		return sdkerrors.QueryResult(sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unexpected query path: %v", req.Path), false)
+		return sdkerrors.QueryResult(sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unexpected query path: %v", req.Path))
 	}
 
 	return res
@@ -414,3 +412,12 @@ func getProofFromTree(tree *iavl.MutableTree, key []byte, exists bool) *tmcrypto
 	op := types.NewIavlCommitmentOp(key, commitmentProof)
 	return &tmcrypto.ProofOps{Ops: []tmcrypto.ProofOp{op.ProofOp()}}
 }
+
+//----------------------------------------
+
+// Implements types.Iterator.
+type iavlIterator struct {
+	dbm.Iterator
+}
+
+var _ types.Iterator = (*iavlIterator)(nil)

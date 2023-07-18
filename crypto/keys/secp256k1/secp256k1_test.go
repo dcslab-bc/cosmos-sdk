@@ -7,18 +7,18 @@ import (
 	"math/big"
 	"testing"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	btcecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
-	"github.com/cometbft/cometbft/crypto"
-	tmsecp256k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/cosmos/btcutil/base58"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/Finschia/ostracon/crypto"
+	ostsecp256k1 "github.com/Finschia/ostracon/crypto/secp256k1"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
 )
 
 type keyData struct {
@@ -65,7 +65,7 @@ func TestSignAndValidateSecp256k1(t *testing.T) {
 	// ----
 	// Test cross packages verification
 	msgHash := crypto.Sha256(msg)
-	btcPrivKey, btcPubKey := btcSecp256k1.PrivKeyFromBytes(privKey.Key)
+	btcPrivKey, btcPubKey := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privKey.Key)
 	// This fails: malformed signature: no header magic
 	//   btcSig, err := secp256k1.ParseSignature(sig, secp256k1.S256())
 	//   require.NoError(t, err)
@@ -78,11 +78,9 @@ func TestSignAndValidateSecp256k1(t *testing.T) {
 	ok := ecdsa.Verify(btcPubKey.ToECDSA(), msgHash, r, s)
 	require.True(t, ok)
 
-	sig2, err := btcecdsa.SignCompact(btcPrivKey, msgHash, false)
-	// Chop off compactSigRecoveryCode.
-	sig2 = sig2[1:]
+	sig2, err := btcPrivKey.Sign(msgHash)
 	require.NoError(t, err)
-	pubKey.VerifySignature(msg, sig2)
+	pubKey.VerifySignature(msg, sig2.Serialize())
 
 	// ----
 	// Mutate the signature, just one bit.
@@ -101,7 +99,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 
 		// This function creates a private and public key in the underlying libraries format.
 		// The private key is basically calling new(big.Int).SetBytes(pk), which removes leading zero bytes
-		priv, _ := btcSecp256k1.PrivKeyFromBytes(privKeyBytes[:])
+		priv, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privKeyBytes[:])
 		// this takes the bytes returned by `(big int).Bytes()`, and if the length is less than 32 bytes,
 		// pads the bytes from the left with zero bytes. Therefore these two functions composed
 		// result in the identity function on privKeyBytes, hence the following equality check
@@ -275,39 +273,39 @@ func TestMarshalAmino(t *testing.T) {
 func TestMarshalAmino_BackwardsCompatibility(t *testing.T) {
 	aminoCdc := codec.NewLegacyAmino()
 	// Create Tendermint keys.
-	tmPrivKey := tmsecp256k1.GenPrivKey()
-	tmPubKey := tmPrivKey.PubKey()
+	ostPrivKey := ostsecp256k1.GenPrivKey()
+	ostPubKey := ostPrivKey.PubKey()
 	// Create our own keys, with the same private key as Tendermint's.
-	privKey := &secp256k1.PrivKey{Key: []byte(tmPrivKey)}
+	privKey := &secp256k1.PrivKey{Key: []byte(ostPrivKey)}
 	pubKey := privKey.PubKey().(*secp256k1.PubKey)
 
 	testCases := []struct {
 		desc      string
-		tmKey     interface{}
+		ostKey    interface{}
 		ourKey    interface{}
 		marshalFn func(o interface{}) ([]byte, error)
 	}{
 		{
 			"secp256k1 private key, binary",
-			tmPrivKey,
+			ostPrivKey,
 			privKey,
 			aminoCdc.Marshal,
 		},
 		{
 			"secp256k1 private key, JSON",
-			tmPrivKey,
+			ostPrivKey,
 			privKey,
 			aminoCdc.MarshalJSON,
 		},
 		{
 			"secp256k1 public key, binary",
-			tmPubKey,
+			ostPubKey,
 			pubKey,
 			aminoCdc.Marshal,
 		},
 		{
 			"secp256k1 public key, JSON",
-			tmPubKey,
+			ostPubKey,
 			pubKey,
 			aminoCdc.MarshalJSON,
 		},
@@ -316,7 +314,7 @@ func TestMarshalAmino_BackwardsCompatibility(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			// Make sure Amino encoding override is not breaking backwards compatibility.
-			bz1, err := tc.marshalFn(tc.tmKey)
+			bz1, err := tc.marshalFn(tc.ostKey)
 			require.NoError(t, err)
 			bz2, err := tc.marshalFn(tc.ourKey)
 			require.NoError(t, err)

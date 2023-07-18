@@ -5,12 +5,12 @@ import (
 	"reflect"
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/suite"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	testdata "github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	testdata "github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 type eventsTestSuite struct {
@@ -19,6 +19,10 @@ type eventsTestSuite struct {
 
 func TestEventsTestSuite(t *testing.T) {
 	suite.Run(t, new(eventsTestSuite))
+}
+
+func (s *eventsTestSuite) SetupSuite() {
+	s.T().Parallel()
 }
 
 func (s *eventsTestSuite) TestAppendEvents() {
@@ -37,25 +41,6 @@ func (s *eventsTestSuite) TestAppendAttributes() {
 	e = e.AppendAttributes(sdk.NewAttribute("recipient", "bar"))
 	s.Require().Len(e.Attributes, 2)
 	s.Require().Equal(e, sdk.NewEvent("transfer", sdk.NewAttribute("sender", "foo"), sdk.NewAttribute("recipient", "bar")))
-}
-
-func (s *eventsTestSuite) TestGetAttributes() {
-	e := sdk.NewEvent("transfer", sdk.NewAttribute("sender", "foo"))
-	e = e.AppendAttributes(sdk.NewAttribute("recipient", "bar"))
-	attr, found := e.GetAttribute("recipient")
-	s.Require().True(found)
-	s.Require().Equal(attr, sdk.NewAttribute("recipient", "bar"))
-	_, found = e.GetAttribute("foo")
-	s.Require().False(found)
-
-	events := sdk.Events{e}.AppendEvent(sdk.NewEvent("message", sdk.NewAttribute("sender", "bar")))
-	attrs, found := events.GetAttributes("sender")
-	s.Require().True(found)
-	s.Require().Len(attrs, 2)
-	s.Require().Equal(attrs[0], sdk.NewAttribute("sender", "foo"))
-	s.Require().Equal(attrs[1], sdk.NewAttribute("sender", "bar"))
-	_, found = events.GetAttributes("foo")
-	s.Require().False(found)
 }
 
 func (s *eventsTestSuite) TestEmptyEvents() {
@@ -133,43 +118,20 @@ func (s *eventsTestSuite) TestEventManagerTypedEvents() {
 }
 
 func (s *eventsTestSuite) TestStringifyEvents() {
-	cases := []struct {
-		name       string
-		events     sdk.Events
-		expTxtStr  string
-		expJSONStr string
-	}{
-		{
-			name: "default",
-			events: sdk.Events{
-				sdk.NewEvent("message", sdk.NewAttribute(sdk.AttributeKeySender, "foo")),
-				sdk.NewEvent("message", sdk.NewAttribute(sdk.AttributeKeyModule, "bank")),
-			},
-			expTxtStr:  "\t\t- message\n\t\t\t- sender: foo\n\t\t- message\n\t\t\t- module: bank",
-			expJSONStr: "[{\"type\":\"message\",\"attributes\":[{\"key\":\"sender\",\"value\":\"foo\"}]},{\"type\":\"message\",\"attributes\":[{\"key\":\"module\",\"value\":\"bank\"}]}]",
-		},
-		{
-			name: "multiple events with same attributes",
-			events: sdk.Events{
-				sdk.NewEvent(
-					"message",
-					sdk.NewAttribute(sdk.AttributeKeyModule, "staking"),
-					sdk.NewAttribute(sdk.AttributeKeySender, "cosmos1foo"),
-				),
-				sdk.NewEvent("message", sdk.NewAttribute(sdk.AttributeKeySender, "foo")),
-			},
-			expTxtStr:  "\t\t- message\n\t\t\t- module: staking\n\t\t\t- sender: cosmos1foo\n\t\t- message\n\t\t\t- sender: foo",
-			expJSONStr: `[{"type":"message","attributes":[{"key":"module","value":"staking"},{"key":"sender","value":"cosmos1foo"}]},{"type":"message","attributes":[{"key":"sender","value":"foo"}]}]`,
-		},
+	e := sdk.Events{
+		sdk.NewEvent("message", sdk.NewAttribute("sender", "foo")),
+		sdk.NewEvent("message", sdk.NewAttribute("module", "bank")),
 	}
+	se := sdk.StringifyEvents(e.ToABCIEvents())
 
-	for _, test := range cases {
-		se := sdk.StringifyEvents(test.events.ToABCIEvents())
-		s.Require().Equal(test.expTxtStr, se.String())
-		bz, err := json.Marshal(se)
-		s.Require().NoError(err)
-		s.Require().Equal(test.expJSONStr, string(bz))
-	}
+	expectedTxtStr := "\t\t- message\n\t\t\t- sender: foo\n\t\t\t- module: bank"
+	s.Require().Equal(expectedTxtStr, se.String())
+
+	bz, err := json.Marshal(se)
+	s.Require().NoError(err)
+
+	expectedJSONStr := "[{\"type\":\"message\",\"attributes\":[{\"key\":\"sender\",\"value\":\"foo\"},{\"key\":\"module\",\"value\":\"bank\"}]}]"
+	s.Require().Equal(expectedJSONStr, string(bz))
 }
 
 func (s *eventsTestSuite) TestMarkEventsToIndex() {
@@ -177,15 +139,15 @@ func (s *eventsTestSuite) TestMarkEventsToIndex() {
 		{
 			Type: "message",
 			Attributes: []abci.EventAttribute{
-				{Key: "sender", Value: "foo"},
-				{Key: "recipient", Value: "bar"},
+				{Key: []byte("sender"), Value: []byte("foo")},
+				{Key: []byte("recipient"), Value: []byte("bar")},
 			},
 		},
 		{
 			Type: "staking",
 			Attributes: []abci.EventAttribute{
-				{Key: "deposit", Value: "5"},
-				{Key: "unbond", Value: "10"},
+				{Key: []byte("deposit"), Value: []byte("5")},
+				{Key: []byte("unbond"), Value: []byte("10")},
 			},
 		},
 	}
@@ -201,15 +163,15 @@ func (s *eventsTestSuite) TestMarkEventsToIndex() {
 				{
 					Type: "message",
 					Attributes: []abci.EventAttribute{
-						{Key: "sender", Value: "foo", Index: true},
-						{Key: "recipient", Value: "bar", Index: true},
+						{Key: []byte("sender"), Value: []byte("foo"), Index: true},
+						{Key: []byte("recipient"), Value: []byte("bar"), Index: true},
 					},
 				},
 				{
 					Type: "staking",
 					Attributes: []abci.EventAttribute{
-						{Key: "deposit", Value: "5", Index: true},
-						{Key: "unbond", Value: "10", Index: true},
+						{Key: []byte("deposit"), Value: []byte("5"), Index: true},
+						{Key: []byte("unbond"), Value: []byte("10"), Index: true},
 					},
 				},
 			},
@@ -221,15 +183,15 @@ func (s *eventsTestSuite) TestMarkEventsToIndex() {
 				{
 					Type: "message",
 					Attributes: []abci.EventAttribute{
-						{Key: "sender", Value: "foo", Index: true},
-						{Key: "recipient", Value: "bar"},
+						{Key: []byte("sender"), Value: []byte("foo"), Index: true},
+						{Key: []byte("recipient"), Value: []byte("bar")},
 					},
 				},
 				{
 					Type: "staking",
 					Attributes: []abci.EventAttribute{
-						{Key: "deposit", Value: "5", Index: true},
-						{Key: "unbond", Value: "10"},
+						{Key: []byte("deposit"), Value: []byte("5"), Index: true},
+						{Key: []byte("unbond"), Value: []byte("10")},
 					},
 				},
 			},
@@ -244,15 +206,15 @@ func (s *eventsTestSuite) TestMarkEventsToIndex() {
 				{
 					Type: "message",
 					Attributes: []abci.EventAttribute{
-						{Key: "sender", Value: "foo", Index: true},
-						{Key: "recipient", Value: "bar", Index: true},
+						{Key: []byte("sender"), Value: []byte("foo"), Index: true},
+						{Key: []byte("recipient"), Value: []byte("bar"), Index: true},
 					},
 				},
 				{
 					Type: "staking",
 					Attributes: []abci.EventAttribute{
-						{Key: "deposit", Value: "5", Index: true},
-						{Key: "unbond", Value: "10", Index: true},
+						{Key: []byte("deposit"), Value: []byte("5"), Index: true},
+						{Key: []byte("unbond"), Value: []byte("10"), Index: true},
 					},
 				},
 			},

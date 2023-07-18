@@ -1,10 +1,10 @@
 package exported
 
 import (
-	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cosmos/gogoproto/proto"
+	ostbytes "github.com/Finschia/ostracon/libs/bytes"
+	"github.com/gogo/protobuf/proto"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // Evidence defines the contract which concrete evidence types of misbehavior
@@ -15,7 +15,7 @@ type Evidence interface {
 	Route() string
 	Type() string
 	String() string
-	Hash() tmbytes.HexBytes
+	Hash() ostbytes.HexBytes
 	ValidateBasic() error
 
 	// Height at which the infraction occurred

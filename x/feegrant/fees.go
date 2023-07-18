@@ -1,9 +1,7 @@
 package feegrant
 
 import (
-	"time"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // FeeAllowance implementations are tied to a given fee delegator and delegatee,
@@ -24,7 +22,4 @@ type FeeAllowanceI interface {
 	// ValidateBasic should evaluate this FeeAllowance for internal consistency.
 	// Don't allow negative amounts, or negative periods for example.
 	ValidateBasic() error
-
-	// ExpiresAt returns the expiry time of the allowance.
-	ExpiresAt() (*time.Time, error)
 }

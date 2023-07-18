@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cometbft/cometbft/mempool"
-	tmtypes "github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/Finschia/ostracon/mempool"
+	octypes "github.com/Finschia/ostracon/types"
+
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx"
 )
 
 // BroadcastTx broadcasts a transactions either synchronously or asynchronously
@@ -28,8 +29,11 @@ func (ctx Context) BroadcastTx(txBytes []byte) (res *sdk.TxResponse, err error) 
 	case flags.BroadcastAsync:
 		res, err = ctx.BroadcastTxAsync(txBytes)
 
+	case flags.BroadcastBlock:
+		res, err = ctx.BroadcastTxCommit(txBytes)
+
 	default:
-		return nil, fmt.Errorf("unsupported return type %s; supported types: sync, async", ctx.BroadcastMode)
+		return nil, fmt.Errorf("unsupported return type %s; supported types: sync, async, block", ctx.BroadcastMode)
 	}
 
 	return res, err
@@ -43,7 +47,7 @@ func (ctx Context) BroadcastTx(txBytes []byte) (res *sdk.TxResponse, err error) 
 // TODO: Avoid brittle string matching in favor of error matching. This requires
 // a change to Tendermint's RPCError type to allow retrieval or matching against
 // a concrete error type.
-func CheckTendermintError(err error, tx tmtypes.Tx) *sdk.TxResponse {
+func CheckTendermintError(err error, tx octypes.Tx) *sdk.TxResponse {
 	if err == nil {
 		return nil
 	}
@@ -52,7 +56,8 @@ func CheckTendermintError(err error, tx tmtypes.Tx) *sdk.TxResponse {
 	txHash := fmt.Sprintf("%X", tx.Hash())
 
 	switch {
-	case strings.Contains(errStr, strings.ToLower(mempool.ErrTxInCache.Error())):
+	case strings.Contains(errStr, strings.ToLower(mempool.ErrTxInCache.Error())),
+		strings.Contains(errStr, strings.ToLower(mempool.ErrTxInMap.Error())):
 		return &sdk.TxResponse{
 			Code:      sdkerrors.ErrTxInMempoolCache.ABCICode(),
 			Codespace: sdkerrors.ErrTxInMempoolCache.Codespace(),
@@ -76,6 +81,30 @@ func CheckTendermintError(err error, tx tmtypes.Tx) *sdk.TxResponse {
 	default:
 		return nil
 	}
+}
+
+// BroadcastTxCommit broadcasts transaction bytes to a Tendermint node and
+// waits for a commit. An error is only returned if there is no RPC node
+// connection or if broadcasting fails.
+//
+// NOTE: This should ideally not be used as the request may timeout but the tx
+// may still be included in a block. Use BroadcastTxAsync or BroadcastTxSync
+// instead.
+func (ctx Context) BroadcastTxCommit(txBytes []byte) (*sdk.TxResponse, error) {
+	node, err := ctx.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := node.BroadcastTxCommit(context.Background(), txBytes)
+	if err == nil {
+		return sdk.NewResponseFormatBroadcastTxCommit(res), nil
+	}
+
+	if errRes := CheckTendermintError(err, txBytes); errRes != nil {
+		return errRes, nil
+	}
+	return sdk.NewResponseFormatBroadcastTxCommit(res), err
 }
 
 // BroadcastTxSync broadcasts transaction bytes to a Tendermint node
@@ -134,6 +163,8 @@ func normalizeBroadcastMode(mode tx.BroadcastMode) string {
 	switch mode {
 	case tx.BroadcastMode_BROADCAST_MODE_ASYNC:
 		return "async"
+	case tx.BroadcastMode_BROADCAST_MODE_BLOCK:
+		return "block"
 	case tx.BroadcastMode_BROADCAST_MODE_SYNC:
 		return "sync"
 	default:

@@ -3,7 +3,7 @@ package cli
 import (
 	flag "github.com/spf13/pflag"
 
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 const (
@@ -31,7 +31,6 @@ const (
 	FlagGenesisFormat = "genesis-format"
 	FlagNodeID        = "node-id"
 	FlagIP            = "ip"
-	FlagP2PPort       = "p2p-port"
 )
 
 // common flagsets to add to various functions

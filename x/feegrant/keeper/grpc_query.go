@@ -3,15 +3,15 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/gogoproto/proto"
+	"github.com/gogo/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 var _ feegrant.QueryServer = Keeper{}
@@ -106,18 +106,26 @@ func (q Keeper) AllowancesByGranter(c context.Context, req *feegrant.QueryAllowa
 
 	ctx := sdk.UnwrapSDKContext(c)
 
+	var grants []*feegrant.Grant
+
 	store := ctx.KVStore(q.storeKey)
 	prefixStore := prefix.NewStore(store, feegrant.FeeAllowanceKeyPrefix)
-	grants, pageRes, err := query.GenericFilteredPaginate(q.cdc, prefixStore, req.Pagination, func(key []byte, grant *feegrant.Grant) (*feegrant.Grant, error) {
+	pageRes, err := query.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
 		// ParseAddressesFromFeeAllowanceKey expects the full key including the prefix.
 		granter, _ := feegrant.ParseAddressesFromFeeAllowanceKey(append(feegrant.FeeAllowanceKeyPrefix, key...))
 		if !granter.Equals(granterAddr) {
-			return nil, nil
+			return false, nil
 		}
 
-		return grant, nil
-	}, func() *feegrant.Grant {
-		return &feegrant.Grant{}
+		if accumulate {
+			var grant feegrant.Grant
+			if err := q.cdc.Unmarshal(value, &grant); err != nil {
+				return false, err
+			}
+			grants = append(grants, &grant)
+		}
+
+		return true, nil
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

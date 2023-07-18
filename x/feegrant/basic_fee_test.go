@@ -4,28 +4,26 @@ import (
 	"testing"
 	"time"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 func TestBasicFeeValidAllow(t *testing.T) {
-	key := sdk.NewKVStoreKey(feegrant.StoreKey)
-	testCtx := testutil.DefaultContextWithDB(t, key, sdk.NewTransientStoreKey("transient_test"))
+	app := simapp.Setup(false)
 
-	ctx := testCtx.Ctx.WithBlockHeader(tmproto.Header{Height: 1})
-
+	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
 	badTime := ctx.BlockTime().AddDate(0, 0, -1)
 	allowace := &feegrant.BasicAllowance{
 		Expiration: &badTime,
 	}
 	require.Error(t, allowace.ValidateBasic())
 
-	ctx = ctx.WithBlockHeader(tmproto.Header{
+	ctx = app.BaseApp.NewContext(false, tmproto.Header{
 		Time: time.Now(),
 	})
 	eth := sdk.NewCoins(sdk.NewInt64Coin("eth", 10))
@@ -126,6 +124,7 @@ func TestBasicFeeValidAllow(t *testing.T) {
 			accept:    false,
 		},
 	}
+	require.Error(t, allowace.ValidateBasic())
 
 	for name, stc := range cases {
 		tc := stc // to make scopelint happy
@@ -133,7 +132,7 @@ func TestBasicFeeValidAllow(t *testing.T) {
 			err := tc.allowance.ValidateBasic()
 			require.NoError(t, err)
 
-			ctx := testCtx.Ctx.WithBlockTime(tc.blockTime)
+			ctx := app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockTime(tc.blockTime)
 
 			// now try to deduct
 			removed, err := tc.allowance.Accept(ctx, tc.fee, []sdk.Msg{})

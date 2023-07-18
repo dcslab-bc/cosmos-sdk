@@ -3,14 +3,15 @@ package dbadapter
 import (
 	"io"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/cachekv"
+	"github.com/Finschia/finschia-sdk/store/listenkv"
+	"github.com/Finschia/finschia-sdk/store/tracekv"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
-// Wrapper type for dbm.Db with implementation of KVStore
+// Wrapper type for dbm.DB with implementation of KVStore
 type Store struct {
 	dbm.DB
 }
@@ -83,6 +84,11 @@ func (dsa Store) CacheWrap() types.CacheWrap {
 // CacheWrapWithTrace implements KVStore.
 func (dsa Store) CacheWrapWithTrace(w io.Writer, tc types.TraceContext) types.CacheWrap {
 	return cachekv.NewStore(tracekv.NewStore(dsa, w, tc))
+}
+
+// CacheWrapWithListeners implements the CacheWrapper interface.
+func (dsa Store) CacheWrapWithListeners(storeKey types.StoreKey, listeners []types.WriteListener) types.CacheWrap {
+	return cachekv.NewStore(listenkv.NewStore(dsa, storeKey, listeners))
 }
 
 // dbm.DB implements KVStore so we can CacheKVStore it.

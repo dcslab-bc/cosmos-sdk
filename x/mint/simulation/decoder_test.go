@@ -4,26 +4,24 @@ import (
 	"fmt"
 	"testing"
 
-	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	"github.com/cosmos/cosmos-sdk/x/mint/simulation"
-	"github.com/cosmos/cosmos-sdk/x/mint/types"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
+	"github.com/Finschia/finschia-sdk/x/mint/simulation"
+	"github.com/Finschia/finschia-sdk/x/mint/types"
 )
 
 func TestDecodeStore(t *testing.T) {
-	encCfg := moduletestutil.MakeTestEncodingConfig(mint.AppModuleBasic{})
+	cdc := simapp.MakeTestEncodingConfig().Marshaler
+	dec := simulation.NewDecodeStore(cdc)
 
-	dec := simulation.NewDecodeStore(encCfg.Codec)
-
-	minter := types.NewMinter(math.LegacyOneDec(), math.LegacyNewDec(15))
+	minter := types.NewMinter(sdk.OneDec(), sdk.NewDec(15))
 
 	kvPairs := kv.Pairs{
 		Pairs: []kv.Pair{
-			{Key: types.MinterKey, Value: encCfg.Codec.MustMarshal(&minter)},
+			{Key: types.MinterKey, Value: cdc.MustMarshal(&minter)},
 			{Key: []byte{0x99}, Value: []byte{0x99}},
 		},
 	}

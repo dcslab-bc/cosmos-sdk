@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	tmrand "github.com/cometbft/cometbft/libs/rand"
+	ostrand "github.com/Finschia/ostracon/libs/rand"
 )
 
 func randCompactBitArray(bits int) (*CompactBitArray, []byte) {
 	numBytes := (bits + 7) / 8
-	src := tmrand.Bytes((bits + 7) / 8)
+	src := ostrand.Bytes((bits + 7) / 8)
 	bA := NewCompactBitArray(bits)
 
 	for i := 0; i < numBytes-1; i++ {
@@ -204,7 +204,6 @@ func TestCompactBitArrayNumOfTrueBitsBefore(t *testing.T) {
 		{`"x"`, []int{0}, []int{0}},
 		{`"_x"`, []int{1}, []int{0}},
 		{`"x___xxxx"`, []int{0, 4, 5, 6, 7}, []int{0, 1, 2, 3, 4}},
-		{`"x___xxxx"`, []int{0, 4, 5, 6, 7, 8}, []int{0, 1, 2, 3, 4, 5}},
 		{`"__x_xx_x__x_x___"`, []int{2, 4, 5, 7, 10, 12}, []int{0, 1, 2, 3, 4, 5}},
 		{`"______________xx"`, []int{14, 15}, []int{0, 1}},
 	}

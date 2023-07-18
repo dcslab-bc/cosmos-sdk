@@ -4,22 +4,20 @@ import (
 	"fmt"
 	"io"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/mempool"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	"github.com/Finschia/finschia-sdk/snapshots"
+	"github.com/Finschia/finschia-sdk/store"
+	"github.com/Finschia/finschia-sdk/store/cache"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // File for storing in-package BaseApp optional functions,
 // for options that need access to non-exported fields of the BaseApp
 
 // SetPruning sets a pruning option on the multistore associated with the app
-func SetPruning(opts pruningtypes.PruningOptions) func(*BaseApp) {
+func SetPruning(opts sdk.PruningOptions) func(*BaseApp) {
 	return func(bapp *BaseApp) { bapp.cms.SetPruning(opts) }
 }
 
@@ -70,30 +68,29 @@ func SetIAVLDisableFastNode(disable bool) func(*BaseApp) {
 	return func(bapp *BaseApp) { bapp.cms.SetIAVLDisableFastNode(disable) }
 }
 
-// SetIAVLLazyLoading enables/disables lazy loading of the IAVL store.
-func SetIAVLLazyLoading(lazyLoading bool) func(*BaseApp) {
-	return func(bapp *BaseApp) { bapp.cms.SetLazyLoading(lazyLoading) }
-}
-
 // SetInterBlockCache provides a BaseApp option function that sets the
 // inter-block cache.
 func SetInterBlockCache(cache sdk.MultiStorePersistentCache) func(*BaseApp) {
 	return func(app *BaseApp) { app.setInterBlockCache(cache) }
 }
 
-// SetSnapshot sets the snapshot store.
-func SetSnapshot(snapshotStore *snapshots.Store, opts snapshottypes.SnapshotOptions) func(*BaseApp) {
-	return func(app *BaseApp) { app.SetSnapshot(snapshotStore, opts) }
+// SetSnapshotInterval sets the snapshot interval.
+func SetSnapshotInterval(interval uint64) func(*BaseApp) {
+	return func(app *BaseApp) { app.SetSnapshotInterval(interval) }
 }
 
-// SetMempool sets the mempool on BaseApp.
-func SetMempool(mempool mempool.Mempool) func(*BaseApp) {
-	return func(app *BaseApp) { app.SetMempool(mempool) }
+// SetSnapshotKeepRecent sets the recent snapshots to keep.
+func SetSnapshotKeepRecent(keepRecent uint32) func(*BaseApp) {
+	return func(app *BaseApp) { app.SetSnapshotKeepRecent(keepRecent) }
 }
 
-// SetChainID sets the chain ID in BaseApp.
-func SetChainID(chainID string) func(*BaseApp) {
-	return func(app *BaseApp) { app.chainID = chainID }
+// SetSnapshotStore sets the snapshot store.
+func SetSnapshotStore(snapshotStore *snapshots.Store) func(*BaseApp) {
+	return func(app *BaseApp) { app.SetSnapshotStore(snapshotStore) }
+}
+
+func SetChanCheckTxSize(size uint) func(*BaseApp) {
+	return func(app *BaseApp) { app.SetChanCheckTxSize(size) }
 }
 
 func (app *BaseApp) SetName(name string) {
@@ -174,14 +171,6 @@ func (app *BaseApp) SetAnteHandler(ah sdk.AnteHandler) {
 	app.anteHandler = ah
 }
 
-func (app *BaseApp) SetPostHandler(ph sdk.PostHandler) {
-	if app.sealed {
-		panic("SetPostHandler() on sealed BaseApp")
-	}
-
-	app.postHandler = ph
-}
-
 func (app *BaseApp) SetAddrPeerFilter(pf sdk.PeerFilter) {
 	if app.sealed {
 		panic("SetAddrPeerFilter() on sealed BaseApp")
@@ -221,17 +210,40 @@ func (app *BaseApp) SetStoreLoader(loader StoreLoader) {
 	app.storeLoader = loader
 }
 
-// SetSnapshot sets the snapshot store and options.
-func (app *BaseApp) SetSnapshot(snapshotStore *snapshots.Store, opts snapshottypes.SnapshotOptions) {
+// SetRouter allows us to customize the router.
+func (app *BaseApp) SetRouter(router sdk.Router) {
 	if app.sealed {
-		panic("SetSnapshot() on sealed BaseApp")
+		panic("SetRouter() on sealed BaseApp")
+	}
+	app.router = router
+}
+
+// SetSnapshotStore sets the snapshot store.
+func (app *BaseApp) SetSnapshotStore(snapshotStore *snapshots.Store) {
+	if app.sealed {
+		panic("SetSnapshotStore() on sealed BaseApp")
 	}
 	if snapshotStore == nil {
 		app.snapshotManager = nil
 		return
 	}
-	app.cms.SetSnapshotInterval(opts.Interval)
-	app.snapshotManager = snapshots.NewManager(snapshotStore, opts, app.cms, nil, app.logger)
+	app.snapshotManager = snapshots.NewManager(snapshotStore, app.cms)
+}
+
+// SetSnapshotInterval sets the snapshot interval.
+func (app *BaseApp) SetSnapshotInterval(snapshotInterval uint64) {
+	if app.sealed {
+		panic("SetSnapshotInterval() on sealed BaseApp")
+	}
+	app.snapshotInterval = snapshotInterval
+}
+
+// SetSnapshotKeepRecent sets the number of recent snapshots to keep.
+func (app *BaseApp) SetSnapshotKeepRecent(snapshotKeepRecent uint32) {
+	if app.sealed {
+		panic("SetSnapshotKeepRecent() on sealed BaseApp")
+	}
+	app.snapshotKeepRecent = snapshotKeepRecent
 }
 
 // SetInterfaceRegistry sets the InterfaceRegistry.
@@ -239,6 +251,21 @@ func (app *BaseApp) SetInterfaceRegistry(registry types.InterfaceRegistry) {
 	app.interfaceRegistry = registry
 	app.grpcQueryRouter.SetInterfaceRegistry(registry)
 	app.msgServiceRouter.SetInterfaceRegistry(registry)
+}
+
+func (app *BaseApp) SetChanCheckTxSize(chanCheckTxSize uint) {
+	if app.sealed {
+		panic("SetChanCheckTxSize() on sealed BaseApp")
+	}
+	app.chCheckTxSize = chanCheckTxSize
+}
+
+func MetricsProvider(prometheus bool) cache.MetricsProvider {
+	namespace := "app"
+	if prometheus {
+		return cache.PrometheusMetricsProvider(namespace)
+	}
+	return cache.NopMetricsProvider()
 }
 
 // SetStreamingService is used to set a streaming service into the BaseApp hooks and load the listeners into the multistore
@@ -250,46 +277,4 @@ func (app *BaseApp) SetStreamingService(s StreamingService) {
 	// register the StreamingService within the BaseApp
 	// BaseApp will pass BeginBlock, DeliverTx, and EndBlock requests and responses to the streaming services to update their ABCI context
 	app.abciListeners = append(app.abciListeners, s)
-}
-
-// SetTxDecoder sets the TxDecoder if it wasn't provided in the BaseApp constructor.
-func (app *BaseApp) SetTxDecoder(txDecoder sdk.TxDecoder) {
-	app.txDecoder = txDecoder
-}
-
-// SetTxEncoder sets the TxEncoder if it wasn't provided in the BaseApp constructor.
-func (app *BaseApp) SetTxEncoder(txEncoder sdk.TxEncoder) {
-	app.txEncoder = txEncoder
-}
-
-// SetQueryMultiStore set a alternative MultiStore implementation to support grpc query service.
-//
-// Ref: https://github.com/cosmos/cosmos-sdk/issues/13317
-func (app *BaseApp) SetQueryMultiStore(ms sdk.MultiStore) {
-	app.qms = ms
-}
-
-// SetMempool sets the mempool for the BaseApp and is required for the app to start up.
-func (app *BaseApp) SetMempool(mempool mempool.Mempool) {
-	if app.sealed {
-		panic("SetMempool() on sealed BaseApp")
-	}
-	app.mempool = mempool
-}
-
-// SetProcessProposal sets the process proposal function for the BaseApp.
-func (app *BaseApp) SetProcessProposal(handler sdk.ProcessProposalHandler) {
-	if app.sealed {
-		panic("SetProcessProposal() on sealed BaseApp")
-	}
-	app.processProposal = handler
-}
-
-// SetPrepareProposal sets the prepare proposal function for the BaseApp.
-func (app *BaseApp) SetPrepareProposal(handler sdk.PrepareProposalHandler) {
-	if app.sealed {
-		panic("SetPrepareProposal() on sealed BaseApp")
-	}
-
-	app.prepareProposal = handler
 }

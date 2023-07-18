@@ -2,14 +2,13 @@ package keeper
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/address"
+	bank "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 var (
@@ -21,21 +20,9 @@ var (
 func TestGrantkey(t *testing.T) {
 	require := require.New(t)
 	key := grantStoreKey(grantee, granter, msgType)
-	require.Len(key, len(GrantKey)+len(address.MustLengthPrefix(grantee))+len(address.MustLengthPrefix(granter))+len([]byte(msgType)))
+	require.Len(key, len(GrantKey)+len(address.MustLengthPrefix(grantee.Bytes()))+len(address.MustLengthPrefix(granter.Bytes()))+len([]byte(msgType)))
 
-	granter1, grantee1, msgType1 := parseGrantStoreKey(grantStoreKey(grantee, granter, msgType))
+	granter1, grantee1 := addressesFromGrantStoreKey(grantStoreKey(grantee, granter, msgType))
 	require.Equal(granter, granter1)
 	require.Equal(grantee, grantee1)
-	require.Equal(msgType1, msgType)
-}
-
-func TestGrantQueueKey(t *testing.T) {
-	blockTime := time.Now().UTC()
-	queueKey := GrantQueueKey(blockTime, granter, grantee)
-
-	expiration, granter1, grantee1, err := parseGrantQueueKey(queueKey)
-	require.NoError(t, err)
-	require.Equal(t, blockTime, expiration)
-	require.Equal(t, granter, granter1)
-	require.Equal(t, grantee, grantee1)
 }

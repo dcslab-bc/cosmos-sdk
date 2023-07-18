@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/rpc/client/mock"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
-	tmtypes "github.com/cometbft/cometbft/types"
+	"github.com/Finschia/ostracon/crypto/tmhash"
+	"github.com/Finschia/ostracon/mempool"
+	"github.com/Finschia/ostracon/rpc/client/mock"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 type MockClient struct {
@@ -21,11 +21,15 @@ type MockClient struct {
 	err error
 }
 
-func (c MockClient) BroadcastTxAsync(ctx context.Context, tx tmtypes.Tx) (*coretypes.ResultBroadcastTx, error) {
+func (c MockClient) BroadcastTxCommit(ctx context.Context, tx octypes.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
 	return nil, c.err
 }
 
-func (c MockClient) BroadcastTxSync(ctx context.Context, tx tmtypes.Tx) (*coretypes.ResultBroadcastTx, error) {
+func (c MockClient) BroadcastTxAsync(ctx context.Context, tx octypes.Tx) (*ctypes.ResultBroadcastTx, error) {
+	return nil, c.err
+}
+
+func (c MockClient) BroadcastTxSync(ctx context.Context, tx octypes.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return nil, c.err
 }
 
@@ -40,12 +44,14 @@ func CreateContextWithErrorAndMode(err error, mode string) Context {
 func TestBroadcastError(t *testing.T) {
 	errors := map[error]uint32{
 		mempool.ErrTxInCache:       sdkerrors.ErrTxInMempoolCache.ABCICode(),
+		mempool.ErrTxInMap:         sdkerrors.ErrTxInMempoolCache.ABCICode(),
 		mempool.ErrTxTooLarge{}:    sdkerrors.ErrTxTooLarge.ABCICode(),
 		mempool.ErrMempoolIsFull{}: sdkerrors.ErrMempoolIsFull.ABCICode(),
 	}
 
 	modes := []string{
 		flags.BroadcastAsync,
+		flags.BroadcastBlock,
 		flags.BroadcastSync,
 	}
 

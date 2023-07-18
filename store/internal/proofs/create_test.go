@@ -26,15 +26,8 @@ func TestCreateMembership(t *testing.T) {
 			data := BuildMap(tc.size)
 			allkeys := SortedKeys(data)
 			key := GetKey(allkeys, tc.loc)
-			nonKey := GetNonKey(allkeys, tc.loc)
-
-			// error if the key does not exist
-			proof, err := CreateMembershipProof(data, []byte(nonKey))
-			assert.EqualError(t, err, "cannot make existence proof if key is not in map")
-			assert.Nil(t, proof)
-
 			val := data[key]
-			proof, err = CreateMembershipProof(data, []byte(key))
+			proof, err := CreateMembershipProof(data, []byte(key))
 			if err != nil {
 				t.Fatalf("Creating Proof: %+v", err)
 			}
@@ -43,12 +36,12 @@ func TestCreateMembership(t *testing.T) {
 			}
 
 			root := CalcRoot(data)
-			err = proof.GetExist().Verify(ics23.TendermintSpec, root, []byte(key), val)
+			err = proof.GetExist().Verify(TendermintSpec, root, []byte(key), val)
 			if err != nil {
 				t.Fatalf("Verifying Proof: %+v", err)
 			}
 
-			valid := ics23.VerifyMembership(ics23.TendermintSpec, root, proof, []byte(key), val)
+			valid := ics23.VerifyMembership(TendermintSpec, root, proof, []byte(key), val)
 			if !valid {
 				t.Fatalf("Membership Proof Invalid")
 			}
@@ -73,15 +66,9 @@ func TestCreateNonMembership(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			data := BuildMap(tc.size)
 			allkeys := SortedKeys(data)
-			nonKey := GetNonKey(allkeys, tc.loc)
-			key := GetKey(allkeys, tc.loc)
+			key := GetNonKey(allkeys, tc.loc)
 
-			// error if the key exists
 			proof, err := CreateNonMembershipProof(data, []byte(key))
-			assert.EqualError(t, err, "cannot create non-membership proof if key is in map")
-			assert.Nil(t, proof)
-
-			proof, err = CreateNonMembershipProof(data, []byte(nonKey))
 			if err != nil {
 				t.Fatalf("Creating Proof: %+v", err)
 			}
@@ -90,12 +77,12 @@ func TestCreateNonMembership(t *testing.T) {
 			}
 
 			root := CalcRoot(data)
-			err = proof.GetNonexist().Verify(ics23.TendermintSpec, root, []byte(nonKey))
+			err = proof.GetNonexist().Verify(TendermintSpec, root, []byte(key))
 			if err != nil {
 				t.Fatalf("Verifying Proof: %+v", err)
 			}
 
-			valid := ics23.VerifyNonMembership(ics23.TendermintSpec, root, proof, []byte(nonKey))
+			valid := ics23.VerifyNonMembership(TendermintSpec, root, proof, []byte(key))
 			if !valid {
 				t.Fatalf("Non Membership Proof Invalid")
 			}

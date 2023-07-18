@@ -2,22 +2,24 @@ package ante
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"sync"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256r1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/crypto/types/multisig"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
-	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	kmultisig "github.com/Finschia/finschia-sdk/crypto/keys/multisig"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256r1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/crypto/types/multisig"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/legacy/legacytx"
+	authsigning "github.com/Finschia/finschia-sdk/x/auth/signing"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 var (
@@ -98,7 +100,7 @@ func (spkd SetPubKeyDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 	// Also emit the following events, so that txs can be indexed by these
 	// indices:
 	// - signature (via `tx.signature='<sig_as_base64>'`),
-	// - concat(address,"/",sequence) (via `tx.acc_seq='cosmos1abc...def/42'`).
+	// - concat(address,"/",sequence) (via `tx.acc_seq='link1abc...def/42'`).
 	sigs, err := sigTx.GetSignaturesV2()
 	if err != nil {
 		return ctx, err
@@ -136,10 +138,6 @@ type SigGasConsumeDecorator struct {
 }
 
 func NewSigGasConsumeDecorator(ak AccountKeeper, sigGasConsumer SignatureVerificationGasConsumer) SigGasConsumeDecorator {
-	if sigGasConsumer == nil {
-		sigGasConsumer = DefaultSigVerificationGasConsumer
-	}
-
 	return SigGasConsumeDecorator{
 		ak:             ak,
 		sigGasConsumer: sigGasConsumer,
@@ -202,12 +200,14 @@ func (sgcd SigGasConsumeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simula
 type SigVerificationDecorator struct {
 	ak              AccountKeeper
 	signModeHandler authsigning.SignModeHandler
+	txHashCache     sync.Map
 }
 
-func NewSigVerificationDecorator(ak AccountKeeper, signModeHandler authsigning.SignModeHandler) SigVerificationDecorator {
-	return SigVerificationDecorator{
+func NewSigVerificationDecorator(ak AccountKeeper, signModeHandler authsigning.SignModeHandler) *SigVerificationDecorator {
+	return &SigVerificationDecorator{
 		ak:              ak,
 		signModeHandler: signModeHandler,
+		txHashCache:     sync.Map{},
 	}
 }
 
@@ -232,7 +232,12 @@ func OnlyLegacyAminoSigners(sigData signing.SignatureData) bool {
 	}
 }
 
-func (svd SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+func (svd *SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	// TODO https://github.com/Finschia/link/issues/1136
+	// no need to verify signatures on recheck tx
+	if ctx.IsReCheckTx() {
+		return next(ctx, tx, simulate)
+	}
 	sigTx, ok := tx.(authsigning.SigVerifiableTx)
 	if !ok {
 		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "invalid transaction type")
@@ -252,15 +257,30 @@ func (svd SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 		return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "invalid number of signer;  expected: %d, got %d", len(signerAddrs), len(sigs))
 	}
 
+	newSigKeys := make([]string, 0, len(sigs))
+	defer func() {
+		// remove txHashCache if got an error
+		if err != nil {
+			for _, sigKey := range newSigKeys {
+				svd.txHashCache.Delete(sigKey)
+			}
+		}
+	}()
+
 	for i, sig := range sigs {
-		acc, err := GetSignerAcc(ctx, svd.ak, signerAddrs[i])
+		var acc types.AccountI
+		acc, err = GetSignerAcc(ctx, svd.ak, signerAddrs[i])
 		if err != nil {
 			return ctx, err
 		}
 
+		if simulate {
+			continue
+		}
+
 		// retrieve pubkey
 		pubKey := acc.GetPubKey()
-		if !simulate && pubKey == nil {
+		if pubKey == nil {
 			return ctx, sdkerrors.Wrap(sdkerrors.ErrInvalidPubKey, "pubkey on account is not set")
 		}
 
@@ -280,16 +300,28 @@ func (svd SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 			accNum = acc.GetAccountNumber()
 		}
 		signerData := authsigning.SignerData{
-			Address:       acc.GetAddress().String(),
 			ChainID:       chainID,
 			AccountNumber: accNum,
 			Sequence:      acc.GetSequence(),
-			PubKey:        pubKey,
 		}
 
-		// no need to verify signatures on recheck tx
-		if !simulate && !ctx.IsReCheckTx() {
-			err := authsigning.VerifySignature(pubKey, signerData, sig.Data, svd.signModeHandler, tx)
+		if !simulate {
+			if !genesis {
+				sigKey := fmt.Sprintf("%d:%d", signerData.AccountNumber, signerData.Sequence)
+				// TODO could we use `tx.(*wrapper).getBodyBytes()` instead of `ctx.TxBytes()`?
+				txHash := sha256.Sum256(ctx.TxBytes())
+				stored := false
+
+				// TODO(duong2): Does this really improve performance?
+				stored, err = svd.verifySignatureWithCache(ctx, pubKey, signerData, sig.Data, tx, sigKey, txHash[:])
+
+				if stored {
+					newSigKeys = append(newSigKeys, sigKey)
+				}
+			} else {
+				err = authsigning.VerifySignature(pubKey, signerData, sig.Data, svd.signModeHandler, tx)
+			}
+
 			if err != nil {
 				var errMsg string
 				if OnlyLegacyAminoSigners(sig.Data) {
@@ -300,7 +332,6 @@ func (svd SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 					errMsg = fmt.Sprintf("signature verification failed; please verify account number (%d) and chain-id (%s)", accNum, chainID)
 				}
 				return ctx, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, errMsg)
-
 			}
 		}
 	}
@@ -308,10 +339,55 @@ func (svd SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	return next(ctx, tx, simulate)
 }
 
+func (svd *SigVerificationDecorator) verifySignatureWithCache(
+	ctx sdk.Context,
+	pubKey cryptotypes.PubKey,
+	signerData authsigning.SignerData,
+	sigData signing.SignatureData,
+	tx sdk.Tx,
+	sigKey string,
+	txHash []byte,
+) (stored bool, err error) {
+	switch {
+	case ctx.IsCheckTx() && !ctx.IsReCheckTx(): // CheckTx
+		err = authsigning.VerifySignature(pubKey, signerData, sigData, svd.signModeHandler, tx)
+		if err == nil {
+			svd.txHashCache.Store(sigKey, txHash)
+			stored = true
+		}
+
+	case ctx.IsReCheckTx(): // ReCheckTx
+		verified, exist := svd.checkCache(sigKey, txHash)
+		if !verified {
+			if exist {
+				svd.txHashCache.Delete(sigKey)
+			}
+			err = fmt.Errorf("unable to verify signature")
+		}
+
+	default: // DeliverTx
+		verified, exist := svd.checkCache(sigKey, txHash)
+		if exist {
+			svd.txHashCache.Delete(sigKey)
+		}
+		if !verified {
+			err = authsigning.VerifySignature(pubKey, signerData, sigData, svd.signModeHandler, tx)
+		}
+	}
+
+	return stored, err
+}
+
+func (svd *SigVerificationDecorator) checkCache(sigKey string, txHash []byte) (verified, exist bool) {
+	cached, exist := svd.txHashCache.Load(sigKey)
+	verified = exist && bytes.Equal(cached.([]byte), txHash)
+	return verified, exist
+}
+
 // IncrementSequenceDecorator handles incrementing sequences of all signers.
 // Use the IncrementSequenceDecorator decorator to prevent replay attacks. Note,
-// there is need to execute IncrementSequenceDecorator on RecheckTx since
-// BaseApp.Commit() will set the check state based on the latest header.
+// there is no need to execute IncrementSequenceDecorator on RecheckTX since
+// CheckTx would already bump the sequence number.
 //
 // NOTE: Since CheckTx and DeliverTx state are managed separately, subsequent and
 // sequential txs orginating from the same account cannot be handled correctly in

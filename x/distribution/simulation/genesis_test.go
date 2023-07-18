@@ -7,14 +7,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	sdkmath "cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/distribution/simulation"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/simulation"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 // TestRandomizedGenState tests the normal scenario of applying RandomizedGenState.
@@ -31,7 +30,7 @@ func TestRandomizedGenState(t *testing.T) {
 		Rand:         r,
 		NumBonded:    3,
 		Accounts:     simtypes.RandomAccounts(r, 3),
-		InitialStake: sdkmath.NewInt(1000),
+		InitialStake: 1000,
 		GenState:     make(map[string]json.RawMessage),
 	}
 
@@ -40,11 +39,13 @@ func TestRandomizedGenState(t *testing.T) {
 	var distrGenesis types.GenesisState
 	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &distrGenesis)
 
-	dec1, _ := sdk.NewDecFromStr("0.210000000000000000")
+	dec1, _ := sdk.NewDecFromStr("0.170000000000000000")
+	dec2, _ := sdk.NewDecFromStr("0.010000000000000000")
+	dec3, _ := sdk.NewDecFromStr("0.210000000000000000")
 
-	require.Equal(t, sdk.ZeroDec(), distrGenesis.Params.BaseProposerReward)  //nolint:staticcheck
-	require.Equal(t, sdk.ZeroDec(), distrGenesis.Params.BonusProposerReward) //nolint:staticcheck
-	require.Equal(t, dec1, distrGenesis.Params.CommunityTax)
+	require.Equal(t, dec1, distrGenesis.Params.BaseProposerReward)
+	require.Equal(t, dec2, distrGenesis.Params.BonusProposerReward)
+	require.Equal(t, dec3, distrGenesis.Params.CommunityTax)
 	require.Equal(t, true, distrGenesis.Params.WithdrawAddrEnabled)
 	require.Len(t, distrGenesis.DelegatorStartingInfos, 0)
 	require.Len(t, distrGenesis.DelegatorWithdrawInfos, 0)

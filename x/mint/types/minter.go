@@ -3,9 +3,7 @@ package types
 import (
 	"fmt"
 
-	"cosmossdk.io/math"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // NewMinter returns a new Minter object with the given inflation and annual
@@ -21,7 +19,7 @@ func NewMinter(inflation, annualProvisions sdk.Dec) Minter {
 func InitialMinter(inflation sdk.Dec) Minter {
 	return NewMinter(
 		inflation,
-		math.LegacyNewDec(0),
+		sdk.NewDec(0),
 	)
 }
 
@@ -33,7 +31,7 @@ func DefaultInitialMinter() Minter {
 	)
 }
 
-// ValidateMinter does a basic validation on minter.
+// validate minter
 func ValidateMinter(minter Minter) error {
 	if minter.Inflation.IsNegative() {
 		return fmt.Errorf("mint parameter Inflation should be positive, is %s",
@@ -43,7 +41,7 @@ func ValidateMinter(minter Minter) error {
 }
 
 // NextInflationRate returns the new inflation rate for the next hour.
-func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec) math.LegacyDec {
+func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec) sdk.Dec {
 	// The target annual inflation rate is recalculated for each previsions cycle. The
 	// inflation is also subject to a rate change (positive or negative) depending on
 	// the distance from the desired ratio (67%). The maximum rate change possible is
@@ -51,10 +49,10 @@ func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec) math.Legac
 	// 7% and 20%.
 
 	// (1 - bondedRatio/GoalBonded) * InflationRateChange
-	inflationRateChangePerYear := math.LegacyOneDec().
+	inflationRateChangePerYear := sdk.OneDec().
 		Sub(bondedRatio.Quo(params.GoalBonded)).
 		Mul(params.InflationRateChange)
-	inflationRateChange := inflationRateChangePerYear.Quo(math.LegacyNewDec(int64(params.BlocksPerYear)))
+	inflationRateChange := inflationRateChangePerYear.Quo(sdk.NewDec(int64(params.BlocksPerYear)))
 
 	// adjust the new annual inflation for this next cycle
 	inflation := m.Inflation.Add(inflationRateChange) // note inflationRateChange may be negative
@@ -70,7 +68,7 @@ func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec) math.Legac
 
 // NextAnnualProvisions returns the annual provisions based on current total
 // supply and inflation rate.
-func (m Minter) NextAnnualProvisions(_ Params, totalSupply math.Int) math.LegacyDec {
+func (m Minter) NextAnnualProvisions(_ Params, totalSupply sdk.Int) sdk.Dec {
 	return m.Inflation.MulInt(totalSupply)
 }
 

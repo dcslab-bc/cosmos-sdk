@@ -1,40 +1,39 @@
 package keeper
 
 import (
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // TODO: Break into several smaller functions for clarity
 
 // Tally iterates over the votes and updates the tally of a proposal based on the voting power of the
 // voters
-func (keeper Keeper) Tally(ctx sdk.Context, proposal v1.Proposal) (passes bool, burnDeposits bool, tallyResults v1.TallyResult) {
-	results := make(map[v1.VoteOption]sdk.Dec)
-	results[v1.OptionYes] = math.LegacyZeroDec()
-	results[v1.OptionAbstain] = math.LegacyZeroDec()
-	results[v1.OptionNo] = math.LegacyZeroDec()
-	results[v1.OptionNoWithVeto] = math.LegacyZeroDec()
+func (keeper Keeper) Tally(ctx sdk.Context, proposal types.Proposal) (passes bool, burnDeposits bool, tallyResults types.TallyResult) {
+	results := make(map[types.VoteOption]sdk.Dec)
+	results[types.OptionYes] = sdk.ZeroDec()
+	results[types.OptionAbstain] = sdk.ZeroDec()
+	results[types.OptionNo] = sdk.ZeroDec()
+	results[types.OptionNoWithVeto] = sdk.ZeroDec()
 
-	totalVotingPower := math.LegacyZeroDec()
-	currValidators := make(map[string]v1.ValidatorGovInfo)
+	totalVotingPower := sdk.ZeroDec()
+	currValidators := make(map[string]types.ValidatorGovInfo)
 
 	// fetch all the bonded validators, insert them into currValidators
 	keeper.sk.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-		currValidators[validator.GetOperator().String()] = v1.NewValidatorGovInfo(
+		currValidators[validator.GetOperator().String()] = types.NewValidatorGovInfo(
 			validator.GetOperator(),
 			validator.GetBondedTokens(),
 			validator.GetDelegatorShares(),
-			math.LegacyZeroDec(),
-			v1.WeightedVoteOptions{},
+			sdk.ZeroDec(),
+			types.WeightedVoteOptions{},
 		)
 
 		return false
 	})
 
-	keeper.IterateVotes(ctx, proposal.Id, func(vote v1.Vote) bool {
+	keeper.IterateVotes(ctx, proposal.ProposalId, func(vote types.Vote) bool {
 		// if validator, just record it in the map
 		voter := sdk.MustAccAddressFromBech32(vote.Voter)
 
@@ -50,7 +49,7 @@ func (keeper Keeper) Tally(ctx sdk.Context, proposal v1.Proposal) (passes bool, 
 
 			if val, ok := currValidators[valAddrStr]; ok {
 				// There is no need to handle the special case that validator address equal to voter address.
-				// Because voter's voting power will tally again even if there will be deduction of voter's voting power from validator.
+				// Because voter's voting power will tally again even if there will deduct voter's voting power from validator.
 				val.DelegatorDeductions = val.DelegatorDeductions.Add(delegation.GetShares())
 				currValidators[valAddrStr] = val
 
@@ -58,8 +57,7 @@ func (keeper Keeper) Tally(ctx sdk.Context, proposal v1.Proposal) (passes bool, 
 				votingPower := delegation.GetShares().MulInt(val.BondedTokens).Quo(val.DelegatorShares)
 
 				for _, option := range vote.Options {
-					weight, _ := sdk.NewDecFromStr(option.Weight)
-					subPower := votingPower.Mul(weight)
+					subPower := votingPower.Mul(option.Weight)
 					results[option.Option] = results[option.Option].Add(subPower)
 				}
 				totalVotingPower = totalVotingPower.Add(votingPower)
@@ -82,15 +80,14 @@ func (keeper Keeper) Tally(ctx sdk.Context, proposal v1.Proposal) (passes bool, 
 		votingPower := sharesAfterDeductions.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
 
 		for _, option := range val.Vote {
-			weight, _ := sdk.NewDecFromStr(option.Weight)
-			subPower := votingPower.Mul(weight)
+			subPower := votingPower.Mul(option.Weight)
 			results[option.Option] = results[option.Option].Add(subPower)
 		}
 		totalVotingPower = totalVotingPower.Add(votingPower)
 	}
 
-	params := keeper.GetParams(ctx)
-	tallyResults = v1.NewTallyResultFromMap(results)
+	tallyParams := keeper.GetTallyParams(ctx)
+	tallyResults = types.NewTallyResultFromMap(results)
 
 	// TODO: Upgrade the spec to cover all of these cases & remove pseudocode.
 	// If there is no staked coins, the proposal fails
@@ -99,26 +96,23 @@ func (keeper Keeper) Tally(ctx sdk.Context, proposal v1.Proposal) (passes bool, 
 	}
 
 	// If there is not enough quorum of votes, the proposal fails
-	percentVoting := totalVotingPower.Quo(sdk.NewDecFromInt(keeper.sk.TotalBondedTokens(ctx)))
-	quorum, _ := sdk.NewDecFromStr(params.Quorum)
-	if percentVoting.LT(quorum) {
-		return false, params.BurnVoteQuorum, tallyResults
+	percentVoting := totalVotingPower.Quo(keeper.sk.TotalBondedTokens(ctx).ToDec())
+	if percentVoting.LT(tallyParams.Quorum) {
+		return false, true, tallyResults
 	}
 
 	// If no one votes (everyone abstains), proposal fails
-	if totalVotingPower.Sub(results[v1.OptionAbstain]).Equal(math.LegacyZeroDec()) {
+	if totalVotingPower.Sub(results[types.OptionAbstain]).Equal(sdk.ZeroDec()) {
 		return false, false, tallyResults
 	}
 
 	// If more than 1/3 of voters veto, proposal fails
-	vetoThreshold, _ := sdk.NewDecFromStr(params.VetoThreshold)
-	if results[v1.OptionNoWithVeto].Quo(totalVotingPower).GT(vetoThreshold) {
-		return false, params.BurnVoteVeto, tallyResults
+	if results[types.OptionNoWithVeto].Quo(totalVotingPower).GT(tallyParams.VetoThreshold) {
+		return false, true, tallyResults
 	}
 
 	// If more than 1/2 of non-abstaining voters vote Yes, proposal passes
-	threshold, _ := sdk.NewDecFromStr(params.Threshold)
-	if results[v1.OptionYes].Quo(totalVotingPower.Sub(results[v1.OptionAbstain])).GT(threshold) {
+	if results[types.OptionYes].Quo(totalVotingPower.Sub(results[types.OptionAbstain])).GT(tallyParams.Threshold) {
 		return true, false, tallyResults
 	}
 

@@ -5,21 +5,22 @@ import (
 	"fmt"
 	"strings"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	ostbytes "github.com/Finschia/ostracon/libs/bytes"
+	rpcclient "github.com/Finschia/ostracon/rpc/client"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // GetNode returns an RPC client. If the context's client is not defined, an
 // error is returned.
-func (ctx Context) GetNode() (TendermintRPC, error) {
+func (ctx Context) GetNode() (rpcclient.Client, error) {
 	if ctx.Client == nil {
 		return nil, errors.New("no RPC client is defined in offline mode")
 	}
@@ -44,7 +45,7 @@ func (ctx Context) QueryWithData(path string, data []byte) ([]byte, int64, error
 // QueryStore performs a query to a Tendermint node with the provided key and
 // store name. It returns the result and height of the query upon success
 // or an error if the query fails.
-func (ctx Context) QueryStore(key tmbytes.HexBytes, storeName string) ([]byte, int64, error) {
+func (ctx Context) QueryStore(key ostbytes.HexBytes, storeName string) ([]byte, int64, error) {
 	return ctx.queryStore(key, storeName, "key")
 }
 
@@ -59,11 +60,6 @@ func (ctx Context) QueryABCI(req abci.RequestQuery) (abci.ResponseQuery, error) 
 // GetFromAddress returns the from address from the context's name.
 func (ctx Context) GetFromAddress() sdk.AccAddress {
 	return ctx.FromAddress
-}
-
-// GetFeePayerAddress returns the fee granter address from the context
-func (ctx Context) GetFeePayerAddress() sdk.AccAddress {
-	return ctx.FeePayer
 }
 
 // GetFeeGranterAddress returns the fee granter address from the context
@@ -128,7 +124,7 @@ func sdkErrorToGRPCError(resp abci.ResponseQuery) error {
 // query performs a query to a Tendermint node with the provided store name
 // and path. It returns the result and height of the query upon success
 // or an error if the query fails.
-func (ctx Context) query(path string, key tmbytes.HexBytes) ([]byte, int64, error) {
+func (ctx Context) query(path string, key ostbytes.HexBytes) ([]byte, int64, error) {
 	resp, err := ctx.queryABCI(abci.RequestQuery{
 		Path:   path,
 		Data:   key,
@@ -144,7 +140,7 @@ func (ctx Context) query(path string, key tmbytes.HexBytes) ([]byte, int64, erro
 // queryStore performs a query to a Tendermint node with the provided a store
 // name and path. It returns the result and height of the query upon success
 // or an error if the query fails.
-func (ctx Context) queryStore(key tmbytes.HexBytes, storeName, endPath string) ([]byte, int64, error) {
+func (ctx Context) queryStore(key ostbytes.HexBytes, storeName, endPath string) ([]byte, int64, error) {
 	path := fmt.Sprintf("/store/%s/%s", storeName, endPath)
 	return ctx.query(path, key)
 }

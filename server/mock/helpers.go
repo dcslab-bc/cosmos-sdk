@@ -3,22 +3,16 @@ package mock
 import (
 	"fmt"
 	"os"
-	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmlog "github.com/cometbft/cometbft/libs/log"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
 )
 
-// SetupApp returns an application as well as a clean-up function to be used to
-// quickly setup a test case with an app.
-func SetupApp() (abci.Application, func(), error) {
-	var logger tmlog.Logger
-	if testing.Verbose() {
-		logger = tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout)).With("module", "mock")
-	} else {
-		logger = tmlog.NewNopLogger()
-	}
-
+// SetupApp returns an application as well as a clean-up function
+// to be used to quickly setup a test case with an app
+func SetupApp() (ocabci.Application, func(), error) {
+	logger := log.NewOCLogger(log.NewSyncWriter(os.Stdout)).
+		With("module", "mock")
 	rootDir, err := os.MkdirTemp("", "mock-sdk")
 	if err != nil {
 		return nil, nil, err

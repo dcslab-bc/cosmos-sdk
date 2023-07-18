@@ -8,19 +8,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	clienttestutil "github.com/cosmos/cosmos-sdk/client/testutil"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/crypto/hd"
+	"github.com/Finschia/finschia-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/crypto/keyring"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func Test_runExportCmd(t *testing.T) {
-	cdc := clienttestutil.MakeTestCodec(t)
 	testCases := []struct {
 		name           string
 		keyringBackend string
@@ -55,7 +53,7 @@ func Test_runExportCmd(t *testing.T) {
 			extraArgs:      []string{"--unsafe", "--unarmored-hex"},
 			userInput:      "y\n",
 			mustFail:       false,
-			expectedOutput: "2485e33678db4175dc0ecef2d6e1fc493d4a0d7f7ce83324b6ed70afe77f3485\n",
+			expectedOutput: "d4bd5d54ee1b75abc6f5bab08e2e9d3a4b6dfbe6b50e2d6cf2426f3215633a1f\n",
 		},
 		{
 			name:           "file keyring backend properly read password and user confirmation",
@@ -64,7 +62,7 @@ func Test_runExportCmd(t *testing.T) {
 			// first 2 pass for creating the key, then unsafe export confirmation, then unlock keyring pass
 			userInput:      "12345678\n12345678\ny\n12345678\n",
 			mustFail:       false,
-			expectedOutput: "2485e33678db4175dc0ecef2d6e1fc493d4a0d7f7ce83324b6ed70afe77f3485\n",
+			expectedOutput: "d4bd5d54ee1b75abc6f5bab08e2e9d3a4b6dfbe6b50e2d6cf2426f3215633a1f\n",
 		},
 	}
 
@@ -87,9 +85,11 @@ func Test_runExportCmd(t *testing.T) {
 			mockInBuf := bufio.NewReader(mockIn)
 
 			// create a key
-			kb, err := keyring.New(sdk.KeyringServiceName(), tc.keyringBackend, kbHome, bufio.NewReader(mockInBuf), cdc)
+			kb, err := keyring.New(sdk.KeyringServiceName(), tc.keyringBackend, kbHome, bufio.NewReader(mockInBuf))
 			require.NoError(t, err)
-			t.Cleanup(cleanupKeys(t, kb, "keyname1"))
+			t.Cleanup(func() {
+				kb.Delete("keyname1") // nolint:errcheck
+			})
 
 			path := sdk.GetConfig().GetFullBIP44Path()
 			_, err = kb.NewAccount("keyname1", testdata.TestMnemonic, "", path, hd.Secp256k1)
@@ -98,8 +98,7 @@ func Test_runExportCmd(t *testing.T) {
 			clientCtx := client.Context{}.
 				WithKeyringDir(kbHome).
 				WithKeyring(kb).
-				WithInput(mockInBuf).
-				WithCodec(cdc)
+				WithInput(mockInBuf)
 			ctx := context.WithValue(context.Background(), client.ClientContextKey, &clientCtx)
 
 			err = cmd.ExecuteContext(ctx)

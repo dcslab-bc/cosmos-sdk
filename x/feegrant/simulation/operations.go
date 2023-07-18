@@ -3,25 +3,23 @@ package simulation
 import (
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
-	"github.com/cosmos/cosmos-sdk/x/simulation"
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/codec"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/x/feegrant/keeper"
+	"github.com/Finschia/finschia-sdk/x/simulation"
 )
 
+// nolint:gosec
 // Simulation operation weights constants
 //
-//nolint:gosec // These aren't harcoded credentials.
+//nolint:gosec
 const (
-	OpWeightMsgGrantAllowance        = "op_weight_msg_grant_fee_allowance"
-	OpWeightMsgRevokeAllowance       = "op_weight_msg_grant_revoke_allowance"
-	DefaultWeightGrantAllowance  int = 100
-	DefaultWeightRevokeAllowance int = 100
+	OpWeightMsgGrantAllowance  = "op_weight_msg_grant_fee_allowance"
+	OpWeightMsgRevokeAllowance = "op_weight_msg_grant_revoke_allowance"
 )
 
 var (
@@ -30,12 +28,8 @@ var (
 )
 
 func WeightedOperations(
-	registry codectypes.InterfaceRegistry,
-	appParams simtypes.AppParams,
-	cdc codec.JSONCodec,
-	ak feegrant.AccountKeeper,
-	bk feegrant.BankKeeper,
-	k keeper.Keeper,
+	appParams simtypes.AppParams, cdc codec.JSONCodec,
+	ak feegrant.AccountKeeper, bk feegrant.BankKeeper, k keeper.Keeper,
 ) simulation.WeightedOperations {
 	var (
 		weightMsgGrantAllowance  int
@@ -44,30 +38,30 @@ func WeightedOperations(
 
 	appParams.GetOrGenerate(cdc, OpWeightMsgGrantAllowance, &weightMsgGrantAllowance, nil,
 		func(_ *rand.Rand) {
-			weightMsgGrantAllowance = DefaultWeightGrantAllowance
+			weightMsgGrantAllowance = simappparams.DefaultWeightGrantAllowance
 		},
 	)
 
 	appParams.GetOrGenerate(cdc, OpWeightMsgRevokeAllowance, &weightMsgRevokeAllowance, nil,
 		func(_ *rand.Rand) {
-			weightMsgRevokeAllowance = DefaultWeightRevokeAllowance
+			weightMsgRevokeAllowance = simappparams.DefaultWeightRevokeAllowance
 		},
 	)
 
 	return simulation.WeightedOperations{
 		simulation.NewWeightedOperation(
 			weightMsgGrantAllowance,
-			SimulateMsgGrantAllowance(codec.NewProtoCodec(registry), ak, bk, k),
+			SimulateMsgGrantAllowance(ak, bk, k),
 		),
 		simulation.NewWeightedOperation(
 			weightMsgRevokeAllowance,
-			SimulateMsgRevokeAllowance(codec.NewProtoCodec(registry), ak, bk, k),
+			SimulateMsgRevokeAllowance(ak, bk, k),
 		),
 	}
 }
 
 // SimulateMsgGrantAllowance generates MsgGrantAllowance with random values.
-func SimulateMsgGrantAllowance(cdc *codec.ProtoCodec, ak feegrant.AccountKeeper, bk feegrant.BankKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgGrantAllowance(ak feegrant.AccountKeeper, bk feegrant.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -100,7 +94,7 @@ func SimulateMsgGrantAllowance(cdc *codec.ProtoCodec, ak feegrant.AccountKeeper,
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
-			TxGen:           tx.NewTxConfig(cdc, tx.DefaultSignModes),
+			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
 			Cdc:             nil,
 			Msg:             msg,
 			MsgType:         TypeMsgGrantAllowance,
@@ -117,7 +111,7 @@ func SimulateMsgGrantAllowance(cdc *codec.ProtoCodec, ak feegrant.AccountKeeper,
 }
 
 // SimulateMsgRevokeAllowance generates a MsgRevokeAllowance with random values.
-func SimulateMsgRevokeAllowance(cdc *codec.ProtoCodec, ak feegrant.AccountKeeper, bk feegrant.BankKeeper, k keeper.Keeper) simtypes.Operation {
+func SimulateMsgRevokeAllowance(ak feegrant.AccountKeeper, bk feegrant.BankKeeper, k keeper.Keeper) simtypes.Operation {
 	return func(
 		r *rand.Rand, app *baseapp.BaseApp, ctx sdk.Context, accs []simtypes.Account, chainID string,
 	) (simtypes.OperationMsg, []simtypes.FutureOperation, error) {
@@ -150,7 +144,7 @@ func SimulateMsgRevokeAllowance(cdc *codec.ProtoCodec, ak feegrant.AccountKeeper
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
-			TxGen:           tx.NewTxConfig(cdc, tx.DefaultSignModes),
+			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
 			Cdc:             nil,
 			Msg:             &msg,
 			MsgType:         TypeMsgRevokeAllowance,

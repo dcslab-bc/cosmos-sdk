@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/types/simulation"
 )
 
 // entry kinds for use within OperationEntry

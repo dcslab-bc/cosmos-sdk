@@ -1,11 +1,12 @@
 package store
 
 import (
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 // Import cosmos-sdk/types/store.go for convenience.
 type (
+	PruningOptions   = types.PruningOptions
 	Store            = types.Store
 	Committer        = types.Committer
 	CommitStore      = types.CommitStore

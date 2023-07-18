@@ -7,8 +7,7 @@ import (
 	"time"
 	"unsafe"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 const (
@@ -40,20 +39,20 @@ func RandStringOfLength(r *rand.Rand, n int) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-// RandPositiveInt get a rand positive math.Int
-func RandPositiveInt(r *rand.Rand, max math.Int) (math.Int, error) {
-	if !max.GTE(math.OneInt()) {
-		return math.Int{}, errors.New("max too small")
+// RandPositiveInt get a rand positive sdk.Int
+func RandPositiveInt(r *rand.Rand, max sdk.Int) (sdk.Int, error) {
+	if !max.GTE(sdk.OneInt()) {
+		return sdk.Int{}, errors.New("max too small")
 	}
 
-	max = max.Sub(math.OneInt())
+	max = max.Sub(sdk.OneInt())
 
-	return sdk.NewIntFromBigInt(new(big.Int).Rand(r, max.BigInt())).Add(math.OneInt()), nil
+	return sdk.NewIntFromBigInt(new(big.Int).Rand(r, max.BigInt())).Add(sdk.OneInt()), nil
 }
 
 // RandomAmount generates a random amount
 // Note: The range of RandomAmount includes max, and is, in fact, biased to return max as well as 0.
-func RandomAmount(r *rand.Rand, max math.Int) math.Int {
+func RandomAmount(r *rand.Rand, max sdk.Int) sdk.Int {
 	randInt := big.NewInt(0)
 
 	switch r.Intn(10) {
@@ -70,7 +69,7 @@ func RandomAmount(r *rand.Rand, max math.Int) math.Int {
 
 // RandomDecAmount generates a random decimal amount
 // Note: The range of RandomDecAmount includes max, and is, in fact, biased to return max as well as 0.
-func RandomDecAmount(r *rand.Rand, max sdk.Dec) math.LegacyDec {
+func RandomDecAmount(r *rand.Rand, max sdk.Dec) sdk.Dec {
 	randInt := big.NewInt(0)
 
 	switch r.Intn(10) {
@@ -87,16 +86,9 @@ func RandomDecAmount(r *rand.Rand, max sdk.Dec) math.LegacyDec {
 
 // RandTimestamp generates a random timestamp
 func RandTimestamp(r *rand.Rand) time.Time {
-	// json.Marshal breaks for timestamps with year greater than 9999
-	// UnixNano breaks with year greater than 2262
-	start := time.Date(2062, time.Month(1), 1, 1, 1, 1, 1, time.UTC).UnixMilli()
-
-	// Calculate a random amount of time in seconds between 0 and 200 years
-	unixTime := r.Int63n(60*60*24*365*200) * 1000 // convert to milliseconds
-
-	// Get milliseconds for a time between Jan 1, 2062 and Jan 1, 2262
-	rtime := time.UnixMilli(start+unixTime).UnixMilli() / 1000
-	return time.Unix(rtime, 0)
+	// json.Marshal breaks for timestamps greater with year greater than 9999
+	unixTime := r.Int63n(253373529600)
+	return time.Unix(unixTime, 0)
 }
 
 // RandIntBetween returns a random int between two numbers inclusively.

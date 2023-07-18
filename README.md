@@ -1,70 +1,73 @@
-<div align="center">
-  <h1> Cosmos SDK </h1>
-</div>
+The Finschia SDK is a framework for building blockchain applications in Golang.
+It is being used to build [`Finschia`](https://github.com/Finschia/finschia), the first implementation of the Finschia Mainnet.
+This is forked from [`cosmos-sdk`](https://github.com/cosmos/cosmos-sdk) at 2021-03-15.
 
-![banner](docs/static/img/banner.jpg)
+**WARNING**: Breaking changes may occur because this repository is still in the pre-release development phase.
 
-<div align="center">
-  <a href="https://github.com/cosmos/cosmos-sdk/blob/main/LICENSE">
-    <img alt="License: Apache-2.0" src="https://img.shields.io/github/license/cosmos/cosmos-sdk.svg" />
-  </a>
-  <a href="https://pkg.go.dev/github.com/cosmos/cosmos-sdk">
-    <img src="https://pkg.go.dev/badge/github.com/cosmos/cosmos-sdk.svg" alt="Go Reference">
-  </a>
-  <a href="https://goreportcard.com/report/github.com/cosmos/cosmos-sdk">
-    <img alt="Go report card" src="https://goreportcard.com/badge/github.com/cosmos/cosmos-sdk" />
-  </a>
-  <a href="https://codecov.io/gh/cosmos/cosmos-sdk">
-    <img alt="Code Coverage" src="https://codecov.io/gh/cosmos/cosmos-sdk/branch/main/graph/badge.svg" />
-  </a>
-</div>
-<div align="center">
-  <a href="https://discord.gg/AzefAFd">
-    <img alt="Discord" src="https://img.shields.io/discord/669268347736686612.svg" />
-  </a>
-  <a href="https://sourcegraph.com/github.com/cosmos/cosmos-sdk?badge">
-    <img alt="Imported by" src="https://sourcegraph.com/github.com/cosmos/cosmos-sdk/-/badge.svg" />
-  </a>
-    <img alt="Sims" src="https://github.com/cosmos/cosmos-sdk/workflows/Sims/badge.svg" />
-    <img alt="Lint Satus" src="https://github.com/cosmos/cosmos-sdk/workflows/Lint/badge.svg" />
-</div>
+**Note**: Requires [Go 1.18+](https://golang.org/dl/)
 
-The Cosmos SDK is a framework for building blockchain applications. [Tendermint Core (BFT Consensus)](https://github.com/tendermint/tendermint) and the Cosmos SDK are written in the Go programming language. Cosmos SDK is used to build [Gaia](https://github.com/cosmos/gaia), the implementation of the Cosmos Hub.
+## What is the Finschia SDK?
 
-**WARNING**: The Cosmos SDK has mostly stabilized, but we are still making some breaking changes.
+The [Finschia SDK](https://github.com/Finschia/finschia-sdk) is an open-source framework for building multi-asset public Proof-of-Stake (PoS) <df value="blockchain">blockchains</df>, as well as permissioned Proof-Of-Authority (PoA) blockchains. Blockchains built with the Cosmos SDK are generally referred to as **application-specific blockchains**. 
 
-**Note**: Requires [Go 1.19+](https://go.dev/dl)
+The purpose of `Finschia SDK` is to succeed to [the objectives of `Cosmos sdk`](https://github.com/cosmos/cosmos-sdk/blob/master/docs/intro/overview.md) while helping develop blockchains that require faster transaction processing to be applied to reality.
+
+## Why the Finschia SDK?
+
+Cosmos-sdk, which created the philosophy of application-specific blockchain, established its status as a framework for various application blockchain development. `Finschia SDK` inherited this `cosmos-sdk` philosophy, addressing slow transaction processing problem that was difficult for cosmos-sdk to apply in real financial system. Real financial systems require thousands of processing performance per second, with Finschia SDK adding many performance improvements to meet that demand.
+The following work was carried out to improve performance.
+
+- Concurrent checkTx, deliverTx
+- Use [fastcache](https://github.com/victoriametrics/fastcache) for inter block cache and nodedb cache of iavl
+- Lock granularity enhancement
+
+In addition, the following functions were added:
+
+- Virtual machine using `cosmwasm` that makes smart contracts possible to be executed 
+- Use [Ostracon](https://github.com/Finschia/ostracon) as consensus engine instead of `Tendermint`
+
+
+To learn about Cosmos SDK, please refer [Cosmos SDK Docs](https://github.com/cosmos/cosmos-sdk/blob/master/docs).
 
 ## Quick Start
 
-To learn how the Cosmos SDK works from a high-level perspective, see the Cosmos SDK [High-Level Intro](https://docs.cosmos.network/main/intro/overview.html).
+**Build**
+```
+make build
+make install
 
-If you want to get started quickly and learn how to build on top of Cosmos SDK, visit [Cosmos SDK Tutorials](https://tutorials.cosmos.network). You can also fork the tutorial's repository to get started building your own Cosmos SDK application.
+# you can see the version!
+simd version
+```
 
-For more information, see the [Cosmos SDK Documentation](https://docs.cosmos.network).
+&nbsp;
 
-## Contributing
+**Configure**
+```
+zsh init_node.sh sim {N(number of nodes), default=1}
+```
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to contribute and participate in our [dev calls](./CONTRIBUTING.md#teams-dev-calls).
-If you want to follow the updates or learn more about the latest design then join our [Discord](https://discord.com/invite/cosmosnetwork).
+&nbsp;
 
-## Tools and Frameworks
+**Run**
+```
+# run a node
+simd start --home ~/.simapp/simapp0
 
-The Cosmos ecosystem is vast.
-[Awesome Cosmos](https://github.com/cosmos/awesome-cosmos) is a community-curated list of notable frameworks, modules and tools.
+# If N is larger than 1, run all node.
+# simapp0 has other nodes as persistant_peer. 
+simd start --home ~/.simapp/simapp0
+simd start --home ~/.simapp/simapp1
+...
+```
 
-### Cosmos Hub Mainnet
+**Visit with your browser**
+* Node: http://localhost:26657/
+* REST: http://localhost:1317/swagger-ui/
 
-The Cosmos Hub application, `gaia`, has its own [cosmos/gaia repository](https://github.com/cosmos/gaia). Go there to join the Cosmos Hub mainnet and more.
+&nbsp;
 
-### Inter-Blockchain Communication (IBC)
+## Follow Guide
+You can refer to the sample tx commands [here](docs/sample-tx.md). 
+Test different commands to get a broader understanding of Finschia
 
-The IBC module for the Cosmos SDK has its own [cosmos/ibc-go repository](https://github.com/cosmos/ibc-go). Go there to build and integrate with the IBC module.
-
-### Ignite CLI
-
-Ignite CLI is the all-in-one platform to build, launch, and maintain any crypto application on a sovereign and secured blockchain. If you are building a new app or a new module, use [Ignite CLI](https://github.com/ignite/cli) to get started and speed up development.
-
-## Disambiguation
-
-This Cosmos SDK project is not related to the [React-Cosmos](https://github.com/react-cosmos/react-cosmos) project (yet). Many thanks to Evan Coury and Ovidiu (@skidding) for this Github organization name. As per our agreement, this disambiguation notice will stay here.

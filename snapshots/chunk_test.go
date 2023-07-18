@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/snapshots"
+	"github.com/Finschia/finschia-sdk/snapshots"
 )
 
 func TestChunkWriter(t *testing.T) {
@@ -132,7 +132,7 @@ func TestChunkReader(t *testing.T) {
 	pr, pw := io.Pipe()
 	pch := make(chan io.ReadCloser, 1)
 	pch <- pr
-	_ = pw.CloseWithError(theErr)
+	pw.CloseWithError(theErr)
 
 	chunkReader = snapshots.NewChunkReader(pch)
 	buf = make([]byte, 4)

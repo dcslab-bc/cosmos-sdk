@@ -6,15 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
 )
 
 // TODO these next two functions feel kinda hacky based on their placement
@@ -22,26 +22,25 @@ import (
 // ValidatorCommand returns the validator set for a given height
 func ValidatorCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "tendermint-validator-set [height]",
-		Short: "Get the full tendermint validator set at given height",
+		Use:   "ostracon-validator-set [height]",
+		Short: "Get the full ostracon validator set at given height",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-
 			var height *int64
 
 			// optional height
 			if len(args) > 0 {
-				val, err := strconv.ParseInt(args[0], 10, 64)
+				h, err := strconv.Atoi(args[0])
 				if err != nil {
 					return err
 				}
-
-				if val > 0 {
-					height = &val
+				if h > 0 {
+					tmp := int64(h)
+					height = &tmp
 				}
 			}
 
@@ -57,8 +56,8 @@ func ValidatorCommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
-	cmd.Flags().StringP(flags.FlagOutput, "o", "text", "Output format (text|json)")
+	cmd.Flags().StringP(flags.FlagNode, "n", "tcp://localhost:26657", "Node to connect to")
+	cmd.Flags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test)")
 	cmd.Flags().Int(flags.FlagPage, query.DefaultPage, "Query a specific page of paginated results")
 	cmd.Flags().Int(flags.FlagLimit, 100, "Query number of results returned per page")
 
@@ -83,25 +82,27 @@ type ResultValidatorsOutput struct {
 func (rvo ResultValidatorsOutput) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "block height: %d\n", rvo.BlockHeight)
-	fmt.Fprintf(&b, "total count: %d\n", rvo.Total)
+	b.WriteString(fmt.Sprintf("block height: %d\n", rvo.BlockHeight))
+	b.WriteString(fmt.Sprintf("total count: %d\n", rvo.Total))
 
 	for _, val := range rvo.Validators {
-		fmt.Fprintf(&b, `
+		b.WriteString(
+			fmt.Sprintf(`
   Address:          %s
   Pubkey:           %s
   ProposerPriority: %d
   VotingPower:      %d
 		`,
-			val.Address, val.PubKey, val.ProposerPriority, val.VotingPower,
+				val.Address, val.PubKey, val.ProposerPriority, val.VotingPower,
+			),
 		)
 	}
 
 	return b.String()
 }
 
-func validatorOutput(validator *tmtypes.Validator) (ValidatorOutput, error) {
-	pk, err := cryptocodec.FromTmPubKeyInterface(validator.PubKey)
+func validatorOutput(validator *octypes.Validator) (ValidatorOutput, error) {
+	pk, err := cryptocodec.FromOcPubKeyInterface(validator.PubKey)
 	if err != nil {
 		return ValidatorOutput{}, err
 	}

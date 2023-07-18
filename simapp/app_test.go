@@ -2,101 +2,101 @@ package simapp
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
-	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/auth/vesting"
-	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/capability"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	group "github.com/cosmos/cosmos-sdk/x/group/module"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/tests/mocks"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/auth"
+	"github.com/Finschia/finschia-sdk/x/auth/vesting"
+	authz_m "github.com/Finschia/finschia-sdk/x/authz/module"
+	"github.com/Finschia/finschia-sdk/x/bank"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/capability"
+	"github.com/Finschia/finschia-sdk/x/crisis"
+	"github.com/Finschia/finschia-sdk/x/distribution"
+	"github.com/Finschia/finschia-sdk/x/evidence"
+	feegrantmodule "github.com/Finschia/finschia-sdk/x/feegrant/module"
+	foundationmodule "github.com/Finschia/finschia-sdk/x/foundation/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	"github.com/Finschia/finschia-sdk/x/gov"
+	"github.com/Finschia/finschia-sdk/x/mint"
+	"github.com/Finschia/finschia-sdk/x/params"
+	"github.com/Finschia/finschia-sdk/x/slashing"
+	"github.com/Finschia/finschia-sdk/x/staking"
+	tokenmodule "github.com/Finschia/finschia-sdk/x/token/module"
+	"github.com/Finschia/finschia-sdk/x/upgrade"
 )
 
 func TestSimAppExportAndBlockedAddrs(t *testing.T) {
+	encCfg := MakeTestEncodingConfig()
 	db := dbm.NewMemDB()
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	app := NewSimappWithCustomOptions(t, false, SetupOptions{
-		Logger:  logger,
-		DB:      db,
-		AppOpts: simtestutil.NewAppOptionsWithFlagHome(t.TempDir()),
-	})
+	app := NewSimApp(log.NewOCLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encCfg, EmptyAppOptions{})
 
-	// BlockedAddresses returns a map of addresses in app v1 and a map of modules name in app v2.
-	for acc := range BlockedAddresses() {
-		var addr sdk.AccAddress
-		if modAddr, err := sdk.AccAddressFromBech32(acc); err == nil {
-			addr = modAddr
-		} else {
-			addr = app.AccountKeeper.GetModuleAddress(acc)
-		}
-
-		require.True(
-			t,
-			app.BankKeeper.BlockedAddr(addr),
-			fmt.Sprintf("ensure that blocked addresses are properly set in bank keeper: %s should be blocked", acc),
-		)
+	for acc := range maccPerms {
+		require.Equal(t, !allowedReceivingModAcc[acc], app.BankKeeper.BlockedAddr(app.AccountKeeper.GetModuleAddress(acc)),
+			"ensure that blocked addresses are properly set in bank keeper")
 	}
 
+	genesisState := NewDefaultGenesisState(encCfg.Marshaler)
+	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
+	require.NoError(t, err)
+
+	// Initialize the chain
+	app.InitChain(
+		abci.RequestInitChain{
+			Validators:    []abci.ValidatorUpdate{},
+			AppStateBytes: stateBytes,
+		},
+	)
 	app.Commit()
 
-	logger2 := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	// Making a new app object with the db, so that initchain hasn't been called
-	app2 := NewSimApp(logger2, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
-	_, err := app2.ExportAppStateAndValidators(false, []string{}, []string{})
+	app2 := NewSimApp(log.NewOCLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encCfg, EmptyAppOptions{})
+	_, err = app2.ExportAppStateAndValidators(false, []string{})
 	require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
+}
+
+func TestGetMaccPerms(t *testing.T) {
+	dup := GetMaccPerms()
+	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
 }
 
 func TestRunMigrations(t *testing.T) {
 	db := dbm.NewMemDB()
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	app := NewSimApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	encCfg := MakeTestEncodingConfig()
+	logger := log.NewOCLogger(log.NewSyncWriter(os.Stdout))
+	app := NewSimApp(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encCfg, EmptyAppOptions{})
 
 	// Create a new baseapp and configurator for the purpose of this test.
-	bApp := baseapp.NewBaseApp(app.Name(), logger, db, app.TxConfig().TxDecoder())
+	bApp := baseapp.NewBaseApp(appName, logger, db, encCfg.TxConfig.TxDecoder())
 	bApp.SetCommitMultiStoreTracer(nil)
-	bApp.SetInterfaceRegistry(app.InterfaceRegistry())
+	bApp.SetInterfaceRegistry(encCfg.InterfaceRegistry)
 	app.BaseApp = bApp
-	configurator := module.NewConfigurator(app.appCodec, bApp.MsgServiceRouter(), app.GRPCQueryRouter())
+	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 
 	// We register all modules on the Configurator, except x/bank. x/bank will
 	// serve as the test subject on which we run the migration tests.
 	//
 	// The loop below is the same as calling `RegisterServices` on
 	// ModuleManager, except that we skip x/bank.
-	for name, mod := range app.ModuleManager.Modules {
-		if name == banktypes.ModuleName {
+	for _, module := range app.mm.Modules {
+		if module.Name() == banktypes.ModuleName {
 			continue
 		}
 
-		if mod, ok := mod.(module.HasServices); ok {
-			mod.RegisterServices(configurator)
-		}
+		module.RegisterServices(app.configurator)
 	}
 
 	// Initialize the chain
@@ -106,8 +106,7 @@ func TestRunMigrations(t *testing.T) {
 	testCases := []struct {
 		name         string
 		moduleName   string
-		fromVersion  uint64
-		toVersion    uint64
+		forVersion   uint64
 		expRegErr    bool // errors while registering migration
 		expRegErrMsg string
 		expRunErr    bool // errors while running migration
@@ -116,33 +115,29 @@ func TestRunMigrations(t *testing.T) {
 	}{
 		{
 			"cannot register migration for version 0",
-			"bank", 0, 1,
+			"bank", 0,
 			true, "module migration versions should start at 1: invalid version", false, "", 0,
 		},
-		{
-			"throws error on RunMigrations if no migration registered for bank",
-			"", 1, 2,
-			false, "", true, "no migrations found for module bank: not found", 0,
-		},
-		{
-			"can register 1->2 migration handler for x/bank, cannot run migration",
-			"bank", 1, 2,
-			false, "", true, "no migration found for module bank from version 2 to version 3: not found", 0,
-		},
-		{
-			"can register 2->3 migration handler for x/bank, can run migration",
-			"bank", 2, bank.AppModule{}.ConsensusVersion(),
-			false, "", false, "", int(bank.AppModule{}.ConsensusVersion() - 2), // minus 2 because 1-2 is run in the previous test case.
-		},
-		{
-			"cannot register migration handler for same module & fromVersion",
-			"bank", 1, 2,
-			true, "another migration for module bank and version 1 already exists: internal logic error", false, "", 0,
-		},
+		// TODO(dudong2): bank module has no migration func, so comment out tests
+		// {
+		// 	"throws error on RunMigrations if no migration registered for bank",
+		// 	"", 1,
+		// 	false, "", true, "no migrations found for module bank: not found", 0,
+		// },
+		// {
+		// 	"can register and run migration handler for x/bank",
+		// 	"bank", 1,
+		// 	false, "", false, "", 1,
+		// },
+		// {
+		// 	"cannot register migration handler for same module & forVersion",
+		// 	"bank", 1,
+		// 	true, "another migration for module bank and version 1 already exists: internal logic error", false, "", 0,
+		// },
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(tt *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			var err error
 
 			// Since it's very hard to test actual in-place store migrations in
@@ -152,39 +147,35 @@ func TestRunMigrations(t *testing.T) {
 			called := 0
 
 			if tc.moduleName != "" {
-				for i := tc.fromVersion; i < tc.toVersion; i++ {
-					// Register migration for module from version `fromVersion` to `fromVersion+1`.
-					tt.Logf("Registering migration for %q v%d", tc.moduleName, i)
-					err = configurator.RegisterMigration(tc.moduleName, i, func(sdk.Context) error {
-						called++
+				// Register migration for module from version `forVersion` to `forVersion+1`.
+				err = app.configurator.RegisterMigration(tc.moduleName, tc.forVersion, func(sdk.Context) error {
+					called++
 
-						return nil
-					})
+					return nil
+				})
 
-					if tc.expRegErr {
-						require.EqualError(tt, err, tc.expRegErrMsg)
+				if tc.expRegErr {
+					require.EqualError(t, err, tc.expRegErrMsg)
 
-						return
-					}
-					require.NoError(tt, err, "registering migration")
+					return
 				}
 			}
+			require.NoError(t, err)
 
 			// Run migrations only for bank. That's why we put the initial
 			// version for bank as 1, and for all other modules, we put as
 			// their latest ConsensusVersion.
-			_, err = app.ModuleManager.RunMigrations(
-				app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()}), configurator,
+			_, err = app.mm.RunMigrations(
+				app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()}), app.configurator,
 				module.VersionMap{
 					"bank":         1,
 					"auth":         auth.AppModule{}.ConsensusVersion(),
-					"authz":        authzmodule.AppModule{}.ConsensusVersion(),
+					"authz":        authz_m.AppModule{}.ConsensusVersion(),
 					"staking":      staking.AppModule{}.ConsensusVersion(),
 					"mint":         mint.AppModule{}.ConsensusVersion(),
 					"distribution": distribution.AppModule{}.ConsensusVersion(),
 					"slashing":     slashing.AppModule{}.ConsensusVersion(),
 					"gov":          gov.AppModule{}.ConsensusVersion(),
-					"group":        group.AppModule{}.ConsensusVersion(),
 					"params":       params.AppModule{}.ConsensusVersion(),
 					"upgrade":      upgrade.AppModule{}.ConsensusVersion(),
 					"vesting":      vesting.AppModule{}.ConsensusVersion(),
@@ -193,14 +184,16 @@ func TestRunMigrations(t *testing.T) {
 					"crisis":       crisis.AppModule{}.ConsensusVersion(),
 					"genutil":      genutil.AppModule{}.ConsensusVersion(),
 					"capability":   capability.AppModule{}.ConsensusVersion(),
+					"foundation":   foundationmodule.AppModule{}.ConsensusVersion(),
+					"token":        tokenmodule.AppModule{}.ConsensusVersion(),
 				},
 			)
 			if tc.expRunErr {
-				require.EqualError(tt, err, tc.expRunErrMsg, "running migration")
+				require.EqualError(t, err, tc.expRunErrMsg)
 			} else {
-				require.NoError(tt, err, "running migration")
+				require.NoError(t, err)
 				// Make sure bank's migration is called.
-				require.Equal(tt, tc.expCalled, called)
+				require.Equal(t, tc.expCalled, called)
 			}
 		})
 	}
@@ -208,29 +201,30 @@ func TestRunMigrations(t *testing.T) {
 
 func TestInitGenesisOnMigration(t *testing.T) {
 	db := dbm.NewMemDB()
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	app := NewSimApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	encCfg := MakeTestEncodingConfig()
+	logger := log.NewOCLogger(log.NewSyncWriter(os.Stdout))
+	app := NewSimApp(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encCfg, EmptyAppOptions{})
 	ctx := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
 
 	// Create a mock module. This module will serve as the new module we're
 	// adding during a migration.
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
-	mockModule := mock.NewMockAppModuleWithAllExtensions(mockCtrl)
+	mockModule := mocks.NewMockAppModule(mockCtrl)
 	mockDefaultGenesis := json.RawMessage(`{"key": "value"}`)
 	mockModule.EXPECT().DefaultGenesis(gomock.Eq(app.appCodec)).Times(1).Return(mockDefaultGenesis)
 	mockModule.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(app.appCodec), gomock.Eq(mockDefaultGenesis)).Times(1).Return(nil)
 	mockModule.EXPECT().ConsensusVersion().Times(1).Return(uint64(0))
 
-	app.ModuleManager.Modules["mock"] = mockModule
+	app.mm.Modules["mock"] = mockModule
 
 	// Run migrations only for "mock" module. We exclude it from
 	// the VersionMap to simulate upgrading with a new module.
-	_, err := app.ModuleManager.RunMigrations(ctx, app.Configurator(),
+	_, err := app.mm.RunMigrations(ctx, app.configurator,
 		module.VersionMap{
 			"bank":         bank.AppModule{}.ConsensusVersion(),
 			"auth":         auth.AppModule{}.ConsensusVersion(),
-			"authz":        authzmodule.AppModule{}.ConsensusVersion(),
+			"authz":        authz_m.AppModule{}.ConsensusVersion(),
 			"staking":      staking.AppModule{}.ConsensusVersion(),
 			"mint":         mint.AppModule{}.ConsensusVersion(),
 			"distribution": distribution.AppModule{}.ConsensusVersion(),
@@ -239,33 +233,38 @@ func TestInitGenesisOnMigration(t *testing.T) {
 			"params":       params.AppModule{}.ConsensusVersion(),
 			"upgrade":      upgrade.AppModule{}.ConsensusVersion(),
 			"vesting":      vesting.AppModule{}.ConsensusVersion(),
-			"feegrant":     feegrantmodule.AppModule{}.ConsensusVersion(),
 			"evidence":     evidence.AppModule{}.ConsensusVersion(),
 			"crisis":       crisis.AppModule{}.ConsensusVersion(),
 			"genutil":      genutil.AppModule{}.ConsensusVersion(),
 			"capability":   capability.AppModule{}.ConsensusVersion(),
+			"foundation":   foundationmodule.AppModule{}.ConsensusVersion(),
+			"token":        tokenmodule.AppModule{}.ConsensusVersion(),
 		},
 	)
+
 	require.NoError(t, err)
 }
 
 func TestUpgradeStateOnGenesis(t *testing.T) {
+	encCfg := MakeTestEncodingConfig()
 	db := dbm.NewMemDB()
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	app := NewSimappWithCustomOptions(t, false, SetupOptions{
-		Logger:  logger,
-		DB:      db,
-		AppOpts: simtestutil.NewAppOptionsWithFlagHome(t.TempDir()),
-	})
+	app := NewSimApp(log.NewOCLogger(log.NewSyncWriter(os.Stdout)), db, nil, true, map[int64]bool{}, DefaultNodeHome, 0, encCfg, EmptyAppOptions{})
+	genesisState := NewDefaultGenesisState(encCfg.Marshaler)
+	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
+	require.NoError(t, err)
+
+	// Initialize the chain
+	app.InitChain(
+		abci.RequestInitChain{
+			Validators:    []abci.ValidatorUpdate{},
+			AppStateBytes: stateBytes,
+		},
+	)
 
 	// make sure the upgrade keeper has version map in state
 	ctx := app.NewContext(false, tmproto.Header{})
 	vm := app.UpgradeKeeper.GetModuleVersionMap(ctx)
-	for v, i := range app.ModuleManager.Modules {
-		if i, ok := i.(module.HasConsensusVersion); ok {
-			require.Equal(t, vm[v], i.ConsensusVersion())
-		}
+	for v, i := range app.mm.Modules {
+		require.Equal(t, vm[v], i.ConsensusVersion())
 	}
-
-	require.NotNil(t, app.UpgradeKeeper.GetVersionSetter())
 }

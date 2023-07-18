@@ -2,20 +2,18 @@ package keeper
 
 import (
 	"context"
-	"encoding/hex"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	"github.com/Finschia/finschia-sdk/types/query"
 
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -26,20 +24,15 @@ func (k Keeper) Evidence(c context.Context, req *types.QueryEvidenceRequest) (*t
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if req.Hash == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request; hash is empty")
+	if req.EvidenceHash == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid hash")
 	}
 
 	ctx := sdk.UnwrapSDKContext(c)
 
-	decodedHash, err := hex.DecodeString(req.Hash)
-	if err != nil {
-		return nil, fmt.Errorf("invalid evidence hash: %w", err)
-	}
-
-	evidence, _ := k.GetEvidence(ctx, decodedHash)
+	evidence, _ := k.GetEvidence(ctx, req.EvidenceHash)
 	if evidence == nil {
-		return nil, status.Errorf(codes.NotFound, "evidence %s not found", req.Hash)
+		return nil, status.Errorf(codes.NotFound, "evidence %s not found", req.EvidenceHash)
 	}
 
 	msg, ok := evidence.(proto.Message)

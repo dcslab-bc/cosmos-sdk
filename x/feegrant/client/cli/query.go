@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/feegrant"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -83,9 +83,10 @@ $ %s query feegrant grant [granter] [grantee]
 // GetCmdQueryFeeGrantsByGrantee returns cmd to query for all grants for a grantee.
 func GetCmdQueryFeeGrantsByGrantee() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "grants-by-grantee [grantee]",
-		Args:  cobra.ExactArgs(1),
-		Short: "Query all grants of a grantee",
+		Use:     "grants-by-grantee [grantee]",
+		Aliases: []string{"grants"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Query all grants of a grantee",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Queries all the grants for a grantee address.
 

@@ -3,13 +3,14 @@ package types_test
 import (
 	"testing"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/stretchr/testify/suite"
+	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	"github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 type storeTestSuite struct {
@@ -45,10 +46,10 @@ func (s *storeTestSuite) TestPrefixEndBytes() {
 }
 
 func (s *storeTestSuite) TestCommitID() {
-	var empty types.CommitID
+	var empty sdk.CommitID
 	s.Require().True(empty.IsZero())
 
-	nonempty := types.CommitID{
+	nonempty := sdk.CommitID{
 		Version: 1,
 		Hash:    []byte("testhash"),
 	}
@@ -56,7 +57,7 @@ func (s *storeTestSuite) TestCommitID() {
 }
 
 func (s *storeTestSuite) TestNewTransientStoreKeys() {
-	s.Require().Equal(map[string]*types.TransientStoreKey{}, sdk.NewTransientStoreKeys())
+	s.Require().Equal(map[string]*sdk.TransientStoreKey{}, sdk.NewTransientStoreKeys())
 	s.Require().Equal(1, len(sdk.NewTransientStoreKeys("one")))
 }
 

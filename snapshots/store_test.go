@@ -4,21 +4,30 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	db "github.com/cometbft/cometbft-db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/Finschia/finschia-sdk/snapshots"
+	"github.com/Finschia/finschia-sdk/snapshots/types"
+	"github.com/Finschia/finschia-sdk/testutil"
 )
 
 func setupStore(t *testing.T) *snapshots.Store {
-	store, err := snapshots.NewStore(db.NewMemDB(), testutil.GetTempDir(t))
+	// os.MkdirTemp() is used instead of testing.T.TempDir()
+	// see https://github.com/cosmos/cosmos-sdk/pull/8475 for
+	// this change's rationale.
+	tempdir, err := os.MkdirTemp("", "")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(tempdir) })
+
+	store, err := snapshots.NewStore(dbm.NewMemDB(), tempdir)
 	require.NoError(t, err)
 
 	_, err = store.Save(1, 1, makeChunks([][]byte{
@@ -42,21 +51,21 @@ func setupStore(t *testing.T) *snapshots.Store {
 }
 
 func TestNewStore(t *testing.T) {
-	tempdir := testutil.GetTempDir(t)
-	_, err := snapshots.NewStore(db.NewMemDB(), tempdir)
+	tempdir := t.TempDir()
+	_, err := snapshots.NewStore(dbm.NewMemDB(), tempdir)
 
 	require.NoError(t, err)
 }
 
 func TestNewStore_ErrNoDir(t *testing.T) {
-	_, err := snapshots.NewStore(db.NewMemDB(), "")
+	_, err := snapshots.NewStore(dbm.NewMemDB(), "")
 	require.Error(t, err)
 }
 
 func TestNewStore_ErrDirFailure(t *testing.T) {
 	notADir := filepath.Join(testutil.TempFile(t).Name(), "subdir")
 
-	_, err := snapshots.NewStore(db.NewMemDB(), notADir)
+	_, err := snapshots.NewStore(dbm.NewMemDB(), notADir)
 	require.Error(t, err)
 }
 
@@ -80,10 +89,7 @@ func TestStore_Delete(t *testing.T) {
 
 	// Deleting a snapshot being saved should error
 	ch := make(chan io.ReadCloser)
-	go func() {
-		_, err := store.Save(9, 1, ch)
-		require.NoError(t, err)
-	}()
+	go store.Save(9, 1, ch)
 
 	time.Sleep(10 * time.Millisecond)
 	err = store.Delete(9, 1)
@@ -328,10 +334,7 @@ func TestStore_Save(t *testing.T) {
 	// Saving a snapshot should error if a snapshot is already in progress for the same height,
 	// regardless of format. However, a different height should succeed.
 	ch = make(chan io.ReadCloser)
-	go func() {
-		_, err := store.Save(7, 1, ch)
-		require.NoError(t, err)
-	}()
+	go store.Save(7, 1, ch)
 	time.Sleep(10 * time.Millisecond)
 	_, err = store.Save(7, 2, makeChunks(nil))
 	require.Error(t, err)

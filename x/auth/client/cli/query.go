@@ -3,20 +3,19 @@ package cli
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/version"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/version"
+	authtx "github.com/Finschia/finschia-sdk/x/auth/tx"
+	"github.com/Finschia/finschia-sdk/x/auth/types"
 )
 
 const (
@@ -42,10 +41,8 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		GetAccountCmd(),
-		GetAccountAddressByIDCmd(),
 		GetAccountsCmd(),
 		QueryParamsCmd(),
-		QueryModuleAccountsCmd(),
 		QueryModuleAccountByNameCmd(),
 	)
 
@@ -103,18 +100,6 @@ func GetAccountCmd() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 			res, err := queryClient.Account(cmd.Context(), &types.QueryAccountRequest{Address: key.String()})
 			if err != nil {
-				node, err2 := clientCtx.GetNode()
-				if err2 != nil {
-					return err2
-				}
-				status, err2 := node.Status(context.Background())
-				if err2 != nil {
-					return err2
-				}
-				catchingUp := status.SyncInfo.CatchingUp
-				if !catchingUp {
-					return errors.Wrapf(err, "your node may be syncing, please check node status using `/status`")
-				}
 				return err
 			}
 
@@ -127,46 +112,11 @@ func GetAccountCmd() *cobra.Command {
 	return cmd
 }
 
-// GetAccountAddressByIDCmd returns a query account that will display the account address of a given account id.
-func GetAccountAddressByIDCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "address-by-acc-num [acc-num]",
-		Aliases: []string{"address-by-id"},
-		Short:   "Query for an address by account number",
-		Args:    cobra.ExactArgs(1),
-		Example: fmt.Sprintf("%s q auth address-by-acc-num 1", version.AppName),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			accNum, err := strconv.ParseUint(args[0], 10, 64)
-			if err != nil {
-				return err
-			}
-
-			queryClient := types.NewQueryClient(clientCtx)
-			res, err := queryClient.AccountAddressByID(cmd.Context(), &types.QueryAccountAddressByIDRequest{
-				AccountId: accNum,
-			})
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-
-	return cmd
-}
-
 // GetAccountsCmd returns a query command that will display a list of accounts
 func GetAccountsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "accounts",
+		Args:  cobra.NoArgs,
 		Short: "Query all the accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -191,33 +141,6 @@ func GetAccountsCmd() *cobra.Command {
 
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "all-accounts")
-
-	return cmd
-}
-
-// QueryAllModuleAccountsCmd returns a list of all the existing module accounts with their account information and permissions
-func QueryModuleAccountsCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "module-accounts",
-		Short: "Query all module accounts",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			queryClient := types.NewQueryClient(clientCtx)
-
-			res, err := queryClient.ModuleAccounts(context.Background(), &types.QueryModuleAccountsRequest{})
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
 }
@@ -260,6 +183,7 @@ func QueryModuleAccountByNameCmd() *cobra.Command {
 func QueryTxsByEventsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "txs",
+		Args:  cobra.NoArgs,
 		Short: "Query for paginated transactions that match a set of events",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
@@ -269,7 +193,7 @@ to each module's documentation for the full set of events to query for. Each mod
 documents its respective events under 'xx_events.md'.
 
 Example:
-$ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator_reward' --page 1 --limit 30
+$ %s query txs --%s 'message.sender=link1...&message.action=withdraw_delegator_reward' --page 1 --limit 30
 `, eventFormat, version.AppName, flagEvents),
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -297,7 +221,7 @@ $ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator
 				}
 
 				tokens := strings.Split(event, "=")
-				if tokens[0] == tmtypes.TxHeightKey {
+				if tokens[0] == octypes.TxHeightKey {
 					event = fmt.Sprintf("%s=%s", tokens[0], tokens[1])
 				} else {
 					event = fmt.Sprintf("%s='%s'", tokens[0], tokens[1])
@@ -371,7 +295,7 @@ $ %s query tx --%s=%s <sig1_base64>,<sig2_base64...>
 				}
 			case typeSig:
 				{
-					sigParts, err := ParseSigArgs(args)
+					sigParts, err := parseSigArgs(args)
 					if err != nil {
 						return err
 					}
@@ -429,8 +353,8 @@ $ %s query tx --%s=%s <sig1_base64>,<sig2_base64...>
 	return cmd
 }
 
-// ParseSigArgs parses comma-separated signatures from the CLI arguments.
-func ParseSigArgs(args []string) ([]string, error) {
+// parseSigArgs parses comma-separated signatures from the CLI arguments.
+func parseSigArgs(args []string) ([]string, error) {
 	if len(args) != 1 || args[0] == "" {
 		return nil, fmt.Errorf("argument should be comma-separated signatures")
 	}

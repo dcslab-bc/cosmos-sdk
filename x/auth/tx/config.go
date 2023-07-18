@@ -3,11 +3,13 @@ package tx
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	signingtypes "github.com/Finschia/finschia-sdk/types/tx/signing"
+
+	"github.com/Finschia/finschia-sdk/codec"
+
+	"github.com/Finschia/finschia-sdk/client"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/auth/signing"
 )
 
 type config struct {
@@ -40,7 +42,7 @@ func NewTxConfigWithHandler(protoCodec codec.ProtoCodecMarshaler, handler signin
 }
 
 func (g config) NewTxBuilder() client.TxBuilder {
-	return newBuilder(g.protoCodec)
+	return newBuilder()
 }
 
 // WrapTxBuilder returns a builder from provided transaction

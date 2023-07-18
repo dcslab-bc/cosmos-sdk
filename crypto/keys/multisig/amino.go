@@ -1,9 +1,9 @@
 package multisig
 
 import (
-	types "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	types "github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
 
 // tmMultisig implements a K of N threshold multisig. It is used for
@@ -64,7 +64,7 @@ func tmToProto(tmPk tmMultisig) (*LegacyAminoPubKey, error) {
 }
 
 // MarshalAminoJSON overrides amino JSON unmarshaling.
-func (m LegacyAminoPubKey) MarshalAminoJSON() (tmMultisig, error) { //nolint:golint,revive
+func (m LegacyAminoPubKey) MarshalAminoJSON() (tmMultisig, error) { //nolint:golint
 	return protoToTm(&m)
 }
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/armon/go-metrics"
+	metrics "github.com/armon/go-metrics"
 	metricsprom "github.com/armon/go-metrics/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -71,7 +71,7 @@ type GatherResponse struct {
 }
 
 // New creates a new instance of Metrics
-func New(cfg Config) (_ *Metrics, rerr error) {
+func New(cfg Config) (*Metrics, error) {
 	if !cfg.Enabled {
 		return nil, nil
 	}
@@ -90,12 +90,7 @@ func New(cfg Config) (_ *Metrics, rerr error) {
 	metricsConf.EnableHostnameLabel = cfg.EnableHostnameLabel
 
 	memSink := metrics.NewInmemSink(10*time.Second, time.Minute)
-	inMemSig := metrics.DefaultInmemSignal(memSink)
-	defer func() {
-		if rerr != nil {
-			inMemSig.Stop()
-		}
-	}()
+	metrics.DefaultInmemSignal(memSink)
 
 	m := &Metrics{memSink: memSink}
 	fanout := metrics.FanoutSink{memSink}

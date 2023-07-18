@@ -1,13 +1,9 @@
 package types
 
 import (
-	"encoding/json"
-	fmt "fmt"
+	"github.com/gogo/protobuf/proto"
 
-	"github.com/cosmos/gogoproto/proto"
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
 )
 
 type (
@@ -19,7 +15,7 @@ type (
 		// doesn't require access to any other information.
 		ValidateBasic() error
 
-		// GetSigners returns the addrs of signers that must sign.
+		// Signers returns the addrs of signers that must sign.
 		// CONTRACT: All signatures must be present to be valid.
 		// CONTRACT: Returns addrs in some deterministic order.
 		GetSigners() []AccAddress
@@ -41,7 +37,7 @@ type (
 
 	// Tx defines the interface a transaction must fulfill.
 	Tx interface {
-		// GetMsgs gets the all the transaction's messages.
+		// Gets the all the transaction's messages.
 		GetMsgs() []Msg
 
 		// ValidateBasic does a simple and lightweight validation check that doesn't
@@ -58,7 +54,7 @@ type (
 		FeeGranter() AccAddress
 	}
 
-	// TxWithMemo must have GetMemo() method to use ValidateMemoDecorator
+	// Tx must have GetMemo() method to use ValidateMemoDecorator
 	TxWithMemo interface {
 		Tx
 		GetMemo() string
@@ -82,23 +78,4 @@ type TxEncoder func(tx Tx) ([]byte, error)
 // MsgTypeURL returns the TypeURL of a `sdk.Msg`.
 func MsgTypeURL(msg Msg) string {
 	return "/" + proto.MessageName(msg)
-}
-
-// GetMsgFromTypeURL returns a `sdk.Msg` message type from a type URL
-func GetMsgFromTypeURL(cdc codec.Codec, input string) (Msg, error) {
-	var msg Msg
-	bz, err := json.Marshal(struct {
-		Type string `json:"@type"`
-	}{
-		Type: input,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := cdc.UnmarshalInterfaceJSON(bz, &msg); err != nil {
-		return nil, fmt.Errorf("failed to determine sdk.Msg for %s URL : %w", input, err)
-	}
-
-	return msg, nil
 }

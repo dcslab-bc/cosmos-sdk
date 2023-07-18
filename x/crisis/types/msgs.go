@@ -1,17 +1,11 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-)
-
-const (
-	TypeMsgVerifyInvariant = "verify_invariant"
-	TypeMsgUpdateParams    = "update_params"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // ensure Msg interface compliance at compile time
-var _, _ sdk.Msg = &MsgVerifyInvariant{}, &MsgUpdateParams{}
+var _ sdk.Msg = &MsgVerifyInvariant{}
 
 // NewMsgVerifyInvariant creates a new MsgVerifyInvariant object
 //
@@ -24,11 +18,8 @@ func NewMsgVerifyInvariant(sender sdk.AccAddress, invModeName, invRoute string) 
 	}
 }
 
-// Route returns the MsgVerifyInvariant's route.
 func (msg MsgVerifyInvariant) Route() string { return ModuleName }
-
-// Type returns the MsgVerifyInvariant's type.
-func (msg MsgVerifyInvariant) Type() string { return TypeMsgVerifyInvariant }
+func (msg MsgVerifyInvariant) Type() string  { return "verify_invariant" }
 
 // get the bytes for the message signer to sign on
 func (msg MsgVerifyInvariant) GetSigners() []sdk.AccAddress {
@@ -44,8 +35,8 @@ func (msg MsgVerifyInvariant) GetSignBytes() []byte {
 
 // quick validity check
 func (msg MsgVerifyInvariant) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.Sender); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid sender address: %s", err)
+	if msg.Sender == "" {
+		return ErrNoSender
 	}
 	return nil
 }
@@ -53,41 +44,4 @@ func (msg MsgVerifyInvariant) ValidateBasic() error {
 // FullInvariantRoute - get the messages full invariant route
 func (msg MsgVerifyInvariant) FullInvariantRoute() string {
 	return msg.InvariantModuleName + "/" + msg.InvariantRoute
-}
-
-// Route returns the MsgUpdateParams's route.
-func (msg MsgUpdateParams) Route() string { return ModuleName }
-
-// Type returns the MsgUpdateParams's type.
-func (msg MsgUpdateParams) Type() string { return TypeMsgUpdateParams }
-
-// GetSigners returns the signer addresses that are expected to sign the result
-// of GetSignBytes.
-func (msg MsgUpdateParams) GetSigners() []sdk.AccAddress {
-	authority, _ := sdk.AccAddressFromBech32(msg.Authority)
-	return []sdk.AccAddress{authority}
-}
-
-// GetSignBytes returns the raw bytes for a MsgUpdateParams message that
-// the expected signer needs to sign.
-func (msg MsgUpdateParams) GetSignBytes() []byte {
-	bz := ModuleCdc.MustMarshalJSON(&msg)
-	return sdk.MustSortJSON(bz)
-}
-
-// ValidateBasic performs basic MsgUpdateParams message validation.
-func (msg MsgUpdateParams) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(msg.Authority); err != nil {
-		return sdkerrors.Wrap(err, "invalid authority address")
-	}
-
-	if !msg.ConstantFee.IsValid() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "invalid costant fee")
-	}
-
-	if msg.ConstantFee.IsNegative() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, "negative costant fee")
-	}
-
-	return nil
 }

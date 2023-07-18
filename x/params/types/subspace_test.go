@@ -1,29 +1,27 @@
 package types_test
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 
-	"cosmossdk.io/depinject"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/params/testutil"
-	"github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/store"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/params/types"
 )
 
 type SubspaceTestSuite struct {
 	suite.Suite
 
-	cdc   codec.Codec
+	cdc   codec.BinaryCodec
 	amino *codec.LegacyAmino
 	ctx   sdk.Context
 	ss    types.Subspace
@@ -33,17 +31,14 @@ func (suite *SubspaceTestSuite) SetupTest() {
 	db := dbm.NewMemDB()
 
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(key, storetypes.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(tkey, storetypes.StoreTypeTransient, db)
+	ms.MountStoreWithDB(key, sdk.StoreTypeIAVL, db)
 	suite.NoError(ms.LoadLatestVersion())
 
-	err := depinject.Inject(testutil.AppConfig,
-		&suite.cdc,
-		&suite.amino,
-	)
-	suite.NoError(err)
+	encCfg := simapp.MakeTestEncodingConfig()
+	ss := types.NewSubspace(encCfg.Marshaler, encCfg.Amino, key, tkey, "testsubspace")
 
-	ss := types.NewSubspace(suite.cdc, suite.amino, key, tkey, "testsubspace")
+	suite.cdc = encCfg.Marshaler
+	suite.amino = encCfg.Amino
 	suite.ctx = sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
 	suite.ss = ss.WithKeyTable(paramKeyTable())
 }
@@ -97,41 +92,6 @@ func (suite *SubspaceTestSuite) TestGetRaw() {
 	})
 }
 
-func (suite *SubspaceTestSuite) TestIterateKeys() {
-	suite.Require().NotPanics(func() {
-		suite.ss.Set(suite.ctx, keyUnbondingTime, time.Second)
-	})
-	suite.Require().NotPanics(func() {
-		suite.ss.Set(suite.ctx, keyMaxValidators, uint16(50))
-	})
-	suite.Require().NotPanics(func() {
-		suite.ss.Set(suite.ctx, keyBondDenom, "stake")
-	})
-
-	var keys [][]byte
-	suite.ss.IterateKeys(suite.ctx, func(key []byte) bool {
-		keys = append(keys, key)
-		return false
-	})
-	suite.Require().Len(keys, 3)
-	suite.Require().Contains(keys, keyUnbondingTime)
-	suite.Require().Contains(keys, keyMaxValidators)
-	suite.Require().Contains(keys, keyBondDenom)
-
-	var keys2 [][]byte
-	suite.ss.IterateKeys(suite.ctx, func(key []byte) bool {
-		if bytes.Equal(key, keyUnbondingTime) {
-			return true
-		}
-
-		keys2 = append(keys2, key)
-		return false
-	})
-	suite.Require().Len(keys2, 2)
-	suite.Require().Contains(keys2, keyMaxValidators)
-	suite.Require().Contains(keys2, keyBondDenom)
-}
-
 func (suite *SubspaceTestSuite) TestHas() {
 	t := time.Hour * 48
 
@@ -140,16 +100,6 @@ func (suite *SubspaceTestSuite) TestHas() {
 		suite.ss.Set(suite.ctx, keyUnbondingTime, t)
 	})
 	suite.Require().True(suite.ss.Has(suite.ctx, keyUnbondingTime))
-}
-
-func (suite *SubspaceTestSuite) TestModified() {
-	t := time.Hour * 48
-
-	suite.Require().False(suite.ss.Modified(suite.ctx, keyUnbondingTime))
-	suite.Require().NotPanics(func() {
-		suite.ss.Set(suite.ctx, keyUnbondingTime, t)
-	})
-	suite.Require().True(suite.ss.Modified(suite.ctx, keyUnbondingTime))
 }
 
 func (suite *SubspaceTestSuite) TestUpdate() {

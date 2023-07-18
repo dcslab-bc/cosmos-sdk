@@ -7,11 +7,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/distribution/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -26,7 +26,6 @@ func GetQueryCmd() *cobra.Command {
 
 	distQueryCmd.AddCommand(
 		GetCmdQueryParams(),
-		GetCmdQueryValidatorDistributionInfo(),
 		GetCmdQueryValidatorOutstandingRewards(),
 		GetCmdQueryValidatorCommission(),
 		GetCmdQueryValidatorSlashes(),
@@ -56,50 +55,6 @@ func GetCmdQueryParams() *cobra.Command {
 			}
 
 			return clientCtx.PrintProto(&res.Params)
-		},
-	}
-
-	flags.AddQueryFlagsToCmd(cmd)
-	return cmd
-}
-
-// GetCmdQueryValidatorDistributionInfo implements the query validator distribution info command.
-func GetCmdQueryValidatorDistributionInfo() *cobra.Command {
-	bech32PrefixValAddr := sdk.GetConfig().GetBech32ValidatorAddrPrefix()
-
-	cmd := &cobra.Command{
-		Use:   "validator-distribution-info [validator]",
-		Args:  cobra.ExactArgs(1),
-		Short: "Query validator distribution info",
-		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query validator distribution info.
-Example:
-$ %s query distribution validator-distribution-info %s1lwjmdnks33xwnmfayc64ycprww49n33mtm92ne
-`,
-				version.AppName, bech32PrefixValAddr,
-			),
-		),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientQueryContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			validatorAddr, err := sdk.ValAddressFromBech32(args[0])
-			if err != nil {
-				return err
-			}
-
-			queryClient := types.NewQueryClient(clientCtx)
-
-			res, err := queryClient.ValidatorDistributionInfo(cmd.Context(), &types.QueryValidatorDistributionInfoRequest{
-				ValidatorAddress: validatorAddr.String(),
-			})
-			if err != nil {
-				return err
-			}
-
-			return clientCtx.PrintProto(res)
 		},
 	}
 

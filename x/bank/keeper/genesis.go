@@ -3,24 +3,18 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 // InitGenesis initializes the bank module's state from a given genesis state.
 func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
-	if err := k.SetParams(ctx, genState.Params); err != nil {
-		panic(err)
-	}
-
-	for _, se := range genState.GetAllSendEnabled() {
-		k.SetSendEnabled(ctx, se.Denom, se.Enabled)
-	}
+	k.SetParams(ctx, genState.Params)
 
 	totalSupply := sdk.Coins{}
-	genState.Balances = types.SanitizeGenesisBalances(genState.Balances)
 
+	genState.Balances = types.SanitizeGenesisBalances(genState.Balances)
 	for _, balance := range genState.Balances {
 		addr := balance.GetAddress()
 
@@ -51,12 +45,10 @@ func (k BaseKeeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(fmt.Errorf("unable to fetch total supply %v", err))
 	}
 
-	rv := types.NewGenesisState(
+	return types.NewGenesisState(
 		k.GetParams(ctx),
 		k.GetAccountsBalances(ctx),
 		totalSupply,
 		k.GetAllDenomMetaData(ctx),
-		k.GetAllSendEnabledEntries(ctx),
 	)
-	return rv
 }

@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/simapp"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
 
-	"github.com/cometbft/cometbft/crypto"
+	"github.com/Finschia/ostracon/crypto"
 	"github.com/stretchr/testify/require"
 )
 

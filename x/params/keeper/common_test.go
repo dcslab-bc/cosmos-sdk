@@ -1,28 +1,22 @@
 package keeper_test
 
 import (
-	"cosmossdk.io/depinject"
-	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	"github.com/cosmos/cosmos-sdk/x/params/testutil"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	paramskeeper "github.com/Finschia/finschia-sdk/x/params/keeper"
 )
 
-func testComponents() (*codec.LegacyAmino, sdk.Context, storetypes.StoreKey, storetypes.StoreKey, paramskeeper.Keeper) {
-	var cdc codec.Codec
-	if err := depinject.Inject(testutil.AppConfig, &cdc); err != nil {
-		panic(err)
-	}
-
+func testComponents() (*codec.LegacyAmino, sdk.Context, sdk.StoreKey, paramskeeper.Keeper) {
+	marshaler := simapp.MakeTestEncodingConfig().Marshaler
 	legacyAmino := createTestCodec()
 	mkey := sdk.NewKVStoreKey("test")
 	tkey := sdk.NewTransientStoreKey("transient_test")
-	ctx := sdktestutil.DefaultContext(mkey, tkey)
-	keeper := paramskeeper.NewKeeper(cdc, legacyAmino, mkey, tkey)
+	ctx := testutil.DefaultContext(mkey, tkey)
+	keeper := paramskeeper.NewKeeper(marshaler, legacyAmino, mkey, tkey)
 
-	return legacyAmino, ctx, mkey, tkey, keeper
+	return legacyAmino, ctx, mkey, keeper
 }
 
 type invalid struct{}

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil"
 )
 
 func TestApplyMockIO(t *testing.T) {
@@ -27,7 +27,7 @@ func TestApplyMockIO(t *testing.T) {
 
 func TestWriteToNewTempFile(t *testing.T) {
 	tempfile := testutil.WriteToNewTempFile(t, "test string")
-	require.NoError(t, tempfile.Close())
+	tempfile.Close()
 
 	bs, err := os.ReadFile(tempfile.Name())
 	require.NoError(t, err)

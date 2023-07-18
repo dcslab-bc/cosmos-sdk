@@ -4,7 +4,7 @@ package testdata;
 import "gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 
-option go_package = "github.com/cosmos/cosmos-sdk/testutil/testdata";
+option go_package = "github.com/Finschia/finschia-sdk/testutil/testdata";
 
 message Dog {
   string size = 1;
@@ -14,11 +14,6 @@ message Dog {
 message Cat {
   string moniker = 1;
   int32  lives   = 2;
-}
-
-message Bird {
-  string species = 1;
-  int32  color   = 2;
 }
 
 message HasAnimal {
@@ -39,11 +34,4 @@ message BadMultiSignature {
   option (gogoproto.goproto_unrecognized) = true;
   repeated bytes signatures               = 1;
   bytes          malicious_field          = 5;
-}
-
-message TableModel {
-  uint64 id       = 1;
-  string name     = 2;
-  uint64 number   = 3;
-  bytes  metadata = 4;
 }

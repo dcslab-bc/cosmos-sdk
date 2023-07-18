@@ -2,47 +2,39 @@ package tmservice
 
 import (
 	"context"
+	"crypto/sha256"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	gogogrpc "github.com/cosmos/gogoproto/grpc"
+	gogogrpc "github.com/gogo/protobuf/grpc"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	qtypes "github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/version"
+	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/rpc"
+	codectypes "github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	qtypes "github.com/Finschia/finschia-sdk/types/query"
+	"github.com/Finschia/finschia-sdk/version"
 )
+
+// This is the struct that we will implement all the handlers on.
+type queryServer struct {
+	clientCtx         client.Context
+	interfaceRegistry codectypes.InterfaceRegistry
+}
 
 var (
 	_ ServiceServer                      = queryServer{}
 	_ codectypes.UnpackInterfacesMessage = &GetLatestValidatorSetResponse{}
 )
 
-type (
-	abciQueryFn = func(abci.RequestQuery) abci.ResponseQuery
-
-	queryServer struct {
-		clientCtx         client.Context
-		interfaceRegistry codectypes.InterfaceRegistry
-		queryFn           abciQueryFn
-	}
-)
-
 // NewQueryServer creates a new tendermint query server.
-func NewQueryServer(
-	clientCtx client.Context,
-	interfaceRegistry codectypes.InterfaceRegistry,
-	queryFn abciQueryFn,
-) ServiceServer {
+func NewQueryServer(clientCtx client.Context, interfaceRegistry codectypes.InterfaceRegistry) ServiceServer {
 	return queryServer{
 		clientCtx:         clientCtx,
 		interfaceRegistry: interfaceRegistry,
-		queryFn:           queryFn,
 	}
 }
 
@@ -52,7 +44,6 @@ func (s queryServer) GetSyncing(ctx context.Context, _ *GetSyncingRequest) (*Get
 	if err != nil {
 		return nil, err
 	}
-
 	return &GetSyncingResponse{
 		Syncing: status.SyncInfo.CatchingUp,
 	}, nil
@@ -72,9 +63,8 @@ func (s queryServer) GetLatestBlock(ctx context.Context, _ *GetLatestBlockReques
 	}
 
 	return &GetLatestBlockResponse{
-		BlockId:  &protoBlockID,
-		Block:    protoBlock,
-		SdkBlock: convertBlock(protoBlock),
+		BlockId: &protoBlockID,
+		Block:   protoBlock,
 	}, nil
 }
 
@@ -93,11 +83,53 @@ func (s queryServer) GetBlockByHeight(ctx context.Context, req *GetBlockByHeight
 	if err != nil {
 		return nil, err
 	}
-
 	return &GetBlockByHeightResponse{
-		BlockId:  &protoBlockID,
-		Block:    protoBlock,
-		SdkBlock: convertBlock(protoBlock),
+		BlockId: &protoBlockID,
+		Block:   protoBlock,
+	}, nil
+}
+
+// GetBlockByHash implements ServiceServer.GetBlockByHash
+func (s queryServer) GetBlockByHash(_ context.Context, req *GetBlockByHashRequest) (*GetBlockByHashResponse, error) {
+	if n := len(req.Hash); n != sha256.Size {
+		if n == 0 {
+			return nil, status.Error(codes.InvalidArgument, "block hash cannot be empty")
+		}
+		return nil, status.Error(codes.InvalidArgument, "the length of block hash must be 32")
+	}
+
+	res, err := getBlockByHash(s.clientCtx, req.Hash)
+	if err != nil {
+		return nil, err
+	}
+	protoBlockID := res.BlockID.ToProto()
+	protoBlock, err := res.Block.ToProto()
+	if err != nil {
+		return nil, err
+	}
+	return &GetBlockByHashResponse{
+		BlockId: &protoBlockID,
+		Block:   protoBlock,
+	}, nil
+}
+
+// GetBlockResultsByHeight implements ServiceServer.GetBlockResultsByHeight
+func (s queryServer) GetBlockResultsByHeight(_ context.Context, req *GetBlockResultsByHeightRequest) (*GetBlockResultsByHeightResponse, error) {
+	res, err := getBlockResultsByHeight(s.clientCtx, &req.Height)
+	if err != nil {
+		return nil, err
+	}
+	return &GetBlockResultsByHeightResponse{
+		Height:     res.Height,
+		TxsResults: res.TxsResults,
+		ResBeginBlock: &abci.ResponseBeginBlock{
+			Events: res.BeginBlockEvents,
+		},
+		ResEndBlock: &abci.ResponseEndBlock{
+			ValidatorUpdates:      res.ValidatorUpdates,
+			ConsensusParamUpdates: res.ConsensusParamUpdates,
+			Events:                res.EndBlockEvents,
+		},
 	}, nil
 }
 
@@ -107,7 +139,6 @@ func (s queryServer) GetLatestValidatorSet(ctx context.Context, req *GetLatestVa
 	if err != nil {
 		return nil, err
 	}
-
 	return validatorsOutput(ctx, s.clientCtx, nil, page, limit)
 }
 
@@ -119,7 +150,6 @@ func (m *GetLatestValidatorSetResponse) UnpackInterfaces(unpacker codectypes.Any
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -134,16 +164,13 @@ func (s queryServer) GetValidatorSetByHeight(ctx context.Context, req *GetValida
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to parse chain height")
 	}
-
 	if req.Height > chainHeight {
 		return nil, status.Error(codes.InvalidArgument, "requested block height is bigger then the chain length")
 	}
-
 	r, err := validatorsOutput(ctx, s.clientCtx, &req.Height, page, limit)
 	if err != nil {
 		return nil, err
 	}
-
 	return &GetValidatorSetByHeightResponse{
 		BlockHeight: r.BlockHeight,
 		Validators:  r.Validators,
@@ -156,7 +183,6 @@ func validatorsOutput(ctx context.Context, cctx client.Context, height *int64, p
 	if err != nil {
 		return nil, err
 	}
-
 	resp := GetLatestValidatorSetResponse{
 		BlockHeight: vs.BlockHeight,
 		Validators:  make([]*Validator, len(vs.Validators)),
@@ -164,13 +190,11 @@ func validatorsOutput(ctx context.Context, cctx client.Context, height *int64, p
 			Total: vs.Total,
 		},
 	}
-
 	for i, v := range vs.Validators {
 		anyPub, err := codectypes.NewAnyWithValue(v.PubKey)
 		if err != nil {
 			return nil, err
 		}
-
 		resp.Validators[i] = &Validator{
 			Address:          v.Address.String(),
 			ProposerPriority: v.ProposerPriority,
@@ -178,7 +202,6 @@ func validatorsOutput(ctx context.Context, cctx client.Context, height *int64, p
 			VotingPower:      v.VotingPower,
 		}
 	}
-
 	return &resp, nil
 }
 
@@ -205,58 +228,33 @@ func (s queryServer) GetNodeInfo(ctx context.Context, req *GetNodeInfoRequest) (
 	resp := GetNodeInfoResponse{
 		DefaultNodeInfo: protoNodeInfo,
 		ApplicationVersion: &VersionInfo{
-			AppName:          nodeInfo.AppName,
-			Name:             nodeInfo.Name,
-			GitCommit:        nodeInfo.GitCommit,
-			GoVersion:        nodeInfo.GoVersion,
-			Version:          nodeInfo.Version,
-			BuildTags:        nodeInfo.BuildTags,
-			BuildDeps:        deps,
-			CosmosSdkVersion: nodeInfo.CosmosSdkVersion,
+			AppName:       nodeInfo.AppName,
+			Name:          nodeInfo.Name,
+			GitCommit:     nodeInfo.GitCommit,
+			GoVersion:     nodeInfo.GoVersion,
+			Version:       nodeInfo.Version,
+			BuildTags:     nodeInfo.BuildTags,
+			BuildDeps:     deps,
+			LbmSdkVersion: nodeInfo.LbmSdkVersion,
 		},
 	}
 	return &resp, nil
 }
 
-func (s queryServer) ABCIQuery(ctx context.Context, req *ABCIQueryRequest) (*ABCIQueryResponse, error) {
-	if s.queryFn == nil {
-		return nil, status.Error(codes.Internal, "ABCI Query handler undefined")
-	}
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-	if len(req.Path) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "empty query path")
-	}
-
-	if path := baseapp.SplitABCIQueryPath(req.Path); len(path) > 0 {
-		switch path[0] {
-		case baseapp.QueryPathApp, baseapp.QueryPathStore, baseapp.QueryPathP2P, baseapp.QueryPathCustom:
-			// valid path
-
-		default:
-			// Otherwise, error as to prevent either valid gRPC service requests or
-			// bogus ABCI queries.
-			return nil, status.Errorf(codes.InvalidArgument, "unsupported ABCI query path: %s", req.Path)
-		}
-	}
-
-	res := s.queryFn(req.ToABCIRequestQuery())
-	return FromABCIResponseQuery(res), nil
-}
-
 // RegisterTendermintService registers the tendermint queries on the gRPC router.
 func RegisterTendermintService(
+	qrt gogogrpc.Server,
 	clientCtx client.Context,
-	server gogogrpc.Server,
-	iRegistry codectypes.InterfaceRegistry,
-	queryFn abciQueryFn,
+	interfaceRegistry codectypes.InterfaceRegistry,
 ) {
-	RegisterServiceServer(server, NewQueryServer(clientCtx, iRegistry, queryFn))
+	RegisterServiceServer(
+		qrt,
+		NewQueryServer(clientCtx, interfaceRegistry),
+	)
 }
 
 // RegisterGRPCGatewayRoutes mounts the tendermint service's GRPC-gateway routes on the
 // given Mux.
 func RegisterGRPCGatewayRoutes(clientConn gogogrpc.ClientConn, mux *runtime.ServeMux) {
-	_ = RegisterServiceHandlerClient(context.Background(), mux, NewServiceClient(clientConn))
+	RegisterServiceHandlerClient(context.Background(), mux, NewServiceClient(clientConn))
 }

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/tmhash"
-	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	"sigs.k8s.io/yaml"
+	"github.com/Finschia/ostracon/crypto/tmhash"
+	ostbytes "github.com/Finschia/ostracon/libs/bytes"
+	abci "github.com/tendermint/tendermint/abci/types"
+	"gopkg.in/yaml.v2"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
 )
 
 // Evidence type constants
@@ -33,7 +33,7 @@ func (e *Equivocation) String() string {
 }
 
 // Hash returns the hash of an Equivocation object.
-func (e *Equivocation) Hash() tmbytes.HexBytes {
+func (e *Equivocation) Hash() ostbytes.HexBytes {
 	bz, err := e.Marshal()
 	if err != nil {
 		panic(err)
@@ -85,9 +85,9 @@ func (e Equivocation) GetValidatorPower() int64 {
 // GetTotalPower is a no-op for the Equivocation type.
 func (e Equivocation) GetTotalPower() int64 { return 0 }
 
-// FromABCIEvidence converts a Tendermint concrete Evidence type to
+// FromABCIEvidence converts a Ostracon concrete Evidence type to
 // SDK Evidence using Equivocation as the concrete type.
-func FromABCIEvidence(e abci.Misbehavior) exported.Evidence {
+func FromABCIEvidence(e abci.Evidence) exported.Evidence {
 	bech32PrefixConsAddr := sdk.GetConfig().GetBech32ConsensusAddrPrefix()
 	consAddr, err := sdk.Bech32ifyAddressBytes(bech32PrefixConsAddr, e.Validator.Address)
 	if err != nil {

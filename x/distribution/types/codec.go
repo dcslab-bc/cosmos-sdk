@@ -1,30 +1,26 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	authzcodec "github.com/cosmos/cosmos-sdk/x/authz/codec"
-	govcodec "github.com/cosmos/cosmos-sdk/x/gov/codec"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	groupcodec "github.com/cosmos/cosmos-sdk/x/group/codec"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/msgservice"
+	authzcodec "github.com/Finschia/finschia-sdk/x/authz/codec"
+	fdncodec "github.com/Finschia/finschia-sdk/x/foundation/codec"
+	govcodec "github.com/Finschia/finschia-sdk/x/gov/codec"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
-// RegisterLegacyAminoCodec registers the necessary x/distribution interfaces
-// and concrete types on the provided LegacyAmino codec. These types are used
-// for Amino JSON serialization.
+// RegisterLegacyAminoCodec registers the necessary x/distribution interfaces and concrete types
+// on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgWithdrawDelegatorReward{}, "cosmos-sdk/MsgWithdrawDelegationReward")
 	legacy.RegisterAminoMsg(cdc, &MsgWithdrawValidatorCommission{}, "cosmos-sdk/MsgWithdrawValCommission")
 	legacy.RegisterAminoMsg(cdc, &MsgSetWithdrawAddress{}, "cosmos-sdk/MsgModifyWithdrawAddress")
 	legacy.RegisterAminoMsg(cdc, &MsgFundCommunityPool{}, "cosmos-sdk/MsgFundCommunityPool")
-	legacy.RegisterAminoMsg(cdc, &MsgUpdateParams{}, "cosmos-sdk/distribution/MsgUpdateParams")
-	legacy.RegisterAminoMsg(cdc, &MsgCommunityPoolSpend{}, "cosmos-sdk/distr/MsgCommunityPoolSpend")
-
-	cdc.RegisterConcrete(Params{}, "cosmos-sdk/x/distribution/Params", nil)
+	cdc.RegisterConcrete(&CommunityPoolSpendProposal{}, "cosmos-sdk/CommunityPoolSpendProposal", nil)
 }
 
 func RegisterInterfaces(registry types.InterfaceRegistry) {
@@ -34,13 +30,11 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgWithdrawValidatorCommission{},
 		&MsgSetWithdrawAddress{},
 		&MsgFundCommunityPool{},
-		&MsgUpdateParams{},
-		&MsgCommunityPoolSpend{},
 	)
-
 	registry.RegisterImplementations(
 		(*govtypes.Content)(nil),
-		&CommunityPoolSpendProposal{})
+		&CommunityPoolSpendProposal{},
+	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }
@@ -55,10 +49,10 @@ func init() {
 	cryptocodec.RegisterCrypto(amino)
 	sdk.RegisterLegacyAminoCodec(amino)
 
-	// Register all Amino interfaces and concrete types on the authz  and gov Amino codec
+	// Register all Amino interfaces and concrete types on the authz and gov Amino codec
 	// so that this can later be used to properly serialize MsgGrant and MsgExec
 	// instances.
 	RegisterLegacyAminoCodec(authzcodec.Amino)
 	RegisterLegacyAminoCodec(govcodec.Amino)
-	RegisterLegacyAminoCodec(groupcodec.Amino)
+	RegisterLegacyAminoCodec(fdncodec.Amino)
 }

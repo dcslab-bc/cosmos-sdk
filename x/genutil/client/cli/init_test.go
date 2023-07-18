@@ -6,34 +6,33 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
-	abci_server "github.com/cometbft/cometbft/abci/server"
-	"github.com/cometbft/cometbft/libs/cli"
-	"github.com/cometbft/cometbft/libs/log"
+	abci_server "github.com/Finschia/ostracon/abci/server"
+	"github.com/Finschia/ostracon/libs/cli"
+	"github.com/Finschia/ostracon/libs/log"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/server/mock"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	genutiltest "github.com/cosmos/cosmos-sdk/x/genutil/client/testutil"
-	"github.com/cosmos/cosmos-sdk/x/staking"
+	ed255192 "github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	"github.com/Finschia/finschia-sdk/server"
+	"github.com/Finschia/finschia-sdk/server/mock"
+	"github.com/Finschia/finschia-sdk/testutil"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutilcli "github.com/Finschia/finschia-sdk/x/genutil/client/cli"
+	genutiltest "github.com/Finschia/finschia-sdk/x/genutil/client/testutil"
 )
 
-var testMbm = module.NewBasicManager(
-	staking.AppModuleBasic{},
-	genutil.AppModuleBasic{},
-)
+var testMbm = module.NewBasicManager(genutil.AppModuleBasic{})
 
 func TestInitCmd(t *testing.T) {
 	tests := []struct {
@@ -120,34 +119,6 @@ func TestInitRecover(t *testing.T) {
 	require.NoError(t, cmd.ExecuteContext(ctx))
 }
 
-func TestInitDefaultBondDenom(t *testing.T) {
-	home := t.TempDir()
-	logger := log.NewNopLogger()
-	cfg, err := genutiltest.CreateDefaultTendermintConfig(home)
-	require.NoError(t, err)
-
-	serverCtx := server.NewContext(viper.New(), cfg, logger)
-	interfaceRegistry := types.NewInterfaceRegistry()
-	marshaler := codec.NewProtoCodec(interfaceRegistry)
-	clientCtx := client.Context{}.
-		WithCodec(marshaler).
-		WithLegacyAmino(makeCodec()).
-		WithHomeDir(home)
-
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, client.ClientContextKey, &clientCtx)
-	ctx = context.WithValue(ctx, server.ServerContextKey, serverCtx)
-
-	cmd := genutilcli.InitCmd(testMbm, home)
-
-	cmd.SetArgs([]string{
-		"appnode-test",
-		fmt.Sprintf("--%s=%s", cli.HomeFlag, home),
-		fmt.Sprintf("--%s=testtoken", genutilcli.FlagDefaultBondDenom),
-	})
-	require.NoError(t, cmd.ExecuteContext(ctx))
-}
-
 func TestEmptyState(t *testing.T) {
 	home := t.TempDir()
 	logger := log.NewNopLogger()
@@ -211,7 +182,7 @@ func TestStartStandAlone(t *testing.T) {
 	svrAddr, _, err := server.FreeTCPAddr()
 	require.NoError(t, err)
 
-	svr, err := abci_server.NewServer(svrAddr, "socket", app)
+	svr, err := abci_server.NewServer(svrAddr, "grpc", app)
 	require.NoError(t, err, "error creating listener")
 
 	svr.SetLogger(logger.With("module", "abci-server"))
@@ -229,58 +200,12 @@ func TestStartStandAlone(t *testing.T) {
 func TestInitNodeValidatorFiles(t *testing.T) {
 	home := t.TempDir()
 	cfg, err := genutiltest.CreateDefaultTendermintConfig(home)
-	require.NoError(t, err)
-
 	nodeID, valPubKey, err := genutil.InitializeNodeValidatorFiles(cfg)
-	require.NoError(t, err)
 
+	require.Nil(t, err)
 	require.NotEqual(t, "", nodeID)
-	require.NotEqual(t, 0, len(valPubKey.Bytes()))
-}
-
-func TestInitConfig(t *testing.T) {
-	home := t.TempDir()
-	logger := log.NewNopLogger()
-	cfg, err := genutiltest.CreateDefaultTendermintConfig(home)
-	require.NoError(t, err)
-
-	serverCtx := server.NewContext(viper.New(), cfg, logger)
-	interfaceRegistry := types.NewInterfaceRegistry()
-	marshaler := codec.NewProtoCodec(interfaceRegistry)
-	clientCtx := client.Context{}.
-		WithCodec(marshaler).
-		WithLegacyAmino(makeCodec()).
-		WithChainID("foo"). // add chain-id to clientCtx
-		WithHomeDir(home)
-
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, client.ClientContextKey, &clientCtx)
-	ctx = context.WithValue(ctx, server.ServerContextKey, serverCtx)
-
-	cmd := genutilcli.InitCmd(testMbm, home)
-	cmd.SetArgs([]string{"testnode"})
-
-	require.NoError(t, cmd.ExecuteContext(ctx))
-
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	cmd = server.ExportCmd(nil, home)
-	require.NoError(t, cmd.ExecuteContext(ctx))
-
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	os.Stdout = old
-	out := <-outC
-
-	require.Contains(t, out, "\"chain_id\": \"foo\"")
+	require.Equal(t, 32, len(valPubKey.Bytes()))
+	require.EqualValues(t, reflect.TypeOf(&ed255192.PubKey{}), reflect.TypeOf(valPubKey))
 }
 
 // custom tx codec

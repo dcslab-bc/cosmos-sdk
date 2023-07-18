@@ -4,8 +4,28 @@ import (
 	"fmt"
 	"strings"
 
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	govtypes "github.com/Finschia/finschia-sdk/x/gov/types"
 )
+
+const (
+	// ProposalTypeCommunityPoolSpend defines the type for a CommunityPoolSpendProposal
+	ProposalTypeCommunityPoolSpend = "CommunityPoolSpend"
+)
+
+// Assert CommunityPoolSpendProposal implements govtypes.Content at compile-time
+var _ govtypes.Content = &CommunityPoolSpendProposal{}
+
+func init() {
+	govtypes.RegisterProposalType(ProposalTypeCommunityPoolSpend)
+}
+
+// NewCommunityPoolSpendProposal creates a new community pool spned proposal.
+//
+//nolint:interfacer
+func NewCommunityPoolSpendProposal(title, description string, recipient sdk.AccAddress, amount sdk.Coins) *CommunityPoolSpendProposal {
+	return &CommunityPoolSpendProposal{title, description, recipient.String(), amount}
+}
 
 // GetTitle returns the title of a community pool spend proposal.
 func (csp *CommunityPoolSpendProposal) GetTitle() string { return csp.Title }
@@ -17,7 +37,7 @@ func (csp *CommunityPoolSpendProposal) GetDescription() string { return csp.Desc
 func (csp *CommunityPoolSpendProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns the type of a community pool spend proposal.
-func (csp *CommunityPoolSpendProposal) ProposalType() string { return "CommunityPoolSpend" }
+func (csp *CommunityPoolSpendProposal) ProposalType() string { return ProposalTypeCommunityPoolSpend }
 
 // ValidateBasic runs basic stateless validity checks
 func (csp *CommunityPoolSpendProposal) ValidateBasic() error {
@@ -38,11 +58,11 @@ func (csp *CommunityPoolSpendProposal) ValidateBasic() error {
 // String implements the Stringer interface.
 func (csp CommunityPoolSpendProposal) String() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, `Community Pool Spend Proposal:
+	b.WriteString(fmt.Sprintf(`Community Pool Spend Proposal:
   Title:       %s
   Description: %s
   Recipient:   %s
   Amount:      %s
-`, csp.Title, csp.Description, csp.Recipient, csp.Amount)
+`, csp.Title, csp.Description, csp.Recipient, csp.Amount))
 	return b.String()
 }

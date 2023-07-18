@@ -8,58 +8,49 @@ import (
 	"math/rand"
 	"time"
 
-	"cosmossdk.io/math"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
-	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/types/module"
+	"github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/gov/types"
 )
 
 // Simulation parameter constants
 const (
 	DepositParamsMinDeposit    = "deposit_params_min_deposit"
 	DepositParamsDepositPeriod = "deposit_params_deposit_period"
-	DepositMinInitialRatio     = "deposit_params_min_initial_ratio"
 	VotingParamsVotingPeriod   = "voting_params_voting_period"
 	TallyParamsQuorum          = "tally_params_quorum"
 	TallyParamsThreshold       = "tally_params_threshold"
 	TallyParamsVeto            = "tally_params_veto"
 )
 
-// GenDepositParamsDepositPeriod returns randomized DepositParamsDepositPeriod
+// GenDepositParamsDepositPeriod randomized DepositParamsDepositPeriod
 func GenDepositParamsDepositPeriod(r *rand.Rand) time.Duration {
 	return time.Duration(simulation.RandIntBetween(r, 1, 2*60*60*24*2)) * time.Second
 }
 
-// GenDepositParamsMinDeposit returns randomized DepositParamsMinDeposit
+// GenDepositParamsMinDeposit randomized DepositParamsMinDeposit
 func GenDepositParamsMinDeposit(r *rand.Rand) sdk.Coins {
 	return sdk.NewCoins(sdk.NewInt64Coin(sdk.DefaultBondDenom, int64(simulation.RandIntBetween(r, 1, 1e3))))
 }
 
-// GenDepositMinInitialRatio returns randomized DepositMinInitialRatio
-func GenDepositMinInitialDepositRatio(r *rand.Rand) sdk.Dec {
-	return sdk.NewDec(int64(simulation.RandIntBetween(r, 0, 99))).Quo(sdk.NewDec(100))
-}
-
-// GenVotingParamsVotingPeriod returns randomized VotingParamsVotingPeriod
+// GenVotingParamsVotingPeriod randomized VotingParamsVotingPeriod
 func GenVotingParamsVotingPeriod(r *rand.Rand) time.Duration {
 	return time.Duration(simulation.RandIntBetween(r, 1, 2*60*60*24*2)) * time.Second
 }
 
-// GenTallyParamsQuorum returns randomized TallyParamsQuorum
-func GenTallyParamsQuorum(r *rand.Rand) math.LegacyDec {
+// GenTallyParamsQuorum randomized TallyParamsQuorum
+func GenTallyParamsQuorum(r *rand.Rand) sdk.Dec {
 	return sdk.NewDecWithPrec(int64(simulation.RandIntBetween(r, 334, 500)), 3)
 }
 
-// GenTallyParamsThreshold returns randomized TallyParamsThreshold
-func GenTallyParamsThreshold(r *rand.Rand) math.LegacyDec {
+// GenTallyParamsThreshold randomized TallyParamsThreshold
+func GenTallyParamsThreshold(r *rand.Rand) sdk.Dec {
 	return sdk.NewDecWithPrec(int64(simulation.RandIntBetween(r, 450, 550)), 3)
 }
 
-// GenTallyParamsVeto returns randomized TallyParamsVeto
-func GenTallyParamsVeto(r *rand.Rand) math.LegacyDec {
+// GenTallyParamsVeto randomized TallyParamsVeto
+func GenTallyParamsVeto(r *rand.Rand) sdk.Dec {
 	return sdk.NewDecWithPrec(int64(simulation.RandIntBetween(r, 250, 334)), 3)
 }
 
@@ -77,12 +68,6 @@ func RandomizedGenState(simState *module.SimulationState) {
 	simState.AppParams.GetOrGenerate(
 		simState.Cdc, DepositParamsDepositPeriod, &depositPeriod, simState.Rand,
 		func(r *rand.Rand) { depositPeriod = GenDepositParamsDepositPeriod(r) },
-	)
-
-	var minInitialDepositRatio sdk.Dec
-	simState.AppParams.GetOrGenerate(
-		simState.Cdc, DepositMinInitialRatio, &minInitialDepositRatio, simState.Rand,
-		func(r *rand.Rand) { minInitialDepositRatio = GenDepositMinInitialDepositRatio(r) },
 	)
 
 	var votingPeriod time.Duration
@@ -109,9 +94,11 @@ func RandomizedGenState(simState *module.SimulationState) {
 		func(r *rand.Rand) { veto = GenTallyParamsVeto(r) },
 	)
 
-	govGenesis := v1.NewGenesisState(
+	govGenesis := types.NewGenesisState(
 		startingProposalID,
-		v1.NewParams(minDeposit, depositPeriod, votingPeriod, quorum.String(), threshold.String(), veto.String(), minInitialDepositRatio.String(), simState.Rand.Intn(2) == 0, simState.Rand.Intn(2) == 0, simState.Rand.Intn(2) == 0),
+		types.NewDepositParams(minDeposit, depositPeriod),
+		types.NewVotingParams(votingPeriod),
+		types.NewTallyParams(quorum, threshold, veto),
 	)
 
 	bz, err := json.MarshalIndent(&govGenesis, "", " ")

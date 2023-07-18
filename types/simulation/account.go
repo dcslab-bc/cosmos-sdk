@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // Account contains a privkey, pubkey, address tuple
@@ -25,7 +25,8 @@ func (acc Account) Equals(acc2 Account) bool {
 	return acc.Address.Equals(acc2.Address)
 }
 
-// RandomAcc picks and returns a random account and its index from an array.
+// RandomAcc picks and returns a random account from an array and returs its
+// position in the array.
 func RandomAcc(r *rand.Rand, accs []Account) (Account, int) {
 	idx := r.Intn(len(accs))
 	return accs[idx], idx

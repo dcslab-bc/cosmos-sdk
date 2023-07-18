@@ -1,7 +1,7 @@
 package signing
 
 import (
-	"github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/crypto/types"
 )
 
 // SignatureData represents either a *SingleSignatureData or *MultiSignatureData.
@@ -16,7 +16,7 @@ type SingleSignatureData struct {
 	// SignMode represents the SignMode of the signature
 	SignMode SignMode
 
-	// Signature is the raw signature.
+	// SignMode represents the SignMode of the signature
 	Signature []byte
 }
 

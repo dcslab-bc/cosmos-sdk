@@ -5,20 +5,20 @@ import (
 	"math/rand"
 	"testing"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
 )
 
-func TestLegacyParamChange(t *testing.T) {
+func TestParamChange(t *testing.T) {
 	subspace, key := "theSubspace", "key"
 	f := func(r *rand.Rand) string {
 		return "theResult"
 	}
 
-	pChange := NewSimLegacyParamChange(subspace, key, f)
+	pChange := NewSimParamChange(subspace, key, f)
 
 	require.Equal(t, subspace, pChange.Subspace())
 	require.Equal(t, key, pChange.Key())
@@ -30,7 +30,7 @@ func TestNewWeightedProposalContent(t *testing.T) {
 	key := "theKey"
 	weight := 1
 	content := &testContent{}
-	f := func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) simtypes.Content { //nolint:staticcheck
+	f := func(r *rand.Rand, ctx sdk.Context, accs []simtypes.Account) simtypes.Content {
 		return content
 	}
 

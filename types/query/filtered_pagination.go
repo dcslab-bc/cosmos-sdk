@@ -3,8 +3,8 @@ package query
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/types"
 )
 
 // FilteredPaginate does pagination of all the results in the PrefixStore based on the
@@ -102,9 +102,7 @@ func FilteredPaginate(
 		}
 
 		if numHits == end+1 {
-			if nextKey == nil {
-				nextKey = iterator.Key()
-			}
+			nextKey = iterator.Key()
 
 			if !countTotal {
 				break

@@ -2,14 +2,15 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"os"
 
-	tmtypes "github.com/cometbft/cometbft/types"
+	ostos "github.com/Finschia/ostracon/libs/os"
+	octypes "github.com/Finschia/ostracon/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // NewGenesisState creates a new GenesisState object
@@ -66,7 +67,7 @@ func SetGenesisStateInAppState(
 // for the application.
 //
 // NOTE: The pubkey input is this machines pubkey.
-func GenesisStateFromGenDoc(genDoc tmtypes.GenesisDoc) (genesisState map[string]json.RawMessage, err error) {
+func GenesisStateFromGenDoc(genDoc octypes.GenesisDoc) (genesisState map[string]json.RawMessage, err error) {
 	if err = json.Unmarshal(genDoc.AppState, &genesisState); err != nil {
 		return genesisState, err
 	}
@@ -77,13 +78,13 @@ func GenesisStateFromGenDoc(genDoc tmtypes.GenesisDoc) (genesisState map[string]
 // for the application.
 //
 // NOTE: The pubkey input is this machines pubkey.
-func GenesisStateFromGenFile(genFile string) (genesisState map[string]json.RawMessage, genDoc *tmtypes.GenesisDoc, err error) {
-	if _, err := os.Stat(genFile); os.IsNotExist(err) {
+func GenesisStateFromGenFile(genFile string) (genesisState map[string]json.RawMessage, genDoc *octypes.GenesisDoc, err error) {
+	if !ostos.FileExists(genFile) {
 		return genesisState, genDoc,
 			fmt.Errorf("%s does not exist, run `init` first", genFile)
 	}
 
-	genDoc, err = tmtypes.GenesisDocFromFile(genFile)
+	genDoc, err = octypes.GenesisDocFromFile(genFile)
 	if err != nil {
 		return genesisState, genDoc, err
 	}
@@ -93,39 +94,25 @@ func GenesisStateFromGenFile(genFile string) (genesisState map[string]json.RawMe
 }
 
 // ValidateGenesis validates GenTx transactions
-func ValidateGenesis(genesisState *GenesisState, txJSONDecoder sdk.TxDecoder, validator MessageValidator) error {
-	for _, genTx := range genesisState.GenTxs {
-		_, err := ValidateAndGetGenTx(genTx, txJSONDecoder, validator)
+func ValidateGenesis(genesisState *GenesisState, txJSONDecoder sdk.TxDecoder) error {
+	for i, genTx := range genesisState.GenTxs {
+		var tx sdk.Tx
+		tx, err := txJSONDecoder(genTx)
 		if err != nil {
 			return err
 		}
+
+		msgs := tx.GetMsgs()
+		if len(msgs) != 1 {
+			return errors.New(
+				"must provide genesis Tx with exactly 1 CreateValidator message")
+		}
+
+		// TODO: abstract back to staking
+		if _, ok := msgs[0].(*stakingtypes.MsgCreateValidator); !ok {
+			return fmt.Errorf(
+				"genesis transaction %v does not contain a MsgCreateValidator", i)
+		}
 	}
 	return nil
-}
-
-type MessageValidator func([]sdk.Msg) error
-
-func DefaultMessageValidator(msgs []sdk.Msg) error {
-	if len(msgs) != 1 {
-		return fmt.Errorf("unexpected number of GenTx messages; got: %d, expected: 1", len(msgs))
-	}
-	if _, ok := msgs[0].(*stakingtypes.MsgCreateValidator); !ok {
-		return fmt.Errorf("unexpected GenTx message type; expected: MsgCreateValidator, got: %T", msgs[0])
-	}
-	if err := msgs[0].ValidateBasic(); err != nil {
-		return fmt.Errorf("invalid GenTx '%s': %w", msgs[0], err)
-	}
-
-	return nil
-}
-
-// ValidateAndGetGenTx validates the genesis transaction and returns GenTx if valid
-// it cannot verify the signature as it is stateless validation
-func ValidateAndGetGenTx(genTx json.RawMessage, txJSONDecoder sdk.TxDecoder, validator MessageValidator) (sdk.Tx, error) {
-	tx, err := txJSONDecoder(genTx)
-	if err != nil {
-		return tx, fmt.Errorf("failed to decode gentx: %s, error: %s", genTx, err)
-	}
-
-	return tx, validator(tx.GetMsgs())
 }

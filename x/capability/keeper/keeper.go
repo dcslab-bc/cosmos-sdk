@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/log"
+	"github.com/Finschia/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/capability/types"
+	"github.com/Finschia/finschia-sdk/codec"
+	"github.com/Finschia/finschia-sdk/store/prefix"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/capability/types"
 )
 
 type (
@@ -29,8 +28,8 @@ type (
 	// a single specific module.
 	Keeper struct {
 		cdc           codec.BinaryCodec
-		storeKey      storetypes.StoreKey
-		memKey        storetypes.StoreKey
+		storeKey      sdk.StoreKey
+		memKey        sdk.StoreKey
 		capMap        map[uint64]*types.Capability
 		scopedModules map[string]struct{}
 		sealed        bool
@@ -44,8 +43,8 @@ type (
 	// passed by other modules.
 	ScopedKeeper struct {
 		cdc      codec.BinaryCodec
-		storeKey storetypes.StoreKey
-		memKey   storetypes.StoreKey
+		storeKey sdk.StoreKey
+		memKey   sdk.StoreKey
 		capMap   map[uint64]*types.Capability
 		module   string
 	}
@@ -53,7 +52,7 @@ type (
 
 // NewKeeper constructs a new CapabilityKeeper instance and initializes maps
 // for capability map and scopedModules map.
-func NewKeeper(cdc codec.BinaryCodec, storeKey, memKey storetypes.StoreKey) *Keeper {
+func NewKeeper(cdc codec.BinaryCodec, storeKey, memKey sdk.StoreKey) *Keeper {
 	return &Keeper{
 		cdc:           cdc,
 		storeKey:      storeKey,
@@ -100,11 +99,6 @@ func (k *Keeper) Seal() {
 	k.sealed = true
 }
 
-// IsSealed returns if the keeper is sealed.
-func (k *Keeper) IsSealed() bool {
-	return k.sealed
-}
-
 // InitMemStore will assure that the module store is a memory store (it will panic if it's not)
 // and willl initialize it. The function is safe to be called multiple times.
 // InitMemStore must be called every time the app starts before the keeper is used (so
@@ -113,9 +107,8 @@ func (k *Keeper) IsSealed() bool {
 func (k *Keeper) InitMemStore(ctx sdk.Context) {
 	memStore := ctx.KVStore(k.memKey)
 	memStoreType := memStore.GetStoreType()
-
-	if memStoreType != storetypes.StoreTypeMemory {
-		panic(fmt.Sprintf("invalid memory store type; got %s, expected: %s", memStoreType, storetypes.StoreTypeMemory))
+	if memStoreType != sdk.StoreTypeMemory {
+		panic(fmt.Sprintf("invalid memory store type; got %s, expected: %s", memStoreType, sdk.StoreTypeMemory))
 	}
 
 	// create context with no block gas meter to ensure we do not consume gas during local initialization logic.

@@ -4,19 +4,36 @@ import (
 	"testing"
 
 	"github.com/spf13/pflag"
+
+	"github.com/Finschia/finschia-sdk/crypto/keys/secp256k1"
+	"github.com/Finschia/finschia-sdk/simapp/params"
+	"github.com/Finschia/finschia-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Finschia/finschia-sdk/client"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 func Test_splitAndCall_NoMessages(t *testing.T) {
 	clientCtx := client.Context{}
 
-	err := newSplitAndApply(nil, clientCtx, nil, nil, 10)
-	require.NoError(t, err, "")
+	// empty tx will always trigger genOrBroadcastFn
+	maxMsgsCases := []int{0, 1, 10}
+	calledCounter := 0
+	for _, maxMsgs := range maxMsgsCases {
+		err := newSplitAndApply(
+			func(clientCtx client.Context, fs *pflag.FlagSet, msgs ...sdk.Msg) error {
+				// dummy genOrBroadcastFn called once for each case
+				calledCounter++
+				return nil
+			}, clientCtx, nil, nil, maxMsgs)
+		assert.NoError(t, err, "")
+	}
+	assert.Equal(t, calledCounter, len(maxMsgsCases))
 }
 
 func Test_splitAndCall_Splitting(t *testing.T) {
@@ -41,19 +58,42 @@ func Test_splitAndCall_Splitting(t *testing.T) {
 		func(clientCtx client.Context, fs *pflag.FlagSet, msgs ...sdk.Msg) error {
 			callCount++
 
-			require.NotNil(t, clientCtx)
-			require.NotNil(t, msgs)
+			assert.NotNil(t, clientCtx)
+			assert.NotNil(t, msgs)
 
 			if callCount < 3 {
-				require.Equal(t, len(msgs), 2)
+				assert.Equal(t, len(msgs), 2)
 			} else {
-				require.Equal(t, len(msgs), 1)
+				assert.Equal(t, len(msgs), 1)
 			}
 
 			return nil
 		},
 		clientCtx, nil, msgs, chunkSize)
 
-	require.NoError(t, err, "")
-	require.Equal(t, 3, callCount)
+	assert.NoError(t, err, "")
+	assert.Equal(t, 3, callCount)
+}
+
+func TestParseProposal(t *testing.T) {
+	encodingConfig := params.MakeTestEncodingConfig()
+
+	okJSON := testutil.WriteToNewTempFile(t, `
+{
+  "title": "Community Pool Spend",
+  "description": "Pay me some Atoms!",
+  "recipient": "link1s5afhd6gxevu37mkqcvvsj8qeylhn0rz46zdlq",
+  "amount": "1000stake",
+  "deposit": "1000stake"
+}
+`)
+
+	proposal, err := ParseCommunityPoolSpendProposalWithDeposit(encodingConfig.Marshaler, okJSON.Name())
+	require.NoError(t, err)
+
+	require.Equal(t, "Community Pool Spend", proposal.Title)
+	require.Equal(t, "Pay me some Atoms!", proposal.Description)
+	require.Equal(t, "link1s5afhd6gxevu37mkqcvvsj8qeylhn0rz46zdlq", proposal.Recipient)
+	require.Equal(t, "1000stake", proposal.Deposit)
+	require.Equal(t, "1000stake", proposal.Amount)
 }

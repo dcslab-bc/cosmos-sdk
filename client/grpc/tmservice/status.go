@@ -3,15 +3,15 @@ package tmservice
 import (
 	"context"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/Finschia/finschia-sdk/client"
 )
 
-func getNodeStatus(ctx context.Context, clientCtx client.Context) (*coretypes.ResultStatus, error) {
+func getNodeStatus(ctx context.Context, clientCtx client.Context) (*ctypes.ResultStatus, error) {
 	node, err := clientCtx.GetNode()
 	if err != nil {
-		return &coretypes.ResultStatus{}, err
+		return &ctypes.ResultStatus{}, err
 	}
 	return node.Status(ctx)
 }

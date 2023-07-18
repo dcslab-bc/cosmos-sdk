@@ -6,12 +6,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/version"
+	"github.com/Finschia/finschia-sdk/x/authz"
+	bank "github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -44,8 +44,8 @@ func GetCmdQueryGrants() *cobra.Command {
 			fmt.Sprintf(`Query authorization grants for a granter-grantee pair. If msg-type-url
 is set, it will select grants only for that msg type.
 Examples:
-$ %s query %s grants cosmos1skj.. cosmos1skjwj..
-$ %s query %s grants cosmos1skjw.. cosmos1skjwj.. %s
+$ %s query %s grants link1skj.. link1skjwj..
+$ %s query %s grants link1skjw.. link1skjwj.. %s
 `,
 				version.AppName, authz.ModuleName,
 				version.AppName, authz.ModuleName, bank.SendAuthorization{}.MsgTypeURL()),
@@ -95,16 +95,16 @@ $ %s query %s grants cosmos1skjw.. cosmos1skjwj.. %s
 	return cmd
 }
 
-// GetQueryGranterGrants returns cmd to query for all grants for a granter.
 func GetQueryGranterGrants() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "grants-by-granter [granter-addr]",
-		Args:  cobra.ExactArgs(1),
-		Short: "query authorization grants granted by granter",
+		Use:     "grants-by-granter [granter-addr]",
+		Aliases: []string{"granter-grants"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "query authorization grants granted by granter",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query authorization grants granted by granter.
 Examples:
-$ %s q %s grants-by-granter cosmos1skj..
+$ %s q %s grants-by-granter link1skj..
 `,
 				version.AppName, authz.ModuleName),
 		),
@@ -144,16 +144,16 @@ $ %s q %s grants-by-granter cosmos1skj..
 	return cmd
 }
 
-// GetQueryGranteeGrants returns cmd to query for all grants for a grantee.
 func GetQueryGranteeGrants() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "grants-by-grantee [grantee-addr]",
-		Args:  cobra.ExactArgs(1),
-		Short: "query authorization grants granted to a grantee",
+		Use:     "grants-by-grantee [grantee-addr]",
+		Aliases: []string{"grantee-grants"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "query authorization grants granted to a grantee",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query authorization grants granted to a grantee.
 Examples:
-$ %s q %s grants-by-grantee cosmos1skj..
+$ %s q %s grants-by-grantee link1skj..
 `,
 				version.AppName, authz.ModuleName),
 		),

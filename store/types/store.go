@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"io"
 
-	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
+	oststrings "github.com/Finschia/ostracon/libs/strings"
+	abci "github.com/tendermint/tendermint/abci/types"
+	dbm "github.com/tendermint/tm-db"
 
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	snapshottypes "github.com/Finschia/finschia-sdk/snapshots/types"
+	"github.com/Finschia/finschia-sdk/types/kv"
 )
 
 type Store interface {
@@ -22,8 +22,8 @@ type Committer interface {
 	Commit() CommitID
 	LastCommitID() CommitID
 
-	SetPruning(pruningtypes.PruningOptions)
-	GetPruning() pruningtypes.PruningOptions
+	SetPruning(PruningOptions)
+	GetPruning() PruningOptions
 }
 
 // Stores of MultiStore must implement CommitStore.
@@ -50,6 +50,13 @@ type StoreUpgrades struct {
 	Deleted []string      `json:"deleted"`
 }
 
+// UpgradeInfo defines height and name of the upgrade
+// to ensure multistore upgrades happen only at matching height.
+type UpgradeInfo struct {
+	Name   string `json:"name"`
+	Height int64  `json:"height"`
+}
+
 // StoreRename defines a name change of a sub-store.
 // All data previously under a PrefixStore with OldKey will be copied
 // to a PrefixStore with NewKey, then deleted from OldKey store.
@@ -58,17 +65,12 @@ type StoreRename struct {
 	NewKey string `json:"new_key"`
 }
 
-// IsAdded returns true if the given key should be added
+// IsDeleted returns true if the given key should be added
 func (s *StoreUpgrades) IsAdded(key string) bool {
 	if s == nil {
 		return false
 	}
-	for _, added := range s.Added {
-		if key == added {
-			return true
-		}
-	}
-	return false
+	return oststrings.StringInSlice(key, s.Added)
 }
 
 // IsDeleted returns true if the given key should be deleted
@@ -128,8 +130,12 @@ type MultiStore interface {
 	// tracing operations. The modified MultiStore is returned.
 	SetTracingContext(TraceContext) MultiStore
 
-	// LatestVersion returns the latest version in the store
-	LatestVersion() int64
+	// ListeningEnabled returns if listening is enabled for the KVStore belonging the provided StoreKey
+	ListeningEnabled(key StoreKey) bool
+
+	// AddListeners adds WriteListeners for the KVStore belonging to the provided StoreKey
+	// It appends the listeners to a current set, if one already exists
+	AddListeners(key StoreKey, listeners []WriteListener)
 }
 
 // From MultiStore.CacheMultiStore()....
@@ -188,25 +194,17 @@ type CommitMultiStore interface {
 	// SetIAVLDisableFastNode enables/disables fastnode feature on iavl.
 	SetIAVLDisableFastNode(disable bool)
 
-	// SetIAVLLazyLoading enable/disable lazy loading on iavl.
-	SetLazyLoading(lazyLoading bool)
-
 	// RollbackToVersion rollback the db to specific version(height).
 	RollbackToVersion(version int64) error
-
-	// ListeningEnabled returns if listening is enabled for the KVStore belonging the provided StoreKey
-	ListeningEnabled(key StoreKey) bool
-
-	// AddListeners adds WriteListeners for the KVStore belonging to the provided StoreKey
-	// It appends the listeners to a current set, if one already exists
-	AddListeners(key StoreKey, listeners []WriteListener)
 }
 
 //---------subsp-------------------------------
 // KVStore
 
-// BasicKVStore is a simple interface to get/set data
-type BasicKVStore interface {
+// KVStore is a simple interface to get/set data
+type KVStore interface {
+	Store
+
 	// Get returns nil if key doesn't exist. Panics on nil key.
 	Get(key []byte) []byte
 
@@ -218,12 +216,6 @@ type BasicKVStore interface {
 
 	// Delete deletes the key. Panics on nil key.
 	Delete(key []byte)
-}
-
-// KVStore additionally provides iteration and deletion
-type KVStore interface {
-	Store
-	BasicKVStore
 
 	// Iterator over a domain of keys in ascending order. End is exclusive.
 	// Start must be less than end, or the Iterator is invalid.
@@ -276,6 +268,9 @@ type CacheWrap interface {
 
 	// CacheWrapWithTrace recursively wraps again with tracing enabled.
 	CacheWrapWithTrace(w io.Writer, tc TraceContext) CacheWrap
+
+	// CacheWrapWithListeners recursively wraps again with listening enabled
+	CacheWrapWithListeners(storeKey StoreKey, listeners []WriteListener) CacheWrap
 }
 
 type CacheWrapper interface {
@@ -284,6 +279,9 @@ type CacheWrapper interface {
 
 	// CacheWrapWithTrace branches a store with tracing enabled.
 	CacheWrapWithTrace(w io.Writer, tc TraceContext) CacheWrap
+
+	// CacheWrapWithListeners recursively wraps again with listening enabled
+	CacheWrapWithListeners(storeKey StoreKey, listeners []WriteListener) CacheWrap
 }
 
 func (cid CommitID) IsZero() bool {
@@ -306,8 +304,6 @@ const (
 	StoreTypeIAVL
 	StoreTypeTransient
 	StoreTypeMemory
-	StoreTypeSMT
-	StoreTypePersistent
 )
 
 func (st StoreType) String() string {
@@ -326,12 +322,6 @@ func (st StoreType) String() string {
 
 	case StoreTypeMemory:
 		return "StoreTypeMemory"
-
-	case StoreTypeSMT:
-		return "StoreTypeSMT"
-
-	case StoreTypePersistent:
-		return "StoreTypePersistent"
 	}
 
 	return "unknown store type"
@@ -347,7 +337,7 @@ type StoreKey interface {
 }
 
 // CapabilityKey represent the Cosmos SDK keys for object-capability
-// generation in the IBC protocol as defined in https://github.com/cosmos/ibc/tree/master/spec/core/ics-005-port-allocation#data-structures
+// generation in the IBC protocol as defined in https://github.com/cosmos/ics/tree/master/spec/ics-005-port-allocation#data-structures
 type CapabilityKey StoreKey
 
 // KVStoreKey is used for accessing substores.
@@ -427,29 +417,6 @@ type KVPair kv.Pair
 // TraceContext contains TraceKVStore context data. It will be written with
 // every trace operation.
 type TraceContext map[string]interface{}
-
-// Clone clones tc into another instance of TraceContext.
-func (tc TraceContext) Clone() TraceContext {
-	ret := TraceContext{}
-	for k, v := range tc {
-		ret[k] = v
-	}
-
-	return ret
-}
-
-// Merge merges value of newTc into tc.
-func (tc TraceContext) Merge(newTc TraceContext) TraceContext {
-	if tc == nil {
-		tc = TraceContext{}
-	}
-
-	for k, v := range newTc {
-		tc[k] = v
-	}
-
-	return tc
-}
 
 // MultiStorePersistentCache defines an interface which provides inter-block
 // (persistent) caching capabilities for multiple CommitKVStores based on StoreKeys.

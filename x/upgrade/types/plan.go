@@ -3,12 +3,9 @@ package types
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
 )
-
-// UpgradeInfoFileName file to store upgrade information
-const UpgradeInfoFilename = "upgrade-info.json"
 
 func (p Plan) String() string {
 	due := p.DueAt()
@@ -20,9 +17,6 @@ func (p Plan) String() string {
 
 // ValidateBasic does basic validation of a Plan
 func (p Plan) ValidateBasic() error {
-	if !p.Time.IsZero() {
-		return sdkerrors.ErrInvalidRequest.Wrap("time-based upgrades have been deprecated in the SDK")
-	}
 	if p.UpgradedClientState != nil {
 		return sdkerrors.ErrInvalidRequest.Wrap("upgrade logic for IBC has been moved to the IBC module")
 	}
@@ -46,5 +40,5 @@ func (p Plan) ShouldExecute(ctx sdk.Context) bool {
 
 // DueAt is a string representation of when this plan is due to be executed
 func (p Plan) DueAt() string {
-	return fmt.Sprintf("height: %d", p.Height)
+	return fmt.Sprintf("Height: %d", p.Height)
 }

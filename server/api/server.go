@@ -8,18 +8,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
-	tmrpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	gateway "github.com/cosmos/gogogateway"
+	"github.com/gogo/gateway"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
+	"github.com/Finschia/ostracon/libs/log"
+	ostrpcserver "github.com/Finschia/ostracon/rpc/jsonrpc/server"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/codec/legacy"
+	"github.com/Finschia/finschia-sdk/server/config"
+	"github.com/Finschia/finschia-sdk/telemetry"
+	grpctypes "github.com/Finschia/finschia-sdk/types/grpc"
+
+	// unnamed import of statik for swagger UI support
+	_ "github.com/Finschia/finschia-sdk/client/docs/statik"
 )
 
 // Server defines the server's API interface.
@@ -88,13 +92,14 @@ func New(clientCtx client.Context, logger log.Logger) *Server {
 func (s *Server) Start(cfg config.Config) error {
 	s.mtx.Lock()
 
-	tmCfg := tmrpcserver.DefaultConfig()
-	tmCfg.MaxOpenConnections = int(cfg.API.MaxOpenConnections)
-	tmCfg.ReadTimeout = time.Duration(cfg.API.RPCReadTimeout) * time.Second
-	tmCfg.WriteTimeout = time.Duration(cfg.API.RPCWriteTimeout) * time.Second
-	tmCfg.MaxBodyBytes = int64(cfg.API.RPCMaxBodyBytes)
+	ostCfg := ostrpcserver.DefaultConfig()
+	ostCfg.MaxOpenConnections = int(cfg.API.MaxOpenConnections)
+	ostCfg.ReadTimeout = time.Duration(cfg.API.RPCReadTimeout) * time.Second
+	ostCfg.WriteTimeout = time.Duration(cfg.API.RPCWriteTimeout) * time.Second
+	ostCfg.IdleTimeout = time.Duration(cfg.API.RPCIdleTimeout) * time.Second
+	ostCfg.MaxBodyBytes = int64(cfg.API.RPCMaxBodyBytes)
 
-	listener, err := tmrpcserver.Listen(cfg.API.Address, tmCfg)
+	listener, err := ostrpcserver.Listen(cfg.API.Address, ostCfg)
 	if err != nil {
 		s.mtx.Unlock()
 		return err
@@ -108,11 +113,11 @@ func (s *Server) Start(cfg config.Config) error {
 
 	if cfg.API.EnableUnsafeCORS {
 		allowAllCORS := handlers.CORS(handlers.AllowedHeaders([]string{"Content-Type"}))
-		return tmrpcserver.Serve(s.listener, allowAllCORS(h), s.logger, tmCfg)
+		return ostrpcserver.Serve(s.listener, allowAllCORS(h), s.logger, ostCfg)
 	}
 
 	s.logger.Info("starting API server...")
-	return tmrpcserver.Serve(s.listener, s.Router, s.logger, tmCfg)
+	return ostrpcserver.Serve(s.listener, s.Router, s.logger, ostCfg)
 }
 
 // Close closes the API server.

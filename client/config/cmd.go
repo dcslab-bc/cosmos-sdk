@@ -7,8 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
+	ostcli "github.com/Finschia/ostracon/libs/cli"
+
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
 )
 
 // Cmd returns a CLI command to interactively create an application CLI
@@ -50,7 +52,7 @@ func runConfigCmd(cmd *cobra.Command, args []string) error {
 			cmd.Println(conf.ChainID)
 		case flags.FlagKeyringBackend:
 			cmd.Println(conf.KeyringBackend)
-		case flags.FlagOutput:
+		case ostcli.OutputFlag:
 			cmd.Println(conf.Output)
 		case flags.FlagNode:
 			cmd.Println(conf.Node)
@@ -70,7 +72,7 @@ func runConfigCmd(cmd *cobra.Command, args []string) error {
 			conf.SetChainID(value)
 		case flags.FlagKeyringBackend:
 			conf.SetKeyringBackend(value)
-		case flags.FlagOutput:
+		case ostcli.OutputFlag:
 			conf.SetOutput(value)
 		case flags.FlagNode:
 			conf.SetNode(value)

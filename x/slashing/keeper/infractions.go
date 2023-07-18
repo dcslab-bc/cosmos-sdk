@@ -3,10 +3,9 @@ package keeper
 import (
 	"fmt"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/slashing/types"
 )
 
 // HandleValidatorSignature handles a validator signature, must be called once per validator per block.
@@ -20,11 +19,6 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 		panic(fmt.Sprintf("Validator consensus-address %s not found", consAddr))
 	}
 
-	// don't update missed blocks when validator's jailed
-	if k.sk.IsValidatorJailed(ctx, consAddr) {
-		return
-	}
-
 	// fetch signing info
 	signInfo, found := k.GetValidatorSigningInfo(ctx, consAddr)
 	if !found {
@@ -32,7 +26,7 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 	}
 
 	// this is a relative index, so it counts blocks the validator *should* have signed
-	// will use the 0-value default signing info if not present, except for start height
+	// will use the 0-value default signing info if not present, except for the beginning
 	index := signInfo.IndexOffset % k.SignedBlocksWindow(ctx)
 	signInfo.IndexOffset++
 
@@ -75,11 +69,12 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 		)
 	}
 
-	minHeight := signInfo.StartHeight + k.SignedBlocksWindow(ctx)
+	numVotes := signInfo.IndexOffset
+	minVotes := k.SignedBlocksWindow(ctx)
 	maxMissed := k.SignedBlocksWindow(ctx) - minSignedPerWindow
 
-	// if we are past the minimum height and the validator has missed too many blocks, punish them
-	if height > minHeight && signInfo.MissedBlocksCounter > maxMissed {
+	// if we have joined enough times to voter set and the validator has missed too many blocks, punish them
+	if numVotes >= minVotes && signInfo.MissedBlocksCounter > maxMissed {
 		validator := k.sk.ValidatorByConsAddr(ctx, consAddr)
 		if validator != nil && !validator.IsJailed() {
 			// Downtime confirmed: slash and jail the validator
@@ -90,7 +85,6 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 			// That's fine since this is just used to filter unbonding delegations & redelegations.
 			distributionHeight := height - sdk.ValidatorUpdateDelay - 1
 
-			coinsBurned := k.sk.SlashWithInfractionReason(ctx, consAddr, distributionHeight, power, k.SlashFractionDowntime(ctx), stakingtypes.Infraction_INFRACTION_DOWNTIME)
 			ctx.EventManager().EmitEvent(
 				sdk.NewEvent(
 					types.EventTypeSlash,
@@ -98,9 +92,9 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 					sdk.NewAttribute(types.AttributeKeyPower, fmt.Sprintf("%d", power)),
 					sdk.NewAttribute(types.AttributeKeyReason, types.AttributeValueMissingSignature),
 					sdk.NewAttribute(types.AttributeKeyJailed, consAddr.String()),
-					sdk.NewAttribute(types.AttributeKeyBurnedCoins, coinsBurned.String()),
 				),
 			)
+			k.sk.Slash(ctx, consAddr, distributionHeight, power, k.SlashFractionDowntime(ctx))
 			k.sk.Jail(ctx, consAddr)
 
 			signInfo.JailedUntil = ctx.BlockHeader().Time.Add(k.DowntimeJailDuration(ctx))
@@ -114,7 +108,7 @@ func (k Keeper) HandleValidatorSignature(ctx sdk.Context, addr cryptotypes.Addre
 				"slashing and jailing validator due to liveness fault",
 				"height", height,
 				"validator", consAddr.String(),
-				"min_height", minHeight,
+				"min_votes", minVotes,
 				"threshold", minSignedPerWindow,
 				"slashed", k.SlashFractionDowntime(ctx).String(),
 				"jailed_until", signInfo.JailedUntil,

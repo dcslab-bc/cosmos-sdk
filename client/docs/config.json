@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Cosmos SDK - gRPC Gateway docs",
-    "description": "A REST interface for state queries",
+    "title": "LBM SDK - gRPC Gateway docs",
+    "description": "A REST interface for state queries, legacy transactions",
     "version": "1.0.0"
   },
   "apis": [
@@ -23,7 +23,7 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/cosmos/base/tendermint/v1beta1/query.swagger.json",
+      "url": "./tmp-swagger-gen/lbm/base/ostracon/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "Params": "BaseParams"
@@ -51,21 +51,6 @@
       "operationIds": {
         "rename": {
           "Params": "GovParams"
-        }
-      }
-    },
-    {
-      "url": "./tmp-swagger-gen/cosmos/gov/v1/query.swagger.json",
-      "operationIds": {
-        "rename": {
-          "Params": "GovV1Params",
-          "Proposal": "GovV1Proposal",
-          "Proposals": "GovV1Proposal",
-          "Vote": "GovV1Vote",
-          "Votes": "GovV1Votes",
-          "Deposit": "GovV1Deposit",
-          "Deposits": "GovV1Deposit",
-          "TallyResult": "GovV1TallyResult"
         }
       }
     },
@@ -125,6 +110,51 @@
       }
     },
     {
+      "url": "./tmp-swagger-gen/lbm/foundation/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "FoundationParams",
+          "Proposal": "FoundationProposal",
+          "Proposals": "FoundationProposals",
+          "Vote": "FoundationVote",
+          "Votes": "FoundationVotes",
+          "TallyResult": "FoundationTallyResult",
+          "Grants": "FoundationGrants"
+        }
+      }
+    },
+    {
+      "url": "./tmp-swagger-gen/lbm/token/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "TokenParams",
+          "Balance": "TokenBalance",
+          "AllBalances": "TokenAllBalances",
+          "GranteeGrants": "TokenGranteeGrants",
+          "Approved": "TokenApproved",
+          "Approvers": "TokenApprovers",
+          "Supply": "TokenSupply",
+          "Minted": "TokenMinted",
+          "Burnt": "TokenBurnt",
+          "Contract": "TokenContract"
+        }
+      }
+    },
+    {
+      "url": "./tmp-swagger-gen/lbm/collection/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "CollectionParams",
+          "Balance": "CollectionBalance",
+          "AllBalances": "CollectionAllBalances",
+          "GranteeGrants": "CollectionGranteeGrants",
+          "Approved": "CollectionApproved",
+          "Approvers": "CollectionApprovers",
+          "Contract": "CollectionContract"
+        }
+      }
+    },
+    {
       "url": "./tmp-swagger-gen/cosmos/feegrant/v1beta1/query.swagger.json",
       "operationIds": {
         "rename": {
@@ -133,21 +163,16 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/cosmos/nft/v1beta1/query.swagger.json",
-      "operationIds": {
-        "rename": {
-          "Params": "NftParams",
-          "Balance": "NftBalance"
-        }
-      }
+      "url": "./tmp-swagger-gen/cosmos/base/node/v1beta1/query.swagger.json"
     },
     {
-      "url": "./tmp-swagger-gen/cosmos/group/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/lbm/tx/v1beta1/service.swagger.json",
+      "dereference": {
+        "circular": "ignore"
+      },
       "operationIds": {
         "rename": {
-          "Params": "GroupParams",
-          "Proposal": "GroupProposal",
-          "TallyResult": "GroupTallyResult"
+          "GetBlockWithTxs": "GetBlockWithTxs2"
         }
       }
     }

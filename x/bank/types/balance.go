@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/exported"
+	"github.com/Finschia/finschia-sdk/codec"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/bank/exported"
 )
 
 var _ exported.GenesisBalance = (*Balance)(nil)
@@ -64,7 +64,7 @@ func SanitizeGenesisBalances(balances []Balance) []Balance {
 	// 1. Retrieve the address equivalents for each Balance's address.
 	addresses := make([]sdk.AccAddress, len(balances))
 	for i := range balances {
-		addr, _ := sdk.AccAddressFromBech32(balances[i].Address)
+		addr := sdk.MustAccAddressFromBech32(balances[i].Address)
 		addresses[i] = addr
 	}
 

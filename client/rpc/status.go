@@ -5,17 +5,17 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cometbft/cometbft/p2p"
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/Finschia/ostracon/libs/bytes"
+	"github.com/Finschia/ostracon/p2p"
+	ctypes "github.com/Finschia/ostracon/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	cryptocodec "github.com/Finschia/finschia-sdk/crypto/codec"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
 )
 
-// ValidatorInfo is info about the node's validator, same as Tendermint,
+// ValidatorInfo is info about the node's validator, same as Ostracon,
 // except that we use our own PubKey.
 type validatorInfo struct {
 	Address     bytes.HexBytes
@@ -23,11 +23,11 @@ type validatorInfo struct {
 	VotingPower int64
 }
 
-// ResultStatus is node's info, same as Tendermint, except that we use our own
+// ResultStatus is node's info, same as Ostracon, except that we use our own
 // PubKey.
 type resultStatus struct {
 	NodeInfo      p2p.DefaultNodeInfo
-	SyncInfo      coretypes.SyncInfo
+	SyncInfo      ctypes.SyncInfo
 	ValidatorInfo validatorInfo
 }
 
@@ -47,13 +47,10 @@ func StatusCommand() *cobra.Command {
 				return err
 			}
 
-			var pk cryptotypes.PubKey
-			// `status` has TM pubkeys, we need to convert them to our pubkeys.
-			if status.ValidatorInfo.PubKey != nil {
-				pk, err = cryptocodec.FromTmPubKeyInterface(status.ValidatorInfo.PubKey)
-				if err != nil {
-					return err
-				}
+			// `status` has OC pubkeys, we need to convert them to our pubkeys.
+			pk, err := cryptocodec.FromOcPubKeyInterface(status.ValidatorInfo.PubKey)
+			if err != nil {
+				return err
 			}
 			statusWithPk := resultStatus{
 				NodeInfo: status.NodeInfo,
@@ -80,10 +77,10 @@ func StatusCommand() *cobra.Command {
 	return cmd
 }
 
-func getNodeStatus(clientCtx client.Context) (*coretypes.ResultStatus, error) {
+func getNodeStatus(clientCtx client.Context) (*ctypes.ResultStatus, error) {
 	node, err := clientCtx.GetNode()
 	if err != nil {
-		return &coretypes.ResultStatus{}, err
+		return &ctypes.ResultStatus{}, err
 	}
 
 	return node.Status(context.Background())

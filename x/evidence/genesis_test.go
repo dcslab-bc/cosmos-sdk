@@ -3,20 +3,18 @@ package evidence_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/stretchr/testify/require"
+	"github.com/Finschia/ostracon/types/time"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	"github.com/cosmos/cosmos-sdk/x/evidence/testutil"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/Finschia/finschia-sdk/crypto/keys/ed25519"
+	"github.com/Finschia/finschia-sdk/simapp"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
+	"github.com/Finschia/finschia-sdk/x/evidence/keeper"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 type GenesisTestSuite struct {
@@ -27,13 +25,11 @@ type GenesisTestSuite struct {
 }
 
 func (suite *GenesisTestSuite) SetupTest() {
-	var evidenceKeeper keeper.Keeper
+	checkTx := false
+	app := simapp.Setup(checkTx)
 
-	app, err := simtestutil.Setup(testutil.AppConfig, &evidenceKeeper)
-	require.NoError(suite.T(), err)
-
-	suite.ctx = app.BaseApp.NewContext(false, tmproto.Header{Height: 1})
-	suite.keeper = evidenceKeeper
+	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{Height: 1})
+	suite.keeper = app.EvidenceKeeper
 }
 
 func (suite *GenesisTestSuite) TestInitGenesis() {

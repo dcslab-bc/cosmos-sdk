@@ -1,3 +1,6 @@
+//go:build norace
+// +build norace
+
 package grpc_test
 
 import (
@@ -6,57 +9,57 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jhump/protoreflect/grpcreflect"
+
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/jhump/protoreflect/grpcreflect"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	rpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	reflectionv1 "github.com/cosmos/cosmos-sdk/client/grpc/reflection"
-	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
-	reflectionv2 "github.com/cosmos/cosmos-sdk/server/grpc/reflection/v2alpha1"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/Finschia/finschia-sdk/client"
+	reflectionv1 "github.com/Finschia/finschia-sdk/client/grpc/reflection"
+	clienttx "github.com/Finschia/finschia-sdk/client/tx"
+	reflectionv2 "github.com/Finschia/finschia-sdk/server/grpc/reflection/v2"
+	"github.com/Finschia/finschia-sdk/simapp"
+	"github.com/Finschia/finschia-sdk/testutil/network"
+	"github.com/Finschia/finschia-sdk/testutil/testdata"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	grpctypes "github.com/Finschia/finschia-sdk/types/grpc"
+	"github.com/Finschia/finschia-sdk/types/tx"
+	txtypes "github.com/Finschia/finschia-sdk/types/tx"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
+	authclient "github.com/Finschia/finschia-sdk/x/auth/client"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	stakingtypes "github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 type IntegrationTestSuite struct {
 	suite.Suite
 
+	app     *simapp.SimApp
 	cfg     network.Config
 	network *network.Network
 	conn    *grpc.ClientConn
 }
 
 func (s *IntegrationTestSuite) SetupSuite() {
-	var err error
 	s.T().Log("setting up integration test suite")
-
-	s.cfg, err = network.DefaultConfigWithAppConfig(network.MinimumAppConfig())
-	s.NoError(err)
+	s.app = simapp.Setup(false)
+	s.cfg = network.DefaultConfig()
 	s.cfg.NumValidators = 1
+	s.network = network.New(s.T(), s.cfg)
+	s.Require().NotNil(s.network)
 
-	s.network, err = network.New(s.T(), s.T().TempDir(), s.cfg)
-	s.Require().NoError(err)
-
-	_, err = s.network.WaitForHeight(2)
+	_, err := s.network.WaitForHeight(2)
 	s.Require().NoError(err)
 
 	val0 := s.network.Validators[0]
 	s.conn, err = grpc.Dial(
 		val0.AppConfig.GRPC.Address,
 		grpc.WithInsecure(), // Or else we get "no transport security set"
-		grpc.WithDefaultCallOptions(grpc.ForceCodec(codec.NewProtoCodec(s.cfg.InterfaceRegistry).GRPCCodec())),
 	)
 	s.Require().NoError(err)
 }
@@ -158,7 +161,7 @@ func (s *IntegrationTestSuite) TestGRPCServer_GetTxsEvent() {
 	txServiceClient := txtypes.NewServiceClient(s.conn)
 	_, err := txServiceClient.GetTxsEvent(
 		context.Background(),
-		&txtypes.GetTxsEventRequest{
+		&tx.GetTxsEventRequest{
 			Events: []string{"message.action='send'"},
 		},
 	)
@@ -219,7 +222,7 @@ func (s *IntegrationTestSuite) TestGRPCServerInvalidHeaderHeights() {
 // TestGRPCUnpacker - tests the grpc endpoint for Validator and using the interface registry unpack and extract the
 // ConsAddr. (ref: https://github.com/cosmos/cosmos-sdk/issues/8045)
 func (s *IntegrationTestSuite) TestGRPCUnpacker() {
-	ir := s.cfg.InterfaceRegistry
+	ir := s.app.InterfaceRegistry()
 	queryClient := stakingtypes.NewQueryClient(s.conn)
 	validator, err := queryClient.Validator(context.Background(),
 		&stakingtypes.QueryValidatorRequest{ValidatorAddr: s.network.Validators[0].ValAddress.String()})
@@ -228,13 +231,13 @@ func (s *IntegrationTestSuite) TestGRPCUnpacker() {
 	// no unpacked interfaces yet, so ConsAddr will be nil
 	nilAddr, err := validator.Validator.GetConsAddr()
 	require.Error(s.T(), err)
-	require.Nil(s.T(), nilAddr)
+	require.True(s.T(), nilAddr.Empty())
 
 	// unpack the interfaces and now ConsAddr is not nil
 	err = validator.Validator.UnpackInterfaces(ir)
 	require.NoError(s.T(), err)
 	addr, err := validator.Validator.GetConsAddr()
-	require.NotNil(s.T(), addr)
+	require.False(s.T(), addr.Empty())
 	require.NoError(s.T(), err)
 }
 
@@ -270,6 +273,75 @@ func (s IntegrationTestSuite) mkTxBuilder() client.TxBuilder {
 	s.Require().NoError(err)
 
 	return txBuilder
+}
+
+func (s *IntegrationTestSuite) TestGRPCCheckStateHeader() {
+	val0 := s.network.Validators[0]
+	authClient := authtypes.NewQueryClient(s.conn)
+	initSeq := uint64(1)
+	AfterCheckStateSeq := uint64(2)
+
+	header := make(metadata.MD)
+	res, err := authClient.Account(
+		context.Background(),
+		&authtypes.QueryAccountRequest{Address: val0.Address.String()},
+		grpc.Header(&header), // Also fetch grpc header
+	)
+	s.Require().NoError(err)
+	var accRes authtypes.AccountI
+	err = s.app.InterfaceRegistry().UnpackAny(res.Account, &accRes)
+	s.Require().NoError(err)
+	s.Require().Equal(
+		initSeq,
+		accRes.GetSequence(),
+	)
+	blockHeight := header.Get(grpctypes.GRPCBlockHeightHeader)
+	s.Require().NotEmpty(blockHeight[0]) // Should contain the block height
+
+	// Broadcast tx to verify gRPC CheckStateHeader
+	txBuilder := s.mkTxBuilder()
+	txBytes, err := val0.ClientCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
+	s.Require().NoError(err)
+	queryClient := txtypes.NewServiceClient(s.conn)
+
+	grpcRes, _ := queryClient.BroadcastTx(
+		context.Background(),
+		&txtypes.BroadcastTxRequest{
+			Mode:    txtypes.BroadcastMode_BROADCAST_MODE_SYNC,
+			TxBytes: txBytes,
+		},
+	)
+	s.Require().Equal(uint32(0), grpcRes.TxResponse.Code)
+
+	// In order for the block to be mined, even a single node requires at least 1~2 seconds, so the sequence number is not yet increased if we query immediately.
+	// So we can validate our CheckState querying logic without `WaitForHeight`
+	ctxWithCheckState := metadata.AppendToOutgoingContext(context.Background(), grpctypes.GRPCCheckStateHeader, "on")
+	res, err = authClient.Account(
+		ctxWithCheckState,
+		&authtypes.QueryAccountRequest{Address: val0.Address.String()},
+	)
+	s.Require().NoError(err)
+	err = s.app.InterfaceRegistry().UnpackAny(res.Account, &accRes)
+	s.Require().NoError(err)
+	s.Require().Equal(
+		AfterCheckStateSeq,
+		accRes.GetSequence(),
+	)
+
+	res, _ = authClient.Account(
+		context.Background(),
+		&authtypes.QueryAccountRequest{Address: val0.Address.String()},
+	)
+	_ = s.app.InterfaceRegistry().UnpackAny(res.Account, &accRes)
+	s.Require().Equal(initSeq, accRes.GetSequence())
+
+	// Wrong header value case. It is deliberately run last to avoid interfering with earlier sequence tests.
+	ctxWithCheckState = metadata.AppendToOutgoingContext(context.Background(), grpctypes.GRPCCheckStateHeader, "wrong")
+	_, err = authClient.Account(
+		ctxWithCheckState,
+		&authtypes.QueryAccountRequest{Address: val0.Address.String()},
+	)
+	s.Require().ErrorContains(err, "invalid checkState header \"x-lbm-checkstate\"")
 }
 
 func TestIntegrationTestSuite(t *testing.T) {

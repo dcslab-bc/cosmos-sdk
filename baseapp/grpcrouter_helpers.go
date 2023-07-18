@@ -4,12 +4,12 @@ import (
 	gocontext "context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	gogogrpc "github.com/cosmos/gogoproto/grpc"
+	gogogrpc "github.com/gogo/protobuf/grpc"
+	abci "github.com/tendermint/tendermint/abci/types"
 	"google.golang.org/grpc"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 // QueryServiceTestHelper provides a helper for making grpc query service
@@ -40,7 +40,7 @@ func (q *QueryServiceTestHelper) Invoke(_ gocontext.Context, method string, args
 	if querier == nil {
 		return fmt.Errorf("handler not found for %s", method)
 	}
-	reqBz, err := q.cdc.Marshal(args)
+	reqBz, err := protoCodec.Marshal(args)
 	if err != nil {
 		return err
 	}
@@ -50,9 +50,13 @@ func (q *QueryServiceTestHelper) Invoke(_ gocontext.Context, method string, args
 		return err
 	}
 
-	err = q.cdc.Unmarshal(res.Value, reply)
+	err = protoCodec.Unmarshal(res.Value, reply)
 	if err != nil {
 		return err
+	}
+
+	if q.interfaceRegistry != nil {
+		return types.UnpackInterfaces(reply, q.interfaceRegistry)
 	}
 
 	return nil

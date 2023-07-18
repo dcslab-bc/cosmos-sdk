@@ -6,41 +6,40 @@ import (
 	"path/filepath"
 	"testing"
 
-	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/log"
-	tmlog "github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/require"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/baseapp"
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	store "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
-func useUpgradeLoader(height int64, upgrades *storetypes.StoreUpgrades) func(*baseapp.BaseApp) {
+func useUpgradeLoader(height int64, upgrades *store.StoreUpgrades) func(*baseapp.BaseApp) {
 	return func(app *baseapp.BaseApp) {
 		app.SetStoreLoader(UpgradeStoreLoader(height, upgrades))
 	}
 }
 
 func defaultLogger() log.Logger {
-	return tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
+	return log.NewOCLogger(log.NewSyncWriter(os.Stdout)).With("module", "sdk/app")
 }
 
 func initStore(t *testing.T, db dbm.DB, storeKey string, k, v []byte) {
 	rs := rootmulti.NewStore(db, log.NewNopLogger())
-	rs.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing))
+	rs.SetPruning(store.PruneNothing)
 	key := sdk.NewKVStoreKey(storeKey)
-	rs.MountStoreWithDB(key, storetypes.StoreTypeIAVL, nil)
+	rs.MountStoreWithDB(key, store.StoreTypeIAVL, nil)
 	err := rs.LoadLatestVersion()
 	require.Nil(t, err)
 	require.Equal(t, int64(0), rs.LastCommitID().Version)
 
 	// write some data in substore
-	kv, _ := rs.GetStore(key).(storetypes.KVStore)
+	kv, _ := rs.GetStore(key).(store.KVStore)
 	require.NotNil(t, kv)
 	kv.Set(k, v)
 	commitID := rs.Commit()
@@ -49,15 +48,15 @@ func initStore(t *testing.T, db dbm.DB, storeKey string, k, v []byte) {
 
 func checkStore(t *testing.T, db dbm.DB, ver int64, storeKey string, k, v []byte) {
 	rs := rootmulti.NewStore(db, log.NewNopLogger())
-	rs.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing))
+	rs.SetPruning(store.PruneNothing)
 	key := sdk.NewKVStoreKey(storeKey)
-	rs.MountStoreWithDB(key, storetypes.StoreTypeIAVL, nil)
+	rs.MountStoreWithDB(key, store.StoreTypeIAVL, nil)
 	err := rs.LoadLatestVersion()
 	require.Nil(t, err)
 	require.Equal(t, ver, rs.LastCommitID().Version)
 
 	// query data in substore
-	kv, _ := rs.GetStore(key).(storetypes.KVStore)
+	kv, _ := rs.GetStore(key).(store.KVStore)
 
 	require.NotNil(t, kv)
 	require.Equal(t, v, kv.Get(k))
@@ -70,8 +69,8 @@ func TestSetLoader(t *testing.T) {
 
 	// set a temporary home dir
 	homeDir := t.TempDir()
-	upgradeInfoFilePath := filepath.Join(homeDir, UpgradeInfoFilename)
-	upgradeInfo := &Plan{
+	upgradeInfoFilePath := filepath.Join(homeDir, "upgrade-info.json")
+	upgradeInfo := &store.UpgradeInfo{
 		Name: "test", Height: upgradeHeight,
 	}
 
@@ -91,13 +90,12 @@ func TestSetLoader(t *testing.T) {
 		loadStoreKey string
 	}{
 		"don't set loader": {
-			setLoader:    nil,
 			origStoreKey: "foo",
 			loadStoreKey: "foo",
 		},
 		"rename with inline opts": {
-			setLoader: useUpgradeLoader(upgradeHeight, &storetypes.StoreUpgrades{
-				Renamed: []storetypes.StoreRename{{
+			setLoader: useUpgradeLoader(upgradeHeight, &store.StoreUpgrades{
+				Renamed: []store.StoreRename{{
 					OldKey: "foo",
 					NewKey: "bar",
 				}},
@@ -119,7 +117,7 @@ func TestSetLoader(t *testing.T) {
 			initStore(t, db, tc.origStoreKey, k, v)
 
 			// load the app with the existing db
-			opts := []func(*baseapp.BaseApp){baseapp.SetPruning(pruningtypes.NewPruningOptions(pruningtypes.PruningNothing))}
+			opts := []func(*baseapp.BaseApp){baseapp.SetPruning(store.PruneNothing)}
 
 			origapp := baseapp.NewBaseApp(t.Name(), defaultLogger(), db, nil, opts...)
 			origapp.MountStores(sdk.NewKVStoreKey(tc.origStoreKey))
@@ -127,7 +125,7 @@ func TestSetLoader(t *testing.T) {
 			require.Nil(t, err)
 
 			for i := int64(2); i <= upgradeHeight-1; i++ {
-				origapp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: i}})
+				origapp.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: i}})
 				res := origapp.Commit()
 				require.NotNil(t, res.Data)
 			}
@@ -143,12 +141,13 @@ func TestSetLoader(t *testing.T) {
 			require.Nil(t, err)
 
 			// "execute" one block
-			app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: upgradeHeight}})
+			app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: upgradeHeight}})
 			res := app.Commit()
 			require.NotNil(t, res.Data)
 
 			// check db is properly updated
 			checkStore(t, db, upgradeHeight, tc.loadStoreKey, k, v)
+			checkStore(t, db, upgradeHeight, tc.loadStoreKey, []byte("foo"), nil)
 		})
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/cli"
+	"github.com/Finschia/ostracon/libs/cli"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const flagLong = "long"

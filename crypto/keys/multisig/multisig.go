@@ -3,12 +3,12 @@ package multisig
 import (
 	fmt "fmt"
 
-	tmcrypto "github.com/cometbft/cometbft/crypto"
+	occrypto "github.com/Finschia/ostracon/crypto"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	multisigtypes "github.com/cosmos/cosmos-sdk/crypto/types/multisig"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	cryptotypes "github.com/Finschia/finschia-sdk/crypto/types"
+	multisigtypes "github.com/Finschia/finschia-sdk/crypto/types/multisig"
+	"github.com/Finschia/finschia-sdk/types/tx/signing"
 )
 
 var (
@@ -36,7 +36,7 @@ func NewLegacyAminoPubKey(threshold int, pubKeys []cryptotypes.PubKey) *LegacyAm
 
 // Address implements cryptotypes.PubKey Address method
 func (m *LegacyAminoPubKey) Address() cryptotypes.Address {
-	return tmcrypto.AddressHash(m.Bytes())
+	return occrypto.AddressHash(m.Bytes())
 }
 
 // Bytes returns the proto encoded version of the LegacyAminoPubKey

@@ -2,26 +2,25 @@ package network
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/cometbft/cometbft/node"
-	"github.com/cometbft/cometbft/p2p"
-	pvm "github.com/cometbft/cometbft/privval"
-	"github.com/cometbft/cometbft/proxy"
-	"github.com/cometbft/cometbft/rpc/client/local"
-	"github.com/cometbft/cometbft/types"
-	tmtime "github.com/cometbft/cometbft/types/time"
+	ostos "github.com/Finschia/ostracon/libs/os"
+	"github.com/Finschia/ostracon/node"
+	"github.com/Finschia/ostracon/p2p"
+	pvm "github.com/Finschia/ostracon/privval"
+	"github.com/Finschia/ostracon/proxy"
+	"github.com/Finschia/ostracon/rpc/client/local"
+	"github.com/Finschia/ostracon/types"
+	osttime "github.com/Finschia/ostracon/types/time"
 
-	"github.com/cosmos/cosmos-sdk/server/api"
-	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
-	srvtypes "github.com/cosmos/cosmos-sdk/server/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/Finschia/finschia-sdk/server/api"
+	servergrpc "github.com/Finschia/finschia-sdk/server/grpc"
+	srvtypes "github.com/Finschia/finschia-sdk/server/types"
+	authtypes "github.com/Finschia/finschia-sdk/x/auth/types"
+	banktypes "github.com/Finschia/finschia-sdk/x/bank/types"
+	"github.com/Finschia/finschia-sdk/x/genutil"
+	genutiltypes "github.com/Finschia/finschia-sdk/x/genutil/types"
 )
 
 func startInProcess(cfg Config, val *Validator) error {
@@ -39,11 +38,12 @@ func startInProcess(cfg Config, val *Validator) error {
 	}
 
 	app := cfg.AppConstructor(*val)
-	genDocProvider := node.DefaultGenesisDocProviderFunc(tmCfg)
 
-	tmNode, err := node.NewNode( //resleak:notresource
+	genDocProvider := node.DefaultGenesisDocProviderFunc(tmCfg)
+	pv := pvm.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile())
+	tmNode, err := node.NewNode(
 		tmCfg,
-		pvm.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile()),
+		pv,
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genDocProvider,
@@ -58,6 +58,7 @@ func startInProcess(cfg Config, val *Validator) error {
 	if err := tmNode.Start(); err != nil {
 		return err
 	}
+
 	val.tmNode = tmNode
 
 	if val.RPCAddress != "" {
@@ -71,7 +72,10 @@ func startInProcess(cfg Config, val *Validator) error {
 
 		app.RegisterTxService(val.ClientCtx)
 		app.RegisterTendermintService(val.ClientCtx)
-		app.RegisterNodeService(val.ClientCtx)
+
+		if a, ok := app.(srvtypes.ApplicationQueryService); ok {
+			a.RegisterNodeService(val.ClientCtx)
+		}
 	}
 
 	if val.APIAddress != "" {
@@ -96,7 +100,7 @@ func startInProcess(cfg Config, val *Validator) error {
 	}
 
 	if val.AppConfig.GRPC.Enable {
-		grpcSrv, err := servergrpc.StartGRPCServer(val.ClientCtx, app, val.AppConfig.GRPC)
+		grpcSrv, err := servergrpc.StartGRPCServer(val.ClientCtx, app, val.AppConfig.GRPC.Address)
 		if err != nil {
 			return err
 		}
@@ -110,11 +114,12 @@ func startInProcess(cfg Config, val *Validator) error {
 			}
 		}
 	}
+
 	return nil
 }
 
 func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
-	genTime := tmtime.Now()
+	genTime := osttime.Now()
 
 	for i := 0; i < cfg.NumValidators; i++ {
 		tmCfg := vals[i].Ctx.Config
@@ -134,7 +139,7 @@ func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
 		}
 
 		appState, err := genutil.GenAppStateFromConfig(cfg.Codec, cfg.TxConfig,
-			tmCfg, initCfg, *genDoc, banktypes.GenesisBalancesIterator{}, genutiltypes.DefaultMessageValidator)
+			tmCfg, initCfg, *genDoc, banktypes.GenesisBalancesIterator{})
 		if err != nil {
 			return err
 		}
@@ -190,13 +195,16 @@ func initGenFiles(cfg Config, genAccounts []authtypes.GenesisAccount, genBalance
 }
 
 func writeFile(name string, dir string, contents []byte) error {
-	file := filepath.Join(dir, name)
+	writePath := filepath.Join(dir) //nolint:gocritic
+	file := filepath.Join(writePath, name)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("could not create directory %q: %w", dir, err)
+	err := ostos.EnsureDir(writePath, 0755)
+	if err != nil {
+		return err
 	}
 
-	if err := os.WriteFile(file, contents, 0o644); err != nil { //nolint: gosec
+	err = ostos.WriteFile(file, contents, 0644)
+	if err != nil {
 		return err
 	}
 

@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	gogotypes "github.com/cosmos/gogoproto/types"
+	gogotypes "github.com/gogo/protobuf/types"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/staking/types"
 )
 
 // get a single validator
@@ -97,7 +96,7 @@ func (k Keeper) SetNewValidatorByPowerIndex(ctx sdk.Context, validator types.Val
 
 // Update the tokens of an existing validator, update the validators power index key
 func (k Keeper) AddValidatorTokensAndShares(ctx sdk.Context, validator types.Validator,
-	tokensToAdd math.Int,
+	tokensToAdd sdk.Int,
 ) (valOut types.Validator, addedShares sdk.Dec) {
 	k.DeleteValidatorByPowerIndex(ctx, validator)
 	validator, addedShares = validator.AddTokensFromDel(tokensToAdd)
@@ -110,7 +109,7 @@ func (k Keeper) AddValidatorTokensAndShares(ctx sdk.Context, validator types.Val
 // Update the tokens of an existing validator, update the validators power index key
 func (k Keeper) RemoveValidatorTokensAndShares(ctx sdk.Context, validator types.Validator,
 	sharesToRemove sdk.Dec,
-) (valOut types.Validator, removedTokens math.Int) {
+) (valOut types.Validator, removedTokens sdk.Int) {
 	k.DeleteValidatorByPowerIndex(ctx, validator)
 	validator, removedTokens = validator.RemoveDelShares(sharesToRemove)
 	k.SetValidator(ctx, validator)
@@ -121,7 +120,7 @@ func (k Keeper) RemoveValidatorTokensAndShares(ctx sdk.Context, validator types.
 
 // Update the tokens of an existing validator, update the validators power index key
 func (k Keeper) RemoveValidatorTokens(ctx sdk.Context,
-	validator types.Validator, tokensToRemove math.Int,
+	validator types.Validator, tokensToRemove sdk.Int,
 ) types.Validator {
 	k.DeleteValidatorByPowerIndex(ctx, validator)
 	validator = validator.RemoveTokens(tokensToRemove)
@@ -141,10 +140,6 @@ func (k Keeper) UpdateValidatorCommission(ctx sdk.Context,
 
 	if err := commission.ValidateNewRate(newRate, blockTime); err != nil {
 		return commission, err
-	}
-
-	if newRate.LT(k.MinCommissionRate(ctx)) {
-		return commission, fmt.Errorf("cannot set validator commission to less than minimum rate of %s", k.MinCommissionRate(ctx))
 	}
 
 	commission.Rate = newRate
@@ -182,9 +177,8 @@ func (k Keeper) RemoveValidator(ctx sdk.Context, address sdk.ValAddress) {
 	store.Delete(types.GetValidatorByConsAddrKey(valConsAddr))
 	store.Delete(types.GetValidatorsByPowerIndexKey(validator, k.PowerReduction(ctx)))
 
-	if err := k.Hooks().AfterValidatorRemoved(ctx, valConsAddr, validator.GetOperator()); err != nil {
-		k.Logger(ctx).Error("error in after validator removed hook", "error", err)
-	}
+	// call hooks
+	k.AfterValidatorRemoved(ctx, valConsAddr, validator.GetOperator())
 }
 
 // get groups of validators
@@ -381,21 +375,9 @@ func (k Keeper) DeleteValidatorQueue(ctx sdk.Context, val types.Validator) {
 	addrs := k.GetUnbondingValidators(ctx, val.UnbondingTime, val.UnbondingHeight)
 	newAddrs := []string{}
 
-	// since address string may change due to Bech32 prefix change, we parse the addresses into bytes
-	// format for normalization
-	deletingAddr, err := sdk.ValAddressFromBech32(val.OperatorAddress)
-	if err != nil {
-		panic(err)
-	}
-
 	for _, addr := range addrs {
-		storedAddr, err := sdk.ValAddressFromBech32(addr)
-		if err != nil {
-			// even if we don't panic here, it will panic in UnbondAllMatureValidators at unbond time
-			panic(err)
-		}
-		if !storedAddr.Equals(deletingAddr) {
-			newAddrs = append(newAddrs, storedAddr.String())
+		if addr != val.OperatorAddress {
+			newAddrs = append(newAddrs, addr)
 		}
 	}
 
@@ -416,6 +398,8 @@ func (k Keeper) ValidatorQueueIterator(ctx sdk.Context, endTime time.Time, endHe
 // UnbondAllMatureValidators unbonds all the mature unbonding validators that
 // have finished their unbonding period.
 func (k Keeper) UnbondAllMatureValidators(ctx sdk.Context) {
+	store := ctx.KVStore(k.storeKey)
+
 	blockTime := ctx.BlockTime()
 	blockHeight := ctx.BlockHeight()
 
@@ -455,33 +439,13 @@ func (k Keeper) UnbondAllMatureValidators(ctx sdk.Context) {
 					panic("unexpected validator in unbonding queue; status was not unbonding")
 				}
 
-				if val.UnbondingOnHoldRefCount == 0 {
-					for _, id := range val.UnbondingIds {
-						k.DeleteUnbondingIndex(ctx, id)
-					}
-
-					val = k.UnbondingToUnbonded(ctx, val)
-
-					if val.GetDelegatorShares().IsZero() {
-						k.RemoveValidator(ctx, val.GetOperator())
-					} else {
-						// remove unbonding ids
-						val.UnbondingIds = []uint64{}
-					}
-
-					// remove validator from queue
-					k.DeleteValidatorQueue(ctx, val)
+				val = k.UnbondingToUnbonded(ctx, val)
+				if val.GetDelegatorShares().IsZero() {
+					k.RemoveValidator(ctx, val.GetOperator())
 				}
 			}
+
+			store.Delete(key)
 		}
 	}
-}
-
-func (k Keeper) IsValidatorJailed(ctx sdk.Context, addr sdk.ConsAddress) bool {
-	v, ok := k.GetValidatorByConsAddr(ctx, addr)
-	if !ok {
-		return false
-	}
-
-	return v.Jailed
 }

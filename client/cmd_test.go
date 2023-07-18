@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	"github.com/Finschia/finschia-sdk/client"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/testutil"
 )
 
 func TestValidateCmd(t *testing.T) {
@@ -70,7 +70,6 @@ func TestSetCmdClientContextHandler(t *testing.T) {
 		}
 
 		c.Flags().String(flags.FlagChainID, "", "network chain ID")
-		c.Flags().String(flags.FlagHome, "", "home dir")
 
 		return c
 	}
@@ -90,14 +89,6 @@ func TestSetCmdClientContextHandler(t *testing.T) {
 			initClientCtx.WithChainID("new-chain-id"),
 			[]string{
 				fmt.Sprintf("--%s=new-chain-id", flags.FlagChainID),
-			},
-		},
-		{
-			"flags set with space",
-			initClientCtx.WithHomeDir("/tmp/dir"),
-			[]string{
-				fmt.Sprintf("--%s", flags.FlagHome),
-				"/tmp/dir",
 			},
 		},
 	}

@@ -3,12 +3,12 @@ package types
 import (
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
+	"github.com/gogo/protobuf/proto"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
+	"github.com/Finschia/finschia-sdk/codec/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	sdkerrors "github.com/Finschia/finschia-sdk/types/errors"
+	"github.com/Finschia/finschia-sdk/x/evidence/exported"
 )
 
 // Message types for the evidence module
@@ -45,8 +45,8 @@ func (m MsgSubmitEvidence) Type() string { return TypeMsgSubmitEvidence }
 
 // ValidateBasic performs basic (non-state-dependant) validation on a MsgSubmitEvidence.
 func (m MsgSubmitEvidence) ValidateBasic() error {
-	if _, err := sdk.AccAddressFromBech32(m.Submitter); err != nil {
-		return sdkerrors.ErrInvalidAddress.Wrapf("invalid submitter address: %s", err)
+	if m.Submitter == "" {
+		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, m.Submitter)
 	}
 
 	evi := m.GetEvidence()
@@ -68,8 +68,12 @@ func (m MsgSubmitEvidence) GetSignBytes() []byte {
 
 // GetSigners returns the single expected signer for a MsgSubmitEvidence.
 func (m MsgSubmitEvidence) GetSigners() []sdk.AccAddress {
-	submitter, _ := sdk.AccAddressFromBech32(m.Submitter)
-	return []sdk.AccAddress{submitter}
+	accAddr, err := sdk.AccAddressFromBech32(m.Submitter)
+	if err != nil {
+		return nil
+	}
+
+	return []sdk.AccAddress{accAddr}
 }
 
 func (m MsgSubmitEvidence) GetEvidence() exported.Evidence {

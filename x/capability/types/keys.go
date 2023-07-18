@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 	StoreKey = ModuleName
 
 	// MemStoreKey defines the in-memory store key
-	MemStoreKey = "memory:capability"
+	MemStoreKey = "mem_capability"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 	KeyIndex = []byte("index")
 
 	// KeyPrefixIndexCapability defines a key prefix that stores index to capability
-	// owners mappings.
+	// name mappings.
 	KeyPrefixIndexCapability = []byte("capability_index")
 
 	// KeyMemInitialized defines the key that stores the initialized flag in the memory store
@@ -39,7 +39,14 @@ func RevCapabilityKey(module, name string) []byte {
 // FwdCapabilityKey returns a forward lookup key for a given module and capability
 // reference.
 func FwdCapabilityKey(module string, cap *Capability) []byte {
-	return []byte(fmt.Sprintf("%s/fwd/%#016p", module, cap))
+	// encode the key to a fixed length to avoid breaking consensus state machine
+	// it's a hacky backport of https://github.com/cosmos/cosmos-sdk/pull/11737
+	// the length 10 is picked so it's backward compatible on common architectures.
+	key := fmt.Sprintf("%#010p", cap)
+	if len(key) > 10 {
+		key = key[len(key)-10:]
+	}
+	return []byte(fmt.Sprintf("%s/fwd/0x%s", module, key))
 }
 
 // IndexToKey returns bytes to be used as a key for a given capability index.

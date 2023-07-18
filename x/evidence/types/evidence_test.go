@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	"github.com/Finschia/finschia-sdk/x/evidence/types"
 )
 
 func TestEquivocation_Valid(t *testing.T) {
@@ -29,19 +29,8 @@ func TestEquivocation_Valid(t *testing.T) {
 	require.Equal(t, e.GetHeight(), e.Height)
 	require.Equal(t, e.Type(), types.TypeEquivocation)
 	require.Equal(t, e.Route(), types.RouteEquivocation)
-	require.Equal(t, e.Hash().String(), "1E10F9267BEA3A9A4AB5302C2C510CC1AFD7C54E232DA5B2E3360DFAFACF7A76")
-	require.Equal(t, e.String(), "consensus_address: cosmosvalcons1vehk7h6lta047h6lta047h6lta047h6l8m4r53\nheight: 100\npower: 1000000\ntime: \"2006-01-02T15:04:05Z\"\n")
-	require.NoError(t, e.ValidateBasic())
-
-	require.Equal(t, int64(0), e.GetTotalPower())
-	require.Equal(t, e.Power, e.GetValidatorPower())
-	require.Equal(t, e.Time, e.GetTime())
-	require.Equal(t, e.ConsensusAddress, e.GetConsensusAddress().String())
-	require.Equal(t, e.Height, e.GetHeight())
-	require.Equal(t, types.TypeEquivocation, e.Type())
-	require.Equal(t, types.RouteEquivocation, e.Route())
-	require.Equal(t, "1E10F9267BEA3A9A4AB5302C2C510CC1AFD7C54E232DA5B2E3360DFAFACF7A76", e.Hash().String())
-	require.Equal(t, "consensus_address: cosmosvalcons1vehk7h6lta047h6lta047h6lta047h6l8m4r53\nheight: 100\npower: 1000000\ntime: \"2006-01-02T15:04:05Z\"\n", e.String())
+	require.Equal(t, e.Hash().String(), "1EB689FD54073D3FCF1212FB87281324B9ED2B690C32454B403778451F5D817D")
+	require.Equal(t, e.String(), "height: 100\ntime: 2006-01-02T15:04:05Z\npower: 1000000\nconsensus_address: linkvalcons1vehk7h6lta047h6lta047h6lta047h6l94rfde\n")
 	require.NoError(t, e.ValidateBasic())
 }
 
@@ -72,8 +61,8 @@ func TestEquivocationValidateBasic(t *testing.T) {
 
 func TestEvidenceAddressConversion(t *testing.T) {
 	sdk.GetConfig().SetBech32PrefixForConsensusNode("testcnclcons", "testcnclconspub")
-	tmEvidence := abci.Misbehavior{
-		Type: abci.MisbehaviorType_DUPLICATE_VOTE,
+	tmEvidence := abci.Evidence{
+		Type: abci.EvidenceType_DUPLICATE_VOTE,
 		Validator: abci.Validator{
 			Address: []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 			Power:   100,

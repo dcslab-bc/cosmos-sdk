@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"os"
 
-	tmjson "github.com/cometbft/cometbft/libs/json"
-	tmtypes "github.com/cometbft/cometbft/types"
+	ostjson "github.com/Finschia/ostracon/libs/json"
+	octypes "github.com/Finschia/ostracon/types"
 	"github.com/spf13/cobra"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 const (
 	FlagHeight           = "height"
 	FlagForZeroHeight    = "for-zero-height"
 	FlagJailAllowedAddrs = "jail-allowed-addrs"
-	FlagModulesToExport  = "modules-to-export"
-	FlagOutputDocument   = "output-document"
 )
 
 // ExportCmd dumps app state to JSON.
@@ -39,7 +38,7 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 				return err
 			}
 
-			db, err := openDB(config.RootDir, GetAppDBBackend(serverCtx.Viper))
+			db, err := openDB(config.RootDir)
 			if err != nil {
 				return err
 			}
@@ -67,15 +66,13 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			height, _ := cmd.Flags().GetInt64(FlagHeight)
 			forZeroHeight, _ := cmd.Flags().GetBool(FlagForZeroHeight)
 			jailAllowedAddrs, _ := cmd.Flags().GetStringSlice(FlagJailAllowedAddrs)
-			modulesToExport, _ := cmd.Flags().GetStringSlice(FlagModulesToExport)
-			outputDocument, _ := cmd.Flags().GetString(FlagOutputDocument)
 
-			exported, err := appExporter(serverCtx.Logger, db, traceWriter, height, forZeroHeight, jailAllowedAddrs, serverCtx.Viper, modulesToExport)
+			exported, err := appExporter(serverCtx.Logger, db, traceWriter, height, forZeroHeight, jailAllowedAddrs, serverCtx.Viper)
 			if err != nil {
 				return fmt.Errorf("error exporting state: %v", err)
 			}
 
-			doc, err := tmtypes.GenesisDocFromFile(serverCtx.Config.GenesisFile())
+			doc, err := octypes.GenesisDocFromFile(serverCtx.Config.GenesisFile())
 			if err != nil {
 				return err
 			}
@@ -83,17 +80,18 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			doc.AppState = exported.AppState
 			doc.Validators = exported.Validators
 			doc.InitialHeight = exported.Height
-			doc.ConsensusParams = &tmtypes.ConsensusParams{
-				Block: tmtypes.BlockParams{
-					MaxBytes: exported.ConsensusParams.Block.MaxBytes,
-					MaxGas:   exported.ConsensusParams.Block.MaxGas,
+			doc.ConsensusParams = &tmproto.ConsensusParams{
+				Block: tmproto.BlockParams{
+					MaxBytes:   exported.ConsensusParams.Block.MaxBytes,
+					MaxGas:     exported.ConsensusParams.Block.MaxGas,
+					TimeIotaMs: doc.ConsensusParams.Block.TimeIotaMs,
 				},
-				Evidence: tmtypes.EvidenceParams{
+				Evidence: tmproto.EvidenceParams{
 					MaxAgeNumBlocks: exported.ConsensusParams.Evidence.MaxAgeNumBlocks,
 					MaxAgeDuration:  exported.ConsensusParams.Evidence.MaxAgeDuration,
 					MaxBytes:        exported.ConsensusParams.Evidence.MaxBytes,
 				},
-				Validator: tmtypes.ValidatorParams{
+				Validator: tmproto.ValidatorParams{
 					PubKeyTypes: exported.ConsensusParams.Validator.PubKeyTypes,
 				},
 			}
@@ -101,28 +99,12 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			// NOTE: Tendermint uses a custom JSON decoder for GenesisDoc
 			// (except for stuff inside AppState). Inside AppState, we're free
 			// to encode as protobuf or amino.
-			encoded, err := tmjson.Marshal(doc)
+			encoded, err := ostjson.Marshal(doc)
 			if err != nil {
 				return err
 			}
 
-			cmd.SetOut(cmd.OutOrStdout())
-			cmd.SetErr(cmd.OutOrStderr())
-			out := sdk.MustSortJSON(encoded)
-
-			if outputDocument == "" {
-				cmd.Println(string(out))
-				return nil
-			}
-
-			var exportedGenDoc tmtypes.GenesisDoc
-			if err = tmjson.Unmarshal(out, &exportedGenDoc); err != nil {
-				return err
-			}
-			if err = exportedGenDoc.SaveAs(outputDocument); err != nil {
-				return err
-			}
-
+			cmd.Println(string(sdk.MustSortJSON(encoded)))
 			return nil
 		},
 	}
@@ -131,8 +113,6 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 	cmd.Flags().Int64(FlagHeight, -1, "Export state from a particular height (-1 means latest height)")
 	cmd.Flags().Bool(FlagForZeroHeight, false, "Export state to start at height zero (perform preproccessing)")
 	cmd.Flags().StringSlice(FlagJailAllowedAddrs, []string{}, "Comma-separated list of operator addresses of jailed validators to unjail")
-	cmd.Flags().StringSlice(FlagModulesToExport, []string{}, "Comma-separated list of modules to export. If empty, will export all modules")
-	cmd.Flags().String(FlagOutputDocument, "", "Exported state is written to the given file instead of STDOUT")
 
 	return cmd
 }

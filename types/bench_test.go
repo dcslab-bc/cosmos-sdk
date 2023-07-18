@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/Finschia/finschia-sdk/types"
 )
 
 var coinStrs = []string{
@@ -14,11 +14,11 @@ var coinStrs = []string{
 }
 
 func BenchmarkParseCoin(b *testing.B) {
-	var blankCoin sdk.Coin
+	var blankCoin types.Coin
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		for _, coinStr := range coinStrs {
-			coin, err := sdk.ParseCoinNormalized(coinStr)
+			coin, err := types.ParseCoinNormalized(coinStr)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -44,7 +44,7 @@ func BenchmarkUintMarshal(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		for _, value := range values {
-			u := sdk.NewUint(value)
+			u := types.NewUint(value)
 			n, err := u.MarshalTo(scratch[:])
 			if err != nil {
 				b.Fatal(err)
@@ -69,7 +69,7 @@ func BenchmarkIntMarshal(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		for _, value := range values {
-			in := sdk.NewInt(value)
+			in := types.NewInt(value)
 			n, err := in.MarshalTo(scratch[:])
 			if err != nil {
 				b.Fatal(err)

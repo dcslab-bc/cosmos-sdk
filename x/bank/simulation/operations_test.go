@@ -4,63 +4,39 @@ import (
 	"math/rand"
 	"testing"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/suite"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/testutil/configurator"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	_ "github.com/cosmos/cosmos-sdk/x/auth"
-	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
-	_ "github.com/cosmos/cosmos-sdk/x/bank"
-	"github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	"github.com/cosmos/cosmos-sdk/x/bank/simulation"
-	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
-	_ "github.com/cosmos/cosmos-sdk/x/consensus"
-	_ "github.com/cosmos/cosmos-sdk/x/params"
-	_ "github.com/cosmos/cosmos-sdk/x/staking"
+	ocabci "github.com/Finschia/ostracon/abci/types"
+
+	"github.com/Finschia/finschia-sdk/simapp"
+	simappparams "github.com/Finschia/finschia-sdk/simapp/params"
+	sdk "github.com/Finschia/finschia-sdk/types"
+	simtypes "github.com/Finschia/finschia-sdk/types/simulation"
+	"github.com/Finschia/finschia-sdk/x/bank/simulation"
+	"github.com/Finschia/finschia-sdk/x/bank/types"
 )
 
 type SimTestSuite struct {
 	suite.Suite
 
-	ctx           sdk.Context
-	accountKeeper types.AccountKeeper
-	bankKeeper    keeper.Keeper
-	cdc           codec.Codec
-	app           *runtime.App
+	ctx sdk.Context
+	app *simapp.SimApp
 }
 
 func (suite *SimTestSuite) SetupTest() {
-	var (
-		appBuilder *runtime.AppBuilder
-		err        error
-	)
-	suite.app, err = simtestutil.Setup(configurator.NewAppConfig(
-		configurator.AuthModule(),
-		configurator.ParamsModule(),
-		configurator.BankModule(),
-		configurator.StakingModule(),
-		configurator.ConsensusModule(),
-		configurator.TxModule(),
-	), &suite.accountKeeper, &suite.bankKeeper, &suite.cdc, &appBuilder)
-
-	suite.NoError(err)
-
-	suite.ctx = suite.app.BaseApp.NewContext(false, tmproto.Header{})
+	checkTx := false
+	app := simapp.Setup(checkTx)
+	suite.app = app
+	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{})
 }
 
 // TestWeightedOperations tests the weights of the operations.
 func (suite *SimTestSuite) TestWeightedOperations() {
-	cdc := suite.cdc
+	cdc := suite.app.AppCodec()
 	appParams := make(simtypes.AppParams)
 
-	weightesOps := simulation.WeightedOperations(appParams, cdc, suite.accountKeeper, suite.bankKeeper)
+	weightesOps := simulation.WeightedOperations(appParams, cdc, suite.app.AccountKeeper, suite.app.BankKeeper)
 
 	// setup 3 accounts
 	s := rand.NewSource(1)
@@ -72,14 +48,12 @@ func (suite *SimTestSuite) TestWeightedOperations() {
 		opMsgRoute string
 		opMsgName  string
 	}{
-		{100, types.ModuleName, types.TypeMsgSend},
-		{10, types.ModuleName, types.TypeMsgMultiSend},
+		{simappparams.DefaultWeightMsgSend, types.ModuleName, types.TypeMsgSend},
+		{simappparams.DefaultWeightMsgMultiSend, types.ModuleName, types.TypeMsgMultiSend},
 	}
 
 	for i, w := range weightesOps {
-		operationMsg, _, err := w.Op()(r, suite.app.BaseApp, suite.ctx, accs, "")
-		suite.Require().NoError(err)
-
+		operationMsg, _, _ := w.Op()(r, suite.app.BaseApp, suite.ctx, accs, "")
 		// the following checks are very much dependent from the ordering of the output given
 		// by WeightedOperations. if the ordering in WeightedOperations changes some tests
 		// will fail
@@ -98,10 +72,10 @@ func (suite *SimTestSuite) TestSimulateMsgSend() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
-	op := simulation.SimulateMsgSend(suite.accountKeeper, suite.bankKeeper)
+	op := simulation.SimulateMsgSend(suite.app.AccountKeeper, suite.app.BankKeeper)
 	operationMsg, futureOperations, err := op(r, suite.app.BaseApp, suite.ctx, accounts, "")
 	suite.Require().NoError(err)
 
@@ -110,8 +84,8 @@ func (suite *SimTestSuite) TestSimulateMsgSend() {
 
 	suite.Require().True(operationMsg.OK)
 	suite.Require().Equal("65337742stake", msg.Amount.String())
-	suite.Require().Equal("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.FromAddress)
-	suite.Require().Equal("cosmos1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7u4x9a0", msg.ToAddress)
+	suite.Require().Equal("link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.FromAddress)
+	suite.Require().Equal("link1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7fmx8x8", msg.ToAddress)
 	suite.Require().Equal(types.TypeMsgSend, msg.Type())
 	suite.Require().Equal(types.ModuleName, msg.Route())
 	suite.Require().Len(futureOperations, 0)
@@ -126,10 +100,10 @@ func (suite *SimTestSuite) TestSimulateMsgMultiSend() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
-	op := simulation.SimulateMsgMultiSend(suite.accountKeeper, suite.bankKeeper)
+	op := simulation.SimulateMsgMultiSend(suite.app.AccountKeeper, suite.app.BankKeeper)
 	operationMsg, futureOperations, err := op(r, suite.app.BaseApp, suite.ctx, accounts, "")
 	require := suite.Require()
 	require.NoError(err)
@@ -138,17 +112,18 @@ func (suite *SimTestSuite) TestSimulateMsgMultiSend() {
 	types.ModuleCdc.UnmarshalJSON(operationMsg.Msg, &msg)
 
 	require.True(operationMsg.OK)
-	require.Len(msg.Inputs, 1)
-	require.Equal("cosmos1tnh2q55v8wyygtt9srz5safamzdengsnqeycj3", msg.Inputs[0].Address)
-	require.Equal("114949958stake", msg.Inputs[0].Coins.String())
+	require.Len(msg.Inputs, 3)
+	require.Equal("link1p8wcgrjr4pjju90xg6u9cgq55dxwq8j7fmx8x8", msg.Inputs[1].Address)
+	require.Equal("185121068stake", msg.Inputs[1].Coins.String())
 	require.Len(msg.Outputs, 2)
-	require.Equal("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r", msg.Outputs[1].Address)
-	require.Equal("107287087stake", msg.Outputs[1].Coins.String())
+	require.Equal("link1ghekyjucln7y67ntx7cf27m9dpuxxemnqk82wt", msg.Outputs[1].Address)
+	require.Equal("260469617stake", msg.Outputs[1].Coins.String())
 	require.Equal(types.TypeMsgMultiSend, msg.Type())
 	require.Equal(types.ModuleName, msg.Route())
 	require.Len(futureOperations, 0)
 }
 
+// Since the allowedReceivingModAcc value of the distribution module is set to true, change it to test in which the result is true.
 func (suite *SimTestSuite) TestSimulateModuleAccountMsgSend() {
 	const (
 		accCount       = 1
@@ -160,10 +135,10 @@ func (suite *SimTestSuite) TestSimulateModuleAccountMsgSend() {
 	accounts := suite.getTestingAccounts(r, accCount)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
-	op := simulation.SimulateMsgSendToModuleAccount(suite.accountKeeper, suite.bankKeeper, moduleAccCount)
+	op := simulation.SimulateMsgSendToModuleAccount(suite.app.AccountKeeper, suite.app.BankKeeper, moduleAccCount)
 
 	s = rand.NewSource(1)
 	r = rand.New(s)
@@ -181,6 +156,7 @@ func (suite *SimTestSuite) TestSimulateModuleAccountMsgSend() {
 	suite.Require().Len(futureOperations, 0)
 }
 
+// Since the allowedReceivingModAcc value of the distribution module is set to true, change it to test in which the result is true.
 func (suite *SimTestSuite) TestSimulateMsgMultiSendToModuleAccount() {
 	const (
 		accCount  = 2
@@ -192,10 +168,10 @@ func (suite *SimTestSuite) TestSimulateMsgMultiSendToModuleAccount() {
 	accounts := suite.getTestingAccounts(r, accCount)
 
 	// begin a new block
-	suite.app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	suite.app.BeginBlock(ocabci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	// execute operation
-	op := simulation.SimulateMsgMultiSendToModuleAccount(suite.accountKeeper, suite.bankKeeper, mAccCount)
+	op := simulation.SimulateMsgMultiSendToModuleAccount(suite.app.AccountKeeper, suite.app.BankKeeper, mAccCount)
 
 	operationMsg, futureOperations, err := op(r, suite.app.BaseApp, suite.ctx, accounts, "")
 	suite.Require().Error(err)
@@ -213,14 +189,14 @@ func (suite *SimTestSuite) TestSimulateMsgMultiSendToModuleAccount() {
 func (suite *SimTestSuite) getTestingAccounts(r *rand.Rand, n int) []simtypes.Account {
 	accounts := simtypes.RandomAccounts(r, n)
 
-	initAmt := sdk.TokensFromConsensusPower(200, sdk.DefaultPowerReduction)
+	initAmt := suite.app.StakingKeeper.TokensFromConsensusPower(suite.ctx, 200)
 	initCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, initAmt))
 
 	// add coins to the accounts
 	for _, account := range accounts {
-		acc := suite.accountKeeper.NewAccountWithAddress(suite.ctx, account.Address)
-		suite.accountKeeper.SetAccount(suite.ctx, acc)
-		suite.Require().NoError(testutil.FundAccount(suite.bankKeeper, suite.ctx, account.Address, initCoins))
+		acc := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, account.Address)
+		suite.app.AccountKeeper.SetAccount(suite.ctx, acc)
+		suite.Require().NoError(simapp.FundAccount(suite.app, suite.ctx, account.Address, initCoins))
 	}
 
 	return accounts

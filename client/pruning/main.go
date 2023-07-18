@@ -7,20 +7,24 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	dbm "github.com/tendermint/tm-db"
 
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
+	"github.com/Finschia/ostracon/libs/log"
+
+	"github.com/Finschia/finschia-sdk/client/flags"
+	"github.com/Finschia/finschia-sdk/server"
+	servertypes "github.com/Finschia/finschia-sdk/server/types"
+	"github.com/Finschia/finschia-sdk/store/rootmulti"
+	storetypes "github.com/Finschia/finschia-sdk/store/types"
+	sdk "github.com/Finschia/finschia-sdk/types"
 )
 
 const FlagAppDBBackend = "app-db-backend"
 
 // PruningCmd prunes the sdk root multi store history versions based on the pruning options
 // specified by command flags.
+//
+//nolint:golint
 func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prune",
@@ -38,7 +42,8 @@ func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 		'--home' and '--app-db-backend'.
 		valid app-db-backend type includes 'goleveldb', 'cleveldb', 'rocksdb', 'boltdb', and 'badgerdb'.
 		`,
-		Example: "prune --home './' --app-db-backend 'goleveldb' --pruning 'custom' --pruning-keep-recent 100",
+		Example: `prune --home './' --app-db-backend 'goleveldb' --pruning 'custom' --pruning-keep-recent 100 --
+		pruning-keep-every 10, --pruning-interval 10`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			vp := viper.New()
 
@@ -50,18 +55,17 @@ func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("get pruning options from command flags, strategy: %v, keep-recent: %v\n",
-				pruningOptions.Strategy,
+			fmt.Printf("get pruning options from command flags, keep-recent: %v\n",
 				pruningOptions.KeepRecent,
 			)
 
 			home := vp.GetString(flags.FlagHome)
-			db, err := openDB(home, server.GetAppDBBackend(vp))
+			db, err := openDB(home)
 			if err != nil {
 				return err
 			}
 
-			logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+			logger := log.NewOCLogger(log.NewSyncWriter(os.Stdout))
 			app := appCreator(logger, db, nil, vp)
 			cms := app.CommitMultiStore()
 
@@ -91,7 +95,7 @@ func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 				pruningHeights[len(pruningHeights)-1],
 			)
 
-			err = rootMultiStore.PruneStores(false, pruningHeights)
+			rootMultiStore.PruneStores(false, pruningHeights)
 			if err != nil {
 				return err
 			}
@@ -102,8 +106,11 @@ func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 
 	cmd.Flags().String(flags.FlagHome, "", "The database home directory")
 	cmd.Flags().String(FlagAppDBBackend, "", "The type of database for application and snapshots databases")
-	cmd.Flags().String(server.FlagPruning, pruningtypes.PruningOptionDefault, "Pruning strategy (default|nothing|everything|custom)")
+	cmd.Flags().String(server.FlagPruning, storetypes.PruningOptionDefault, "Pruning strategy (default|nothing|everything|custom)")
 	cmd.Flags().Uint64(server.FlagPruningKeepRecent, 0, "Number of recent heights to keep on disk (ignored if pruning is not 'custom')")
+	cmd.Flags().Uint64(server.FlagPruningKeepEvery, 0,
+		`Offset heights to keep on disk after 'keep-every' (ignored if pruning is not 'custom'),
+		this is not used by this command but kept for compatibility with the complete pruning options`)
 	cmd.Flags().Uint64(server.FlagPruningInterval, 10,
 		`Height interval at which pruned heights are removed from disk (ignored if pruning is not 'custom'), 
 		this is not used by this command but kept for compatibility with the complete pruning options`)
@@ -111,7 +118,7 @@ func PruningCmd(appCreator servertypes.AppCreator) *cobra.Command {
 	return cmd
 }
 
-func openDB(rootDir string, backendType dbm.BackendType) (dbm.DB, error) {
+func openDB(rootDir string) (dbm.DB, error) {
 	dataDir := filepath.Join(rootDir, "data")
-	return dbm.NewDB("application", backendType, dataDir)
+	return sdk.NewLevelDB("application", dataDir)
 }

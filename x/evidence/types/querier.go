@@ -1,7 +1,9 @@
 package types
 
 import (
-	query "github.com/cosmos/cosmos-sdk/types/query"
+	ostbytes "github.com/Finschia/ostracon/libs/bytes"
+
+	query "github.com/Finschia/finschia-sdk/types/query"
 )
 
 // Querier routes for the evidence module
@@ -11,8 +13,8 @@ const (
 )
 
 // NewQueryEvidenceRequest creates a new instance of QueryEvidenceRequest.
-func NewQueryEvidenceRequest(hash string) *QueryEvidenceRequest {
-	return &QueryEvidenceRequest{Hash: hash}
+func NewQueryEvidenceRequest(hash ostbytes.HexBytes) *QueryEvidenceRequest {
+	return &QueryEvidenceRequest{EvidenceHash: hash}
 }
 
 // NewQueryAllEvidenceRequest creates a new instance of QueryAllEvidenceRequest.
@@ -26,7 +28,6 @@ type QueryAllEvidenceParams struct {
 	Limit int `json:"limit" yaml:"limit"`
 }
 
-// NewQueryAllEvidenceParams creates a new instance to query all evidence params.
 func NewQueryAllEvidenceParams(page, limit int) QueryAllEvidenceParams {
 	return QueryAllEvidenceParams{Page: page, Limit: limit}
 }
