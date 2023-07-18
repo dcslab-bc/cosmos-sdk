@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	ostcfg "github.com/line/ostracon/config"
+	"github.com/line/ostracon/libs/cli"
+	"github.com/line/ostracon/libs/log"
 	"github.com/spf13/viper"
-	tmcfg "github.com/tendermint/tendermint/config"
-	"github.com/tendermint/tendermint/libs/cli"
-	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/server"
+	"github.com/line/lbm-sdk/testutil"
+	"github.com/line/lbm-sdk/types/module"
+	genutilcli "github.com/line/lbm-sdk/x/genutil/client/cli"
 )
 
 func ExecInitCmd(testMbm module.BasicManager, home string, cdc codec.Codec) error {
@@ -40,10 +40,10 @@ func ExecInitCmd(testMbm module.BasicManager, home string, cdc codec.Codec) erro
 	return cmd.ExecuteContext(ctx)
 }
 
-func CreateDefaultTendermintConfig(rootDir string) (*tmcfg.Config, error) {
-	conf := tmcfg.DefaultConfig()
+func CreateDefaultTendermintConfig(rootDir string) (*ostcfg.Config, error) {
+	conf := ostcfg.DefaultConfig()
 	conf.SetRoot(rootDir)
-	tmcfg.EnsureRoot(rootDir)
+	ostcfg.EnsureRoot(rootDir)
 
 	if err := conf.ValidateBasic(); err != nil {
 		return nil, fmt.Errorf("error in config file: %v", err)

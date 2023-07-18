@@ -2,18 +2,21 @@ package tmservice_test
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"testing"
 
+	"github.com/line/ostracon/libs/bytes"
+
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	qtypes "github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/line/lbm-sdk/client/grpc/tmservice"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	"github.com/line/lbm-sdk/testutil/network"
+	qtypes "github.com/line/lbm-sdk/types/query"
+	"github.com/line/lbm-sdk/types/rest"
+	"github.com/line/lbm-sdk/version"
 )
 
 type IntegrationTestSuite struct {
@@ -54,7 +57,7 @@ func (s IntegrationTestSuite) TestQueryNodeInfo() {
 	s.Require().NoError(err)
 	s.Require().Equal(res.ApplicationVersion.AppName, version.NewInfo().AppName)
 
-	restRes, err := rest.GetRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/node_info", val.APIAddress))
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/node_info", val.APIAddress))
 	s.Require().NoError(err)
 	var getInfoRes tmservice.GetNodeInfoResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &getInfoRes))
@@ -67,7 +70,7 @@ func (s IntegrationTestSuite) TestQuerySyncing() {
 	_, err := s.queryClient.GetSyncing(context.Background(), &tmservice.GetSyncingRequest{})
 	s.Require().NoError(err)
 
-	restRes, err := rest.GetRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/syncing", val.APIAddress))
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/syncing", val.APIAddress))
 	s.Require().NoError(err)
 	var syncingRes tmservice.GetSyncingResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &syncingRes))
@@ -75,13 +78,44 @@ func (s IntegrationTestSuite) TestQuerySyncing() {
 
 func (s IntegrationTestSuite) TestQueryLatestBlock() {
 	val := s.network.Validators[0]
-
 	_, err := s.queryClient.GetLatestBlock(context.Background(), &tmservice.GetLatestBlockRequest{})
 	s.Require().NoError(err)
 
-	restRes, err := rest.GetRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/blocks/latest", val.APIAddress))
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/blocks/latest", val.APIAddress))
 	s.Require().NoError(err)
 	var blockInfoRes tmservice.GetLatestBlockResponse
+	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &blockInfoRes))
+}
+
+func (s IntegrationTestSuite) TestQueryBlockByHash() {
+	val := s.network.Validators[0]
+	node, _ := val.ClientCtx.GetNode()
+	blk, _ := node.Block(context.Background(), nil)
+	blkhash := blk.BlockID.Hash
+
+	tcs := []struct {
+		hash  bytes.HexBytes
+		isErr bool
+		err   string
+	}{
+		{blkhash, false, ""},
+		{bytes.HexBytes("wrong hash"), true, "the length of block hash must be 32: invalid request"},
+		{bytes.HexBytes(""), true, "block hash cannot be empty"},
+	}
+
+	for _, tc := range tcs {
+		_, err := s.queryClient.GetBlockByHash(context.Background(), &tmservice.GetBlockByHashRequest{Hash: tc.hash})
+		if tc.isErr {
+			s.Require().Error(err)
+			s.Require().Contains(err.Error(), tc.err)
+		} else {
+			s.Require().NoError(err)
+		}
+	}
+
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/block/%s", val.APIAddress, base64.URLEncoding.EncodeToString(blkhash)))
+	s.Require().NoError(err)
+	var blockInfoRes tmservice.GetBlockByHashResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &blockInfoRes))
 }
 
@@ -90,10 +124,21 @@ func (s IntegrationTestSuite) TestQueryBlockByHeight() {
 	_, err := s.queryClient.GetBlockByHeight(context.Background(), &tmservice.GetBlockByHeightRequest{Height: 1})
 	s.Require().NoError(err)
 
-	restRes, err := rest.GetRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/blocks/%d", val.APIAddress, 1))
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/blocks/%d", val.APIAddress, 1))
 	s.Require().NoError(err)
 	var blockInfoRes tmservice.GetBlockByHeightResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &blockInfoRes))
+}
+
+func (s IntegrationTestSuite) TestQueryBlockResultsByHeight() {
+	val := s.network.Validators[0]
+	_, err := s.queryClient.GetBlockResultsByHeight(context.Background(), &tmservice.GetBlockResultsByHeightRequest{Height: 1})
+	s.Require().NoError(err)
+
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/blockresults/%d", val.APIAddress, 1))
+	s.Require().NoError(err)
+	var blockResultsRes tmservice.GetBlockResultsByHeightResponse
+	s.Require().NoError(val.ClientCtx.JSONCodec.UnmarshalJSON(restRes, &blockResultsRes))
 }
 
 func (s IntegrationTestSuite) TestQueryLatestValidatorSet() {
@@ -117,11 +162,11 @@ func (s IntegrationTestSuite) TestQueryLatestValidatorSet() {
 	s.Require().NoError(err)
 
 	// rest request without pagination
-	_, err = rest.GetRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/latest", val.APIAddress))
+	_, err = rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/latest", val.APIAddress))
 	s.Require().NoError(err)
 
 	// rest request with pagination
-	restRes, err := rest.GetRequest(fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/latest?pagination.offset=%d&pagination.limit=%d", val.APIAddress, 0, 1))
+	restRes, err := rest.GetRequest(fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/latest?pagination.offset=%d&pagination.limit=%d", val.APIAddress, 0, 1))
 	s.Require().NoError(err)
 	var validatorSetRes tmservice.GetLatestValidatorSetResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(restRes, &validatorSetRes))
@@ -170,9 +215,9 @@ func (s IntegrationTestSuite) TestLatestValidatorSet_GRPCGateway() {
 		expErr    bool
 		expErrMsg string
 	}{
-		{"no pagination", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/latest", vals[0].APIAddress), false, ""},
-		{"pagination invalid fields", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/latest?pagination.offset=-1&pagination.limit=-2", vals[0].APIAddress), true, "strconv.ParseUint"},
-		{"with pagination", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/latest?pagination.offset=0&pagination.limit=2", vals[0].APIAddress), false, ""},
+		{"no pagination", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/latest", vals[0].APIAddress), false, ""},
+		{"pagination invalid fields", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/latest?pagination.offset=-1&pagination.limit=-2", vals[0].APIAddress), true, "strconv.ParseUint"},
+		{"with pagination", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/latest?pagination.offset=0&pagination.limit=2", vals[0].APIAddress), false, ""},
 	}
 	for _, tc := range testCases {
 		tc := tc
@@ -231,10 +276,10 @@ func (s IntegrationTestSuite) TestValidatorSetByHeight_GRPCGateway() {
 		expErr    bool
 		expErrMsg string
 	}{
-		{"invalid height", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/%d", vals[0].APIAddress, -1), true, "height must be greater than 0"},
-		{"no pagination", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/%d", vals[0].APIAddress, 1), false, ""},
-		{"pagination invalid fields", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/%d?pagination.offset=-1&pagination.limit=-2", vals[0].APIAddress, 1), true, "strconv.ParseUint"},
-		{"with pagination", fmt.Sprintf("%s/cosmos/base/tendermint/v1beta1/validatorsets/%d?pagination.offset=0&pagination.limit=2", vals[0].APIAddress, 1), false, ""},
+		{"invalid height", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/%d", vals[0].APIAddress, -1), true, "height must be greater than 0"},
+		{"no pagination", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/%d", vals[0].APIAddress, 1), false, ""},
+		{"pagination invalid fields", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/%d?pagination.offset=-1&pagination.limit=-2", vals[0].APIAddress, 1), true, "strconv.ParseUint"},
+		{"with pagination", fmt.Sprintf("%s/lbm/base/ostracon/v1/validatorsets/%d?pagination.offset=0&pagination.limit=2", vals[0].APIAddress, 1), false, ""},
 	}
 	for _, tc := range testCases {
 		tc := tc

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+	ocprototypes "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmprototypes "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 func TestGetBlockRentionHeight(t *testing.T) {
@@ -99,6 +99,15 @@ func TestGetBlockRentionHeight(t *testing.T) {
 			commitHeight: 499000,
 			expected:     0,
 		},
+		"iavl disable fast node": {
+			bapp: NewBaseApp(
+				name, logger, db, nil,
+				SetIAVLDisableFastNode(true),
+			),
+			maxAgeBlocks: 0,
+			commitHeight: 499000,
+			expected:     0,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -107,7 +116,7 @@ func TestGetBlockRentionHeight(t *testing.T) {
 		tc.bapp.SetParamStore(&paramStore{db: dbm.NewMemDB()})
 		tc.bapp.InitChain(abci.RequestInitChain{
 			ConsensusParams: &abci.ConsensusParams{
-				Evidence: &tmprototypes.EvidenceParams{
+				Evidence: &ocprototypes.EvidenceParams{
 					MaxAgeNumBlocks: tc.maxAgeBlocks,
 				},
 			},
@@ -130,11 +139,12 @@ func TestBaseAppCreateQueryContext(t *testing.T) {
 	db := dbm.NewMemDB()
 	name := t.Name()
 	app := NewBaseApp(name, logger, db, nil)
+	app.init()
 
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
+	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 1}})
 	app.Commit()
 
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: 2}})
+	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 2}})
 	app.Commit()
 
 	testCases := []struct {
@@ -159,6 +169,42 @@ func TestBaseAppCreateQueryContext(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test and ensure that consensus params has been updated.
+// See:
+// - https://github.com/line/lbm-sdk/pull/673
+func TestBaseAppBeginBlockConsensusParams(t *testing.T) {
+	t.Parallel()
+
+	logger := defaultLogger()
+	db := dbm.NewMemDB()
+	name := t.Name()
+	app := NewBaseApp(name, logger, db, nil)
+	app.SetParamStore(&paramStore{db: dbm.NewMemDB()})
+	app.InitChain(abci.RequestInitChain{
+		ConsensusParams: &abci.ConsensusParams{
+			Block: &abci.BlockParams{
+				MaxGas: -1,
+			},
+		},
+	})
+	app.init()
+
+	// set block params
+	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 1}})
+	ctx := app.deliverState.ctx
+	maxGas := int64(123456789)
+	app.paramStore.Set(ctx, ParamStoreKeyBlockParams,
+		&abci.BlockParams{
+			MaxGas: maxGas,
+		})
+	app.Commit()
+
+	// confirm consensus params updated into the context
+	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: 2}})
+	newCtx := app.getContextForTx(app.checkState, []byte{})
+	require.Equal(t, maxGas, newCtx.ConsensusParams().Block.MaxGas)
 }
 
 type paramStore struct {

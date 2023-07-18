@@ -3,14 +3,18 @@ package cmd
 import (
 	"context"
 
+	ostcfg "github.com/line/ostracon/config"
+	ostcli "github.com/line/ostracon/libs/cli"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/server"
+)
+
+const (
+	envPrefix = "LBM"
 )
 
 // Execute executes the root command of an application. It handles creating a
@@ -30,8 +34,8 @@ func Execute(rootCmd *cobra.Command, defaultHome string) error {
 	ctx = context.WithValue(ctx, server.ServerContextKey, srvCtx)
 
 	rootCmd.PersistentFlags().String(flags.FlagLogLevel, zerolog.InfoLevel.String(), "The logging level (trace|debug|info|warn|error|fatal|panic)")
-	rootCmd.PersistentFlags().String(flags.FlagLogFormat, tmcfg.LogFormatPlain, "The logging format (json|plain)")
+	rootCmd.PersistentFlags().String(flags.FlagLogFormat, ostcfg.LogFormatPlain, "The logging format (json|plain)")
 
-	executor := tmcli.PrepareBaseCmd(rootCmd, "", defaultHome)
+	executor := ostcli.PrepareBaseCmd(rootCmd, envPrefix, defaultHome)
 	return executor.ExecuteContext(ctx)
 }

@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/line/ostracon/libs/cli"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	"github.com/cosmos/cosmos-sdk/crypto/ledger"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerr "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	"github.com/line/lbm-sdk/crypto/keys/multisig"
+	"github.com/line/lbm-sdk/crypto/ledger"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerr "github.com/line/lbm-sdk/types/errors"
 )
 
 const (
@@ -63,6 +63,12 @@ func runShowCmd(cmd *cobra.Command, args []string) (err error) {
 		info, err = fetchKey(clientCtx.Keyring, args[0])
 		if err != nil {
 			return fmt.Errorf("%s is not a valid name or address: %v", args[0], err)
+		}
+		if info.GetType() == keyring.TypeMulti {
+			info, err = keyring.NewMultiInfo(info.GetName(), info.GetPubKey())
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		pks := make([]cryptotypes.PubKey, len(args))

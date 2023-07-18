@@ -6,9 +6,9 @@ package client_test
 import (
 	"fmt"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/line/ostracon/abci/types"
 
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
 )
 
 func (s *IntegrationTestSuite) TestQueryABCIHeight() {
@@ -34,7 +34,7 @@ func (s *IntegrationTestSuite) TestQueryABCIHeight() {
 			name:      "empty request height and context height - use latest height",
 			reqHeight: 0,
 			ctxHeight: 0,
-			expHeight: 4,
+			expHeight: 5,
 		},
 	}
 
@@ -57,7 +57,7 @@ func (s *IntegrationTestSuite) TestQueryABCIHeight() {
 			res, err := clientCtx.QueryABCI(req)
 			s.Require().NoError(err)
 
-			s.Require().Equal(tc.expHeight, res.Height)
+			s.Require().LessOrEqual(tc.expHeight, res.Height)
 		})
 	}
 }

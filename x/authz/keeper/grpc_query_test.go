@@ -7,10 +7,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/query"
+	"github.com/line/lbm-sdk/x/authz"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
 )
 
 func (suite *TestSuite) TestGRPCQueryAuthorization() {

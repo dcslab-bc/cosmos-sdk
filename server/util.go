@@ -14,21 +14,21 @@ import (
 	"syscall"
 	"time"
 
+	ostcmd "github.com/line/ostracon/cmd/ostracon/commands"
+	ostcfg "github.com/line/ostracon/config"
+	ostlog "github.com/line/ostracon/libs/log"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	tmcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmlog "github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/server/config"
+	"github.com/line/lbm-sdk/server/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/version"
 )
 
 // DONTCOVER
@@ -40,8 +40,8 @@ const ServerContextKey = sdk.ContextKey("server.context")
 // server context
 type Context struct {
 	Viper  *viper.Viper
-	Config *tmcfg.Config
-	Logger tmlog.Logger
+	Config *ostcfg.Config
+	Logger ostlog.Logger
 }
 
 // ErrorCode contains the exit code for server exit.
@@ -56,12 +56,12 @@ func (e ErrorCode) Error() string {
 func NewDefaultContext() *Context {
 	return NewContext(
 		viper.New(),
-		tmcfg.DefaultConfig(),
+		ostcfg.DefaultConfig(),
 		ZeroLogWrapper{log.Logger},
 	)
 }
 
-func NewContext(v *viper.Viper, config *tmcfg.Config, logger tmlog.Logger) *Context {
+func NewContext(v *viper.Viper, config *ostcfg.Config, logger ostlog.Logger) *Context {
 	return &Context{v, config, logger}
 }
 
@@ -120,8 +120,12 @@ func InterceptConfigsPreRunHandler(cmd *cobra.Command, customAppConfigTemplate s
 	basename := path.Base(executableName)
 
 	// Configure the viper instance
-	serverCtx.Viper.BindPFlags(cmd.Flags())
-	serverCtx.Viper.BindPFlags(cmd.PersistentFlags())
+	if err = serverCtx.Viper.BindPFlags(cmd.Flags()); err != nil {
+		return err
+	}
+	if err = serverCtx.Viper.BindPFlags(cmd.PersistentFlags()); err != nil {
+		return err
+	}
 	serverCtx.Viper.SetEnvPrefix(basename)
 	serverCtx.Viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	serverCtx.Viper.AutomaticEnv()
@@ -132,15 +136,18 @@ func InterceptConfigsPreRunHandler(cmd *cobra.Command, customAppConfigTemplate s
 		return err
 	}
 
-	// return value is a tendermint configuration object
+	// return value is a ostracon configuration object
 	serverCtx.Config = config
 	if err = bindFlags(basename, cmd, serverCtx.Viper); err != nil {
 		return err
 	}
 
 	var logWriter io.Writer
-	if strings.ToLower(serverCtx.Viper.GetString(flags.FlagLogFormat)) == tmcfg.LogFormatPlain {
-		logWriter = zerolog.ConsoleWriter{Out: os.Stderr}
+	if strings.ToLower(serverCtx.Viper.GetString(flags.FlagLogFormat)) == ostcfg.LogFormatPlain {
+		logWriter = zerolog.ConsoleWriter{
+			Out:        os.Stderr,
+			TimeFormat: "2006/01/02-15:04:05.999",
+		}
 	} else {
 		logWriter = os.Stderr
 	}
@@ -185,16 +192,16 @@ func SetCmdServerContext(cmd *cobra.Command, serverCtx *Context) error {
 // configuration file. The Tendermint configuration file is parsed given a root
 // Viper object, whereas the application is parsed with the private package-aware
 // viperCfg object.
-func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customConfig interface{}) (*tmcfg.Config, error) {
+func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customConfig interface{}) (*ostcfg.Config, error) {
 	rootDir := rootViper.GetString(flags.FlagHome)
 	configPath := filepath.Join(rootDir, "config")
 	tmCfgFile := filepath.Join(configPath, "config.toml")
 
-	conf := tmcfg.DefaultConfig()
+	conf := ostcfg.DefaultConfig()
 
 	switch _, err := os.Stat(tmCfgFile); {
 	case os.IsNotExist(err):
-		tmcfg.EnsureRoot(rootDir)
+		ostcfg.EnsureRoot(rootDir)
 
 		if err = conf.ValidateBasic(); err != nil {
 			return nil, fmt.Errorf("error in config file: %v", err)
@@ -203,8 +210,13 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 		conf.RPC.PprofListenAddress = "localhost:6060"
 		conf.P2P.RecvRate = 5120000
 		conf.P2P.SendRate = 5120000
+		conf.P2P.PexRecvBufSize = 10000
+		conf.P2P.MempoolRecvBufSize = 100000
+		conf.P2P.EvidenceRecvBufSize = 10000
+		conf.P2P.ConsensusRecvBufSize = 10000
+		conf.P2P.BlockchainRecvBufSize = 10000
 		conf.Consensus.TimeoutCommit = 5 * time.Second
-		tmcfg.WriteConfigFile(tmCfgFile, conf)
+		ostcfg.WriteConfigFile(tmCfgFile, conf)
 
 	case err != nil:
 		return nil, err
@@ -261,18 +273,18 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 
 // add server commands
 func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, addStartFlags types.ModuleInitFlags) {
-	tendermintCmd := &cobra.Command{
-		Use:   "tendermint",
-		Short: "Tendermint subcommands",
+	ostraconCmd := &cobra.Command{
+		Use:   "ostracon",
+		Short: "Ostracon subcommands",
 	}
 
-	tendermintCmd.AddCommand(
+	ostraconCmd.AddCommand(
 		ShowNodeIDCmd(),
 		ShowValidatorCmd(),
 		ShowAddressCmd(),
 		VersionCmd(),
-		tmcmd.ResetAllCmd,
-		tmcmd.ResetStateCmd,
+		ostcmd.ResetAllCmd,
+		ostcmd.ResetStateCmd,
 	)
 
 	startCmd := StartCmd(appCreator, defaultNodeHome)
@@ -280,7 +292,7 @@ func AddCommands(rootCmd *cobra.Command, defaultNodeHome string, appCreator type
 
 	rootCmd.AddCommand(
 		startCmd,
-		tendermintCmd,
+		ostraconCmd,
 		ExportCmd(appExport, defaultNodeHome),
 		version.NewVersionCommand(),
 		NewRollbackCmd(appCreator, defaultNodeHome),

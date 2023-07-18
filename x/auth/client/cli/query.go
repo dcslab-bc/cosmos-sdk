@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"strings"
 
+	octypes "github.com/line/ostracon/types"
 	"github.com/spf13/cobra"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/version"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/query"
+	"github.com/line/lbm-sdk/types/rest"
+	"github.com/line/lbm-sdk/version"
+	authtx "github.com/line/lbm-sdk/x/auth/tx"
+	"github.com/line/lbm-sdk/x/auth/types"
 )
 
 const (
@@ -117,6 +117,7 @@ func GetAccountCmd() *cobra.Command {
 func GetAccountsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "accounts",
+		Args:  cobra.NoArgs,
 		Short: "Query all the accounts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -183,6 +184,7 @@ func QueryModuleAccountByNameCmd() *cobra.Command {
 func QueryTxsByEventsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "txs",
+		Args:  cobra.NoArgs,
 		Short: "Query for paginated transactions that match a set of events",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`
@@ -192,7 +194,7 @@ to each module's documentation for the full set of events to query for. Each mod
 documents its respective events under 'xx_events.md'.
 
 Example:
-$ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator_reward' --page 1 --limit 30
+$ %s query txs --%s 'message.sender=link1...&message.action=withdraw_delegator_reward' --page 1 --limit 30
 `, eventFormat, version.AppName, flagEvents),
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -220,7 +222,7 @@ $ %s query txs --%s 'message.sender=cosmos1...&message.action=withdraw_delegator
 				}
 
 				tokens := strings.Split(event, "=")
-				if tokens[0] == tmtypes.TxHeightKey {
+				if tokens[0] == octypes.TxHeightKey {
 					event = fmt.Sprintf("%s=%s", tokens[0], tokens[1])
 				} else {
 					event = fmt.Sprintf("%s='%s'", tokens[0], tokens[1])

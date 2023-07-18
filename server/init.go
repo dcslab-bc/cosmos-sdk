@@ -3,8 +3,8 @@ package server
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // Deprecated: GenerateCoinKey generates a new key mnemonic along with its addrress.

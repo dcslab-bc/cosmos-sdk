@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/store/prefix"
+	storetypes "github.com/line/lbm-sdk/store/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 const (
@@ -18,24 +19,20 @@ const (
 )
 
 // Individual parameter store for each keeper
-// Transient store persists for a block, so we use it for
-// recording whether the parameter has been changed or not
 type Subspace struct {
 	cdc         codec.BinaryCodec
 	legacyAmino *codec.LegacyAmino
 	key         sdk.StoreKey // []byte -> []byte, stores parameter
-	tkey        sdk.StoreKey // []byte -> bool, stores parameter change
 	name        []byte
 	table       KeyTable
 }
 
 // NewSubspace constructs a store with namestore
-func NewSubspace(cdc codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key sdk.StoreKey, tkey sdk.StoreKey, name string) Subspace {
+func NewSubspace(cdc codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key storetypes.StoreKey, tkey storetypes.StoreKey, name string) Subspace {
 	return Subspace{
 		cdc:         cdc,
 		legacyAmino: legacyAmino,
 		key:         key,
-		tkey:        tkey,
 		name:        []byte(name),
 		table:       NewKeyTable(),
 	}
@@ -70,16 +67,10 @@ func (s Subspace) WithKeyTable(table KeyTable) Subspace {
 
 // Returns a KVStore identical with ctx.KVStore(s.key).Prefix()
 func (s Subspace) kvStore(ctx sdk.Context) sdk.KVStore {
-	// append here is safe, appends within a function won't cause
-	// weird side effects when its singlethreaded
-	return prefix.NewStore(ctx.KVStore(s.key), append(s.name, '/'))
-}
-
-// Returns a transient store for modification
-func (s Subspace) transientStore(ctx sdk.Context) sdk.KVStore {
-	// append here is safe, appends within a function won't cause
-	// weird side effects when its singlethreaded
-	return prefix.NewStore(ctx.TransientStore(s.tkey), append(s.name, '/'))
+	// this function can be called concurrently so we should not call append on s.name directly
+	name := make([]byte, len(s.name))
+	copy(name, s.name)
+	return prefix.NewStore(ctx.MultiStore().GetKVStore(s.key), append(name, '/'))
 }
 
 // Validate attempts to validate a parameter value by its key. If the key is not
@@ -139,13 +130,6 @@ func (s Subspace) Has(ctx sdk.Context, key []byte) bool {
 	return store.Has(key)
 }
 
-// Modified returns true if the parameter key is set in the Subspace's transient
-// KVStore.
-func (s Subspace) Modified(ctx sdk.Context, key []byte) bool {
-	tstore := s.transientStore(ctx)
-	return tstore.Has(key)
-}
-
 // checkType verifies that the provided key and value are comptable and registered.
 func (s Subspace) checkType(key []byte, value interface{}) {
 	attr, ok := s.table.m[string(key)]
@@ -178,9 +162,6 @@ func (s Subspace) Set(ctx sdk.Context, key []byte, value interface{}) {
 	}
 
 	store.Set(key, bz)
-
-	tstore := s.transientStore(ctx)
-	tstore.Set(key, []byte{})
 }
 
 // Update stores an updated raw value for a given parameter key assuming the
@@ -245,7 +226,6 @@ func (s Subspace) SetParamSet(ctx sdk.Context, ps ParamSet) {
 		if err := pair.ValidatorFn(v); err != nil {
 			panic(fmt.Sprintf("value from ParamSetPair is invalid: %s", err))
 		}
-
 		s.Set(ctx, pair.Key, v)
 	}
 }
@@ -273,11 +253,6 @@ func (ros ReadOnlySubspace) GetRaw(ctx sdk.Context, key []byte) []byte {
 // Has delegates a read-only Has call to the Subspace.
 func (ros ReadOnlySubspace) Has(ctx sdk.Context, key []byte) bool {
 	return ros.s.Has(ctx, key)
-}
-
-// Modified delegates a read-only Modified call to the Subspace.
-func (ros ReadOnlySubspace) Modified(ctx sdk.Context, key []byte) bool {
-	return ros.s.Modified(ctx, key)
 }
 
 // Name delegates a read-only Name call to the Subspace.

@@ -11,13 +11,13 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/gogo/protobuf/proto"
+	rpcclient "github.com/line/ostracon/rpc/client"
 	"github.com/pkg/errors"
-	rpcclient "github.com/tendermint/tendermint/rpc/client"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/codec"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // Context implements a typical context created in SDK modules for transaction
@@ -115,6 +115,13 @@ func (ctx Context) WithFrom(from string) Context {
 	return ctx
 }
 
+// WithFeeGranterAddress returns a copy of the context with an updated fee granter account
+// address.
+func (ctx Context) WithFeeGranterAddress(addr sdk.AccAddress) Context {
+	ctx.FeeGranter = addr
+	return ctx
+}
+
 // WithOutputFormat returns a copy of the context with an updated OutputFormat field.
 func (ctx Context) WithOutputFormat(format string) Context {
 	ctx.OutputFormat = format
@@ -194,13 +201,6 @@ func (ctx Context) WithFromName(name string) Context {
 // address.
 func (ctx Context) WithFromAddress(addr sdk.AccAddress) Context {
 	ctx.FromAddress = addr
-	return ctx
-}
-
-// WithFeeGranterAddress returns a copy of the context with an updated fee granter account
-// address.
-func (ctx Context) WithFeeGranterAddress(addr sdk.AccAddress) Context {
-	ctx.FeeGranter = addr
 	return ctx
 }
 
@@ -366,7 +366,7 @@ func GetFromFields(kr keyring.Keyring, from string, genOnly bool) (sdk.AccAddres
 // NewKeyringFromBackend gets a Keyring object from a backend
 func NewKeyringFromBackend(ctx Context, backend string) (keyring.Keyring, error) {
 	if ctx.GenerateOnly || ctx.Simulate {
-		return keyring.New(sdk.KeyringServiceName(), keyring.BackendMemory, ctx.KeyringDir, ctx.Input, ctx.KeyringOptions...)
+		return keyring.New(sdk.KeyringServiceName(), keyring.BackendMemory, ctx.KeyringDir, ctx.Input)
 	}
 
 	return keyring.New(sdk.KeyringServiceName(), backend, ctx.KeyringDir, ctx.Input, ctx.KeyringOptions...)

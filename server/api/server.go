@@ -12,17 +12,17 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrpcserver "github.com/tendermint/tendermint/rpc/jsonrpc/server"
+	"github.com/line/ostracon/libs/log"
+	ostrpcserver "github.com/line/ostracon/rpc/jsonrpc/server"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-	"github.com/cosmos/cosmos-sdk/types/rest"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/server/config"
+	"github.com/line/lbm-sdk/telemetry"
+	grpctypes "github.com/line/lbm-sdk/types/grpc"
+	"github.com/line/lbm-sdk/types/rest"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	_ "github.com/line/lbm-sdk/client/docs/statik"
 )
 
 // Server defines the server's API interface.
@@ -90,43 +90,33 @@ func New(clientCtx client.Context, logger log.Logger) *Server {
 // non-blocking, so an external signal handler must be used.
 func (s *Server) Start(cfg config.Config) error {
 	s.mtx.Lock()
-	if cfg.Telemetry.Enabled {
-		m, err := telemetry.New(cfg.Telemetry)
-		if err != nil {
-			s.mtx.Unlock()
-			return err
-		}
 
-		s.metrics = m
-		s.registerMetrics()
-	}
+	ostCfg := ostrpcserver.DefaultConfig()
+	ostCfg.MaxOpenConnections = int(cfg.API.MaxOpenConnections)
+	ostCfg.ReadTimeout = time.Duration(cfg.API.RPCReadTimeout) * time.Second
+	ostCfg.WriteTimeout = time.Duration(cfg.API.RPCWriteTimeout) * time.Second
+	ostCfg.IdleTimeout = time.Duration(cfg.API.RPCIdleTimeout) * time.Second
+	ostCfg.MaxBodyBytes = int64(cfg.API.RPCMaxBodyBytes)
 
-	tmCfg := tmrpcserver.DefaultConfig()
-	tmCfg.MaxOpenConnections = int(cfg.API.MaxOpenConnections)
-	tmCfg.ReadTimeout = time.Duration(cfg.API.RPCReadTimeout) * time.Second
-	tmCfg.WriteTimeout = time.Duration(cfg.API.RPCWriteTimeout) * time.Second
-	tmCfg.MaxBodyBytes = int64(cfg.API.RPCMaxBodyBytes)
-
-	listener, err := tmrpcserver.Listen(cfg.API.Address, tmCfg)
+	listener, err := ostrpcserver.Listen(cfg.API.Address, ostCfg)
 	if err != nil {
 		s.mtx.Unlock()
 		return err
 	}
 
 	s.registerGRPCGatewayRoutes()
-
 	s.listener = listener
 	var h http.Handler = s.Router
 
+	s.mtx.Unlock()
+
 	if cfg.API.EnableUnsafeCORS {
 		allowAllCORS := handlers.CORS(handlers.AllowedHeaders([]string{"Content-Type"}))
-		s.mtx.Unlock()
-		return tmrpcserver.Serve(s.listener, allowAllCORS(h), s.logger, tmCfg)
+		return ostrpcserver.Serve(s.listener, allowAllCORS(h), s.logger, ostCfg)
 	}
 
 	s.logger.Info("starting API server...")
-	s.mtx.Unlock()
-	return tmrpcserver.Serve(s.listener, s.Router, s.logger, tmCfg)
+	return ostrpcserver.Serve(s.listener, s.Router, s.logger, ostCfg)
 }
 
 // Close closes the API server.
@@ -138,6 +128,13 @@ func (s *Server) Close() error {
 
 func (s *Server) registerGRPCGatewayRoutes() {
 	s.Router.PathPrefix("/").Handler(s.GRPCGatewayRouter)
+}
+
+func (s *Server) SetTelemetry(m *telemetry.Metrics) {
+	s.mtx.Lock()
+	s.metrics = m
+	s.registerMetrics()
+	s.mtx.Unlock()
 }
 
 func (s *Server) registerMetrics() {

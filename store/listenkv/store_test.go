@@ -6,16 +6,16 @@ import (
 	"io"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/dbadapter"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	"github.com/cosmos/cosmos-sdk/store/types"
-
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/tendermint/tm-db"
+
+	"github.com/line/lbm-sdk/codec"
+	codecTypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/store/dbadapter"
+	"github.com/line/lbm-sdk/store/listenkv"
+	"github.com/line/lbm-sdk/store/prefix"
+	"github.com/line/lbm-sdk/store/types"
 )
 
 func bz(s string) []byte { return []byte(s) }
@@ -47,9 +47,9 @@ func newListenKVStore(w io.Writer) *listenkv.Store {
 
 func newEmptyListenKVStore(w io.Writer) *listenkv.Store {
 	listener := types.NewStoreKVPairWriteListener(w, testMarshaller)
-	memDB := dbadapter.Store{DB: dbm.NewMemDB()}
+	dbm := dbadapter.Store{DB: dbm.NewMemDB()}
 
-	return listenkv.NewStore(memDB, testStoreKey, []types.WriteListener{listener})
+	return listenkv.NewStore(dbm, testStoreKey, []types.WriteListener{listener})
 }
 
 func TestListenKVStoreGet(t *testing.T) {
@@ -278,9 +278,9 @@ func TestListenKVStorePrefix(t *testing.T) {
 }
 
 func TestListenKVStoreGetStoreType(t *testing.T) {
-	memDB := dbadapter.Store{DB: dbm.NewMemDB()}
+	dbm := dbadapter.Store{DB: dbm.NewMemDB()}
 	store := newEmptyListenKVStore(nil)
-	require.Equal(t, memDB.GetStoreType(), store.GetStoreType())
+	require.Equal(t, dbm.GetStoreType(), store.GetStoreType())
 }
 
 func TestListenKVStoreCacheWrap(t *testing.T) {

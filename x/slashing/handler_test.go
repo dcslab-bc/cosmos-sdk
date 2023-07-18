@@ -6,25 +6,25 @@ import (
 	"testing"
 	"time"
 
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing"
-	"github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	"github.com/cosmos/cosmos-sdk/x/slashing/testslashing"
-	"github.com/cosmos/cosmos-sdk/x/slashing/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/simapp"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/slashing"
+	"github.com/line/lbm-sdk/x/slashing/keeper"
+	"github.com/line/lbm-sdk/x/slashing/testslashing"
+	"github.com/line/lbm-sdk/x/slashing/types"
+	"github.com/line/lbm-sdk/x/staking"
+	"github.com/line/lbm-sdk/x/staking/teststaking"
+	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
 )
 
 func TestCannotUnjailUnlessJailed(t *testing.T) {
 	// initial setup
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 	pks := simapp.CreateTestPubKeys(1)
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, app.StakingKeeper.TokensFromConsensusPower(ctx, 200))
 
@@ -50,7 +50,7 @@ func TestCannotUnjailUnlessJailed(t *testing.T) {
 func TestCannotUnjailUnlessMeetMinSelfDelegation(t *testing.T) {
 	// initial setup
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 	pks := simapp.CreateTestPubKeys(1)
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, app.StakingKeeper.TokensFromConsensusPower(ctx, 200))
 
@@ -81,7 +81,7 @@ func TestCannotUnjailUnlessMeetMinSelfDelegation(t *testing.T) {
 func TestJailedValidatorDelegations(t *testing.T) {
 	// initial setup
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{Time: time.Unix(0, 0)})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{Time: time.Unix(0, 0)})
 	pks := simapp.CreateTestPubKeys(3)
 
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, app.StakingKeeper.TokensFromConsensusPower(ctx, 20))
@@ -132,18 +132,18 @@ func TestInvalidMsg(t *testing.T) {
 	k := keeper.Keeper{}
 	h := slashing.NewHandler(k)
 
-	res, err := h(sdk.NewContext(nil, tmproto.Header{}, false, nil), testdata.NewTestMsg())
+	res, err := h(sdk.NewContext(nil, ocproto.Header{}, false, nil), testdata.NewTestMsg())
 	require.Error(t, err)
 	require.Nil(t, res)
 	require.True(t, strings.Contains(err.Error(), "unrecognized slashing message type"))
 }
 
 // Test a validator through uptime, downtime, revocation,
-// unrevocation, starting height reset, and revocation again
+// unrevocation, voter set counter reset, and revocation again
 func TestHandleAbsentValidator(t *testing.T) {
 	// initial setup
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{Time: time.Unix(0, 0)})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{Time: time.Unix(0, 0)})
 	pks := simapp.CreateTestPubKeys(1)
 	simapp.AddTestAddrsFromPubKeys(app, ctx, pks, app.StakingKeeper.TokensFromConsensusPower(ctx, 200))
 	app.SlashingKeeper.SetParams(ctx, testslashing.TestParams())
@@ -179,6 +179,7 @@ func TestHandleAbsentValidator(t *testing.T) {
 	info, found = app.SlashingKeeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(val.Address()))
 	require.True(t, found)
 	require.Equal(t, int64(0), info.StartHeight)
+	require.Equal(t, int64(1000), info.IndexOffset)
 	require.Equal(t, int64(0), info.MissedBlocksCounter)
 
 	// 500 blocks missed
@@ -189,6 +190,7 @@ func TestHandleAbsentValidator(t *testing.T) {
 	info, found = app.SlashingKeeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(val.Address()))
 	require.True(t, found)
 	require.Equal(t, int64(0), info.StartHeight)
+	require.Equal(t, int64(1500), info.IndexOffset)
 	require.Equal(t, app.SlashingKeeper.SignedBlocksWindow(ctx)-app.SlashingKeeper.MinSignedPerWindow(ctx), info.MissedBlocksCounter)
 
 	// validator should be bonded still
@@ -204,6 +206,7 @@ func TestHandleAbsentValidator(t *testing.T) {
 	info, found = app.SlashingKeeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(val.Address()))
 	require.True(t, found)
 	require.Equal(t, int64(0), info.StartHeight)
+	require.Equal(t, int64(0), info.IndexOffset)
 	// counter now reset to zero
 	require.Equal(t, int64(0), info.MissedBlocksCounter)
 
@@ -226,6 +229,7 @@ func TestHandleAbsentValidator(t *testing.T) {
 	info, found = app.SlashingKeeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(val.Address()))
 	require.True(t, found)
 	require.Equal(t, int64(0), info.StartHeight)
+	require.Equal(t, int64(1), info.IndexOffset)
 	require.Equal(t, int64(1), info.MissedBlocksCounter)
 
 	// end block
@@ -241,7 +245,7 @@ func TestHandleAbsentValidator(t *testing.T) {
 	require.Nil(t, res)
 
 	// unrevocation should succeed after jail expiration
-	ctx = ctx.WithBlockHeader(tmproto.Header{Time: time.Unix(1, 0).Add(app.SlashingKeeper.DowntimeJailDuration(ctx))})
+	ctx = ctx.WithBlockHeader(ocproto.Header{Time: time.Unix(1, 0).Add(app.SlashingKeeper.DowntimeJailDuration(ctx))})
 	res, err = slh(ctx, types.NewMsgUnjail(addr))
 	require.NoError(t, err)
 	require.NotNil(t, res)
@@ -256,10 +260,11 @@ func TestHandleAbsentValidator(t *testing.T) {
 	// validator should have been slashed
 	require.True(t, amt.Sub(slashAmt).Equal(app.BankKeeper.GetBalance(ctx, bondPool.GetAddress(), app.StakingKeeper.BondDenom(ctx)).Amount))
 
-	// Validator start height should not have been changed
+	// Validator voter set counter should not have been changed
 	info, found = app.SlashingKeeper.GetValidatorSigningInfo(ctx, sdk.ConsAddress(val.Address()))
 	require.True(t, found)
 	require.Equal(t, int64(0), info.StartHeight)
+	require.Equal(t, int64(1), info.IndexOffset)
 	// we've missed 2 blocks more than the maximum, so the counter was reset to 0 at 1 block more and is now 1
 	require.Equal(t, int64(1), info.MissedBlocksCounter)
 

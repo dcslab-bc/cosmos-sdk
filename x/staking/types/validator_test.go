@@ -5,17 +5,17 @@ import (
 	"sort"
 	"testing"
 
+	octypes "github.com/line/ostracon/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec/legacy"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/codec/legacy"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	"github.com/line/lbm-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/staking/teststaking"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
 func TestValidatorTestEquivalent(t *testing.T) {
@@ -59,7 +59,7 @@ func TestUpdateDescription(t *testing.T) {
 func TestABCIValidatorUpdate(t *testing.T) {
 	validator := newValidator(t, valAddr1, pk1)
 	abciVal := validator.ABCIValidatorUpdate(sdk.DefaultPowerReduction)
-	pk, err := validator.TmConsPublicKey()
+	pk, err := validator.OcConsPublicKey()
 	require.NoError(t, err)
 	require.Equal(t, pk, abciVal.PubKey)
 	require.Equal(t, validator.BondedTokens().Int64(), abciVal.Power)
@@ -68,7 +68,7 @@ func TestABCIValidatorUpdate(t *testing.T) {
 func TestABCIValidatorUpdateZero(t *testing.T) {
 	validator := newValidator(t, valAddr1, pk1)
 	abciVal := validator.ABCIValidatorUpdateZero()
-	pk, err := validator.TmConsPublicKey()
+	pk, err := validator.OcConsPublicKey()
 	require.NoError(t, err)
 	require.Equal(t, pk, abciVal.PubKey)
 	require.Equal(t, int64(0), abciVal.Power)
@@ -270,7 +270,7 @@ func TestValidatorsSortDeterminism(t *testing.T) {
 	}
 }
 
-// Check SortTendermint sorts the same as tendermint
+// Check SortTendermint sorts the same as ostracon
 func TestValidatorsSortTendermint(t *testing.T) {
 	vals := make([]types.Validator, 100)
 
@@ -288,16 +288,16 @@ func TestValidatorsSortTendermint(t *testing.T) {
 
 	valz := types.Validators(vals)
 
-	// create expected tendermint validators by converting to tendermint then sorting
-	expectedVals, err := teststaking.ToTmValidators(valz, sdk.DefaultPowerReduction)
+	// create expected ostracon validators by converting to ostracon then sorting
+	expectedVals, err := teststaking.ToOcValidators(valz, sdk.DefaultPowerReduction)
 	require.NoError(t, err)
-	sort.Sort(tmtypes.ValidatorsByVotingPower(expectedVals))
+	sort.Sort(octypes.ValidatorsByVotingPower(expectedVals))
 
 	// sort in SDK and then convert to tendermint
 	sort.SliceStable(valz, func(i, j int) bool {
 		return types.ValidatorsByVotingPower(valz).Less(i, j, sdk.DefaultPowerReduction)
 	})
-	actualVals, err := teststaking.ToTmValidators(valz, sdk.DefaultPowerReduction)
+	actualVals, err := teststaking.ToOcValidators(valz, sdk.DefaultPowerReduction)
 	require.NoError(t, err)
 
 	require.Equal(t, expectedVals, actualVals, "sorting in SDK is not the same as sorting in Tendermint")
@@ -305,7 +305,7 @@ func TestValidatorsSortTendermint(t *testing.T) {
 
 func TestValidatorToTm(t *testing.T) {
 	vals := make(types.Validators, 10)
-	expected := make([]*tmtypes.Validator, 10)
+	expected := make([]*octypes.Validator, 10)
 
 	for i := range vals {
 		pk := ed25519.GenPrivKey().PubKey()
@@ -313,11 +313,11 @@ func TestValidatorToTm(t *testing.T) {
 		val.Status = types.Bonded
 		val.Tokens = sdk.NewInt(rand.Int63())
 		vals[i] = val
-		tmPk, err := cryptocodec.ToTmPubKeyInterface(pk)
+		tmPk, err := cryptocodec.ToOcPubKeyInterface(pk)
 		require.NoError(t, err)
-		expected[i] = tmtypes.NewValidator(tmPk, val.ConsensusPower(sdk.DefaultPowerReduction))
+		expected[i] = octypes.NewValidator(tmPk, val.ConsensusPower(sdk.DefaultPowerReduction))
 	}
-	vs, err := teststaking.ToTmValidators(vals, sdk.DefaultPowerReduction)
+	vs, err := teststaking.ToOcValidators(vals, sdk.DefaultPowerReduction)
 	require.NoError(t, err)
 	require.Equal(t, expected, vs)
 }

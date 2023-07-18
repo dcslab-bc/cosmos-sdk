@@ -12,16 +12,16 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"google.golang.org/grpc/codes"
 	grpcstatus "google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/line/lbm-sdk/codec"
+	snapshottypes "github.com/line/lbm-sdk/snapshots/types"
+	"github.com/line/lbm-sdk/telemetry"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
 )
 
 // InitChain implements the ABCI interface. It runs the initialization logic
@@ -29,13 +29,13 @@ import (
 func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitChain) {
 	// On a new chain, we consider the init chain block height as 0, even though
 	// req.InitialHeight is 1 by default.
-	initHeader := tmproto.Header{ChainID: req.ChainId, Time: req.Time}
+	initHeader := ocproto.Header{ChainID: req.ChainId, Time: req.Time}
 
 	// If req.InitialHeight is > 1, then we set the initial version in the
 	// stores.
 	if req.InitialHeight > 1 {
 		app.initialHeight = req.InitialHeight
-		initHeader = tmproto.Header{ChainID: req.ChainId, Height: req.InitialHeight, Time: req.Time}
+		initHeader = ocproto.Header{ChainID: req.ChainId, Height: req.InitialHeight, Time: req.Time}
 		err := app.cms.SetInitialVersion(req.InitialHeight)
 		if err != nil {
 			panic(err)
@@ -119,8 +119,7 @@ func (app *BaseApp) Info(req abci.RequestInfo) abci.ResponseInfo {
 
 // SetOption implements the ABCI interface.
 func (app *BaseApp) SetOption(req abci.RequestSetOption) (res abci.ResponseSetOption) {
-	// TODO: Implement!
-	return
+	return abci.ResponseSetOption{}
 }
 
 // BeginBlock implements the ABCI application interface.
@@ -136,6 +135,9 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	if err := app.validateHeight(req); err != nil {
 		panic(err)
 	}
+
+	// set the signed validators for addition to context in deliverTx
+	app.voteInfos = req.LastCommitInfo.GetVotes()
 
 	// Initialize the DeliverTx state. If this is the first block, it should
 	// already be initialized in InitChain. Otherwise app.deliverState will be
@@ -161,6 +163,7 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	// NOTE: header hash is not set in NewContext, so we manually set it here
 
 	app.deliverState.ctx = app.deliverState.ctx.
+		WithVoteInfos(app.voteInfos).
 		WithBlockGasMeter(gasMeter).
 		WithHeaderHash(req.Hash).
 		WithConsensusParams(app.GetConsensusParams(app.deliverState.ctx))
@@ -170,7 +173,8 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 	if app.checkState != nil {
 		app.checkState.ctx = app.checkState.ctx.
 			WithBlockGasMeter(gasMeter).
-			WithHeaderHash(req.Hash)
+			WithHeaderHash(req.Hash).
+			WithConsensusParams(app.GetConsensusParams(app.deliverState.ctx))
 	}
 
 	if app.beginBlocker != nil {
@@ -223,34 +227,61 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 // internal CheckTx state if the AnteHandler passes. Otherwise, the ResponseCheckTx
 // will contain releveant error information. Regardless of tx execution outcome,
 // the ResponseCheckTx will contain relevant gas execution context.
-func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
+func (app *BaseApp) CheckTxSync(req abci.RequestCheckTx) abci.ResponseCheckTx {
 	defer telemetry.MeasureSince(time.Now(), "abci", "check_tx")
 
-	var mode runTxMode
-
-	switch {
-	case req.Type == abci.CheckTxType_New:
-		mode = runTxModeCheck
-
-	case req.Type == abci.CheckTxType_Recheck:
-		mode = runTxModeReCheck
-
-	default:
+	if req.Type != abci.CheckTxType_New && req.Type != abci.CheckTxType_Recheck {
 		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
 	}
 
-	gInfo, result, anteEvents, err := app.runTx(mode, req.Tx)
+	tx, err := app.preCheckTx(req.Tx)
 	if err != nil {
-		return sdkerrors.ResponseCheckTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
+		return sdkerrors.ResponseCheckTx(err, 0, 0, app.trace)
+	}
+
+	waits, signals := app.checkAccountWGs.Register(tx)
+
+	app.checkAccountWGs.Wait(waits)
+	defer app.checkAccountWGs.Done(signals)
+
+	gInfo, err := app.checkTx(req.Tx, tx, req.Type == abci.CheckTxType_Recheck)
+	if err != nil {
+		return sdkerrors.ResponseCheckTx(err, gInfo.GasWanted, gInfo.GasUsed, app.trace)
+		// return sdkerrors.ResponseCheckTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace) // TODO(dudong2): need to fix to use ResponseCheckTxWithEvents
 	}
 
 	return abci.ResponseCheckTx{
 		GasWanted: int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
 		GasUsed:   int64(gInfo.GasUsed),   // TODO: Should type accept unsigned ints?
-		Log:       result.Log,
-		Data:      result.Data,
-		Events:    sdk.MarkEventsToIndex(result.Events, app.indexEvents),
 	}
+}
+
+func (app *BaseApp) CheckTxAsync(req abci.RequestCheckTx, callback abci.CheckTxCallback) {
+	if req.Type != abci.CheckTxType_New && req.Type != abci.CheckTxType_Recheck {
+		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
+	}
+
+	reqCheckTx := &RequestCheckTxAsync{
+		txBytes:  req.Tx,
+		recheck:  req.Type == abci.CheckTxType_Recheck,
+		callback: callback,
+		prepare:  waitGroup1(),
+	}
+	app.chCheckTx <- reqCheckTx
+
+	go app.prepareCheckTx(reqCheckTx)
+}
+
+// BeginRecheckTx implements the ABCI interface and set the check state based on the given header
+func (app *BaseApp) BeginRecheckTx(req abci.RequestBeginRecheckTx) abci.ResponseBeginRecheckTx {
+	// NOTE: This is safe because Ostracon holds a lock on the mempool for Rechecking.
+	app.setCheckState(req.Header)
+	return abci.ResponseBeginRecheckTx{Code: abci.CodeTypeOK}
+}
+
+// EndRecheckTx implements the ABCI interface.
+func (app *BaseApp) EndRecheckTx(req abci.RequestEndRecheckTx) abci.ResponseEndRecheckTx {
+	return abci.ResponseEndRecheckTx{Code: abci.CodeTypeOK}
 }
 
 // DeliverTx implements the ABCI interface and executes a tx in DeliverTx mode.
@@ -279,7 +310,12 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 		telemetry.SetGauge(float32(gInfo.GasWanted), "tx", "gas", "wanted")
 	}()
 
-	gInfo, result, anteEvents, err := app.runTx(runTxModeDeliver, req.Tx)
+	tx, err := app.txDecoder(req.Tx)
+	if err != nil {
+		return sdkerrors.ResponseDeliverTx(err, 0, 0, app.trace)
+	}
+
+	gInfo, result, anteEvents, err := app.runTx(req.Tx, tx, false)
 	if err != nil {
 		resultStr = "failed"
 		return sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, sdk.MarkEventsToIndex(anteEvents, app.indexEvents), app.trace)
@@ -296,11 +332,10 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 
 // Commit implements the ABCI interface. It will commit all state that exists in
 // the deliver state's multi-store and includes the resulting commit ID in the
-// returned abci.ResponseCommit. Commit will set the check state based on the
-// latest header and reset the deliver state. Also, if a non-zero halt height is
-// defined in config, Commit will execute a deferred function call to check
-// against that height and gracefully halt if it matches the latest committed
-// height.
+// returned abci.ResponseCommit. Commit will reset the deliver state.
+// Also, if a non-zero halt height is defined in config, Commit will execute
+// a deferred function call to check against that height and gracefully halt if
+// it matches the latest committed height.
 func (app *BaseApp) Commit() (res abci.ResponseCommit) {
 	defer telemetry.MeasureSince(time.Now(), "abci", "commit")
 
@@ -313,12 +348,6 @@ func (app *BaseApp) Commit() (res abci.ResponseCommit) {
 	app.deliverState.ms.Write()
 	commitID := app.cms.Commit()
 	app.logger.Info("commit synced", "commit", fmt.Sprintf("%X", commitID))
-
-	// Reset the Check state to the latest committed.
-	//
-	// NOTE: This is safe because Tendermint holds a lock on the mempool for
-	// Commit. Use the header from this latest block.
-	app.setCheckState(header)
 
 	// empty/reset the deliver state
 	app.deliverState = nil
@@ -660,9 +689,11 @@ func (app *BaseApp) createQueryContext(height int64, prove bool) (sdk.Context, e
 	}
 
 	// branch the commit-multistore for safety
+	app.checkStateMtx.RLock()
 	ctx := sdk.NewContext(
 		cacheMS, app.checkState.ctx.BlockHeader(), true, app.logger,
 	).WithMinGasPrices(app.minGasPrices).WithBlockHeight(height)
+	app.checkStateMtx.RUnlock()
 
 	return ctx, nil
 }

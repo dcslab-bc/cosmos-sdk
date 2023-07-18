@@ -5,17 +5,17 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/line/ostracon/crypto"
+	osted25519 "github.com/line/ostracon/crypto/ed25519"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tendermint/tendermint/crypto"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/codec/types"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	ed25519 "github.com/line/lbm-sdk/crypto/keys/ed25519"
+	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
 )
 
 func TestSignAndValidateEd25519(t *testing.T) {
@@ -187,7 +187,7 @@ func TestMarshalAmino(t *testing.T) {
 func TestMarshalAmino_BackwardsCompatibility(t *testing.T) {
 	aminoCdc := codec.NewLegacyAmino()
 	// Create Tendermint keys.
-	tmPrivKey := tmed25519.GenPrivKey()
+	tmPrivKey := osted25519.GenPrivKey()
 	tmPubKey := tmPrivKey.PubKey()
 	// Create our own keys, with the same private key as Tendermint's.
 	privKey := &ed25519.PrivKey{Key: []byte(tmPrivKey)}

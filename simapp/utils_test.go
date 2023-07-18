@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/line/ostracon/abci/types"
+	types2 "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/std"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/std"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/kv"
+	"github.com/line/lbm-sdk/types/module"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
 )
 
 func makeCodec(bm module.BasicManager) *codec.LegacyAmino {
@@ -21,6 +23,21 @@ func makeCodec(bm module.BasicManager) *codec.LegacyAmino {
 	std.RegisterLegacyAminoCodec(cdc)
 
 	return cdc
+}
+
+func TestSetup(t *testing.T) {
+	app := Setup(false)
+	ctx := app.BaseApp.NewContext(false, types2.Header{})
+
+	app.InitChain(
+		types.RequestInitChain{
+			AppStateBytes: []byte("{}"),
+			ChainId:       "test-chain-id",
+		},
+	)
+
+	acc := app.AccountKeeper.GetAccount(ctx, authtypes.NewModuleAddress(authtypes.FeeCollectorName))
+	require.NotNil(t, acc)
 }
 
 func TestGetSimulationLog(t *testing.T) {

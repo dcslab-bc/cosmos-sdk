@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
+	ostcli "github.com/line/ostracon/libs/cli"
 	"github.com/stretchr/testify/suite"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/slashing/client/cli"
+	"github.com/line/lbm-sdk/client/flags"
+	clitestutil "github.com/line/lbm-sdk/testutil/cli"
+	"github.com/line/lbm-sdk/testutil/network"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/slashing/client/cli"
 )
 
 type IntegrationTestSuite struct {
@@ -61,7 +61,7 @@ func (s *IntegrationTestSuite) TestGetCmdQuerySigningInfo() {
 			"valid address (json output)",
 			[]string{
 				pubKeyStr,
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 				fmt.Sprintf("--%s=1", flags.FlagHeight),
 			},
 			false,
@@ -71,7 +71,7 @@ func (s *IntegrationTestSuite) TestGetCmdQuerySigningInfo() {
 			"valid address (text output)",
 			[]string{
 				pubKeyStr,
-				fmt.Sprintf("--%s=text", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=text", ostcli.OutputFlag),
 				fmt.Sprintf("--%s=1", flags.FlagHeight),
 			},
 			false,
@@ -112,12 +112,12 @@ func (s *IntegrationTestSuite) TestGetCmdQueryParams() {
 	}{
 		{
 			"json output",
-			[]string{fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+			[]string{fmt.Sprintf("--%s=json", ostcli.OutputFlag)},
 			`{"signed_blocks_window":"100","min_signed_per_window":"0.500000000000000000","downtime_jail_duration":"600s","slash_fraction_double_sign":"0.050000000000000000","slash_fraction_downtime":"0.010000000000000000"}`,
 		},
 		{
 			"text output",
-			[]string{fmt.Sprintf("--%s=text", tmcli.OutputFlag)},
+			[]string{fmt.Sprintf("--%s=text", ostcli.OutputFlag)},
 			`downtime_jail_duration: 600s
 min_signed_per_window: "0.500000000000000000"
 signed_blocks_window: "100"

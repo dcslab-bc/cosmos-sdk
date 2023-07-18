@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strconv"
 
+	ostcli "github.com/line/ostracon/libs/cli"
+	"github.com/line/ostracon/privval"
 	"github.com/spf13/cobra"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/line/lbm-sdk/crypto/keyring"
 )
 
 const (
@@ -41,7 +42,7 @@ const (
 
 // List of CLI flags
 const (
-	FlagHome             = tmcli.HomeFlag
+	FlagHome             = ostcli.HomeFlag
 	FlagKeyringDir       = "keyring-dir"
 	FlagUseLedger        = "ledger"
 	FlagChainID          = "chain-id"
@@ -72,12 +73,14 @@ const (
 	FlagCountTotal       = "count-total"
 	FlagTimeoutHeight    = "timeout-height"
 	FlagKeyAlgorithm     = "algo"
+	FlagPrivKeyType      = "priv_key_type"
 	FlagFeeAccount       = "fee-account"
 	FlagReverse          = "reverse"
 
 	// Tendermint logging flags
-	FlagLogLevel  = "log_level"
-	FlagLogFormat = "log_format"
+	FlagLogLevel       = "log_level"
+	FlagLogFormat      = "log_format"
+	DefaultPrivKeyType = privval.PrivKeyTypeEd25519
 )
 
 // LineBreak can be included in a command list to provide a blank line
@@ -88,14 +91,14 @@ var LineBreak = &cobra.Command{Run: func(*cobra.Command, []string) {}}
 func AddQueryFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
 	cmd.Flags().Int64(FlagHeight, 0, "Use a specific height to query state at (this can error if the node is pruning state)")
-	cmd.Flags().StringP(tmcli.OutputFlag, "o", "text", "Output format (text|json)")
+	cmd.Flags().StringP(ostcli.OutputFlag, "o", "text", "Output format (text|json)")
 
 	cmd.MarkFlagRequired(FlagChainID)
 }
 
 // AddTxFlagsToCmd adds common flags to a module tx command.
 func AddTxFlagsToCmd(cmd *cobra.Command) {
-	cmd.Flags().StringP(tmcli.OutputFlag, "o", "json", "Output format (text|json)")
+	cmd.Flags().StringP(ostcli.OutputFlag, "o", "json", "Output format (text|json)")
 	cmd.Flags().String(FlagKeyringDir, "", "The client Keyring directory; if omitted, the default 'home' directory will be used")
 	cmd.Flags().String(FlagFrom, "", "Name or address of private key with which to sign")
 	cmd.Flags().Uint64P(FlagAccountNumber, "a", 0, "The account number of the signing account (offline mode only)")
@@ -103,7 +106,7 @@ func AddTxFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(FlagNote, "", "Note to add a description to the transaction (previously --memo)")
 	cmd.Flags().String(FlagFees, "", "Fees to pay along with transaction; eg: 10uatom")
 	cmd.Flags().String(FlagGasPrices, "", "Gas prices in decimal format to determine the transaction fee (e.g. 0.1uatom)")
-	cmd.Flags().String(FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
+	cmd.Flags().String(FlagNode, "tcp://localhost:26657", "<host>:<port> to ostracon rpc interface for this chain")
 	cmd.Flags().Bool(FlagUseLedger, false, "Use a connected Ledger device")
 	cmd.Flags().Float64(FlagGasAdjustment, DefaultGasAdjustment, "adjustment factor to be multiplied against the estimate returned by the tx simulation; if the gas limit is set manually this flag is ignored ")
 	cmd.Flags().StringP(FlagBroadcastMode, "b", BroadcastSync, "Transaction broadcasting mode (sync|async|block)")
@@ -114,6 +117,8 @@ func AddTxFlagsToCmd(cmd *cobra.Command) {
 	cmd.Flags().String(FlagKeyringBackend, DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test|memory)")
 	cmd.Flags().String(FlagSignMode, "", "Choose sign mode (direct|amino-json), this is an advanced feature")
 	cmd.Flags().Uint64(FlagTimeoutHeight, 0, "Set a block timeout height to prevent the tx from being committed past a certain height")
+	cmd.Flags().String(FlagPrivKeyType, DefaultPrivKeyType, "specify validator's private key type (ed25519|composite). \n"+
+		"set this to priv_key.type in priv_validator_key.json; default `ed25519`")
 	cmd.Flags().String(FlagFeeAccount, "", "Fee account pays fees for the transaction instead of deducting from the signer")
 
 	// --gas can accept integers and "auto"

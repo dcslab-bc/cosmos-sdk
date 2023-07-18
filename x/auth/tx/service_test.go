@@ -7,29 +7,30 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	authtest "github.com/cosmos/cosmos-sdk/x/auth/client/testutil"
-	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/testutil"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	clienttx "github.com/line/lbm-sdk/client/tx"
+	"github.com/line/lbm-sdk/crypto/hd"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	kmultisig "github.com/line/lbm-sdk/crypto/keys/multisig"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	"github.com/line/lbm-sdk/testutil"
+	"github.com/line/lbm-sdk/testutil/network"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/query"
+	"github.com/line/lbm-sdk/types/rest"
+	"github.com/line/lbm-sdk/types/tx"
+	"github.com/line/lbm-sdk/types/tx/signing"
+	authclient "github.com/line/lbm-sdk/x/auth/client"
+	authtest "github.com/line/lbm-sdk/x/auth/client/testutil"
+	bankcli "github.com/line/lbm-sdk/x/bank/client/testutil"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
 )
 
 var bankMsgSendEventAction = fmt.Sprintf("message.action='%s'", sdk.MsgTypeURL(&banktypes.MsgSend{}))
@@ -355,7 +356,8 @@ func (s IntegrationTestSuite) TestGetTx_GRPC() {
 	}{
 		{"nil request", nil, true, "request cannot be nil"},
 		{"empty request", &tx.GetTxRequest{}, true, "tx hash cannot be empty"},
-		{"request with dummy hash", &tx.GetTxRequest{Hash: "deadbeef"}, true, "code = NotFound desc = tx not found: deadbeef"},
+		{"request with dummy hash of wrong length", &tx.GetTxRequest{Hash: "deadbeef"}, true, "The length of tx hash must be 64"},
+		{"request with dummy hash of correct length but invalid", &tx.GetTxRequest{Hash: "2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02"}, true, "tx not found: 2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02"},
 		{"good request", &tx.GetTxRequest{Hash: s.txRes.TxHash}, false, ""},
 	}
 	for _, tc := range testCases {
@@ -387,9 +389,14 @@ func (s IntegrationTestSuite) TestGetTx_GRPCGateway() {
 			true, "tx hash cannot be empty",
 		},
 		{
-			"dummy hash",
+			"dummy hash of wrong length",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", val.APIAddress, "deadbeef"),
-			true, "code = NotFound desc = tx not found: deadbeef",
+			true, "The length of tx hash must be 64",
+		},
+		{
+			"dummy hash of correct length but invalid",
+			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", val.APIAddress, "2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02"),
+			true, "tx not found: 2AAC6096A87A9B9ABF604316313950D518DFDD86F2E597DD84A5808582DD0C02",
 		},
 		{
 			"good hash",
@@ -458,6 +465,7 @@ func (s IntegrationTestSuite) TestBroadcastTx_GRPC() {
 			}
 		})
 	}
+	time.Sleep(1 * time.Second) // wait for block confirm time before executing next test
 }
 
 func (s IntegrationTestSuite) TestBroadcastTx_GRPCGateway() {
@@ -496,6 +504,7 @@ func (s IntegrationTestSuite) TestBroadcastTx_GRPCGateway() {
 			}
 		})
 	}
+	time.Sleep(1 * time.Second) // wait for block confirm time before executing next test
 }
 
 func (s *IntegrationTestSuite) TestSimMultiSigTx() {

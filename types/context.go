@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/store/gaskv"
-	stypes "github.com/cosmos/cosmos-sdk/store/types"
+	abci "github.com/line/ostracon/abci/types"
+	ocbytes "github.com/line/ostracon/libs/bytes"
+	"github.com/line/ostracon/libs/log"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+
+	"github.com/line/lbm-sdk/store/gaskv"
+	stypes "github.com/line/lbm-sdk/store/types"
 )
 
 /*
@@ -25,8 +26,8 @@ and standard additions here would be better just to add to the Context struct
 type Context struct {
 	ctx           context.Context
 	ms            MultiStore
-	header        tmproto.Header
-	headerHash    tmbytes.HexBytes
+	header        ocproto.Header
+	headerHash    ocbytes.HexBytes
 	chainID       string
 	txBytes       []byte
 	logger        log.Logger
@@ -60,13 +61,13 @@ func (c Context) MinGasPrices() DecCoins      { return c.minGasPrice }
 func (c Context) EventManager() *EventManager { return c.eventManager }
 
 // clone the header before returning
-func (c Context) BlockHeader() tmproto.Header {
-	msg := proto.Clone(&c.header).(*tmproto.Header)
+func (c Context) BlockHeader() ocproto.Header {
+	msg := proto.Clone(&c.header).(*ocproto.Header)
 	return *msg
 }
 
 // HeaderHash returns a copy of the header hash obtained during abci.RequestBeginBlock
-func (c Context) HeaderHash() tmbytes.HexBytes {
+func (c Context) HeaderHash() ocbytes.HexBytes {
 	hash := make([]byte, len(c.headerHash))
 	copy(hash, c.headerHash)
 	return hash
@@ -77,7 +78,7 @@ func (c Context) ConsensusParams() *abci.ConsensusParams {
 }
 
 // create a new context
-func NewContext(ms MultiStore, header tmproto.Header, isCheckTx bool, logger log.Logger) Context {
+func NewContext(ms MultiStore, header ocproto.Header, isCheckTx bool, logger log.Logger) Context {
 	// https://github.com/gogo/protobuf/issues/519
 	header.Time = header.Time.UTC()
 	return Context{
@@ -106,7 +107,7 @@ func (c Context) WithMultiStore(ms MultiStore) Context {
 }
 
 // WithBlockHeader returns a Context with an updated tendermint block header in UTC time.
-func (c Context) WithBlockHeader(header tmproto.Header) Context {
+func (c Context) WithBlockHeader(header ocproto.Header) Context {
 	// https://github.com/gogo/protobuf/issues/519
 	header.Time = header.Time.UTC()
 	c.header = header
@@ -251,11 +252,6 @@ func (c Context) Value(key interface{}) interface{} {
 // KVStore fetches a KVStore from the MultiStore.
 func (c Context) KVStore(key StoreKey) KVStore {
 	return gaskv.NewStore(c.MultiStore().GetKVStore(key), c.GasMeter(), stypes.KVGasConfig())
-}
-
-// TransientStore fetches a TransientStore from the MultiStore.
-func (c Context) TransientStore(key StoreKey) KVStore {
-	return gaskv.NewStore(c.MultiStore().GetKVStore(key), c.GasMeter(), stypes.TransientGasConfig())
 }
 
 // CacheContext returns a new Context with the multi-store cached and a new

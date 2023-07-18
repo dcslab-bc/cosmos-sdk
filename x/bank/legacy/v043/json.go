@@ -1,8 +1,8 @@
 package v043
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/bank/types"
 )
 
 // pruneZeroBalancesJSON removes the zero balance addresses from exported genesis.

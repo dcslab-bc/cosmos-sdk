@@ -9,8 +9,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/cosmos/cosmos-sdk/snapshots/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/line/lbm-sdk/snapshots/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
 )
 
 const (

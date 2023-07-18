@@ -14,37 +14,37 @@ import (
 	"testing"
 	"time"
 
+	ostcfg "github.com/line/ostracon/config"
+	ostflags "github.com/line/ostracon/libs/cli/flags"
+	"github.com/line/ostracon/libs/log"
+	ostrand "github.com/line/ostracon/libs/rand"
+	"github.com/line/ostracon/node"
+	ostclient "github.com/line/ostracon/rpc/client"
 	"github.com/stretchr/testify/require"
-	tmcfg "github.com/tendermint/tendermint/config"
-	tmflags "github.com/tendermint/tendermint/libs/cli/flags"
-	"github.com/tendermint/tendermint/libs/log"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
-	"github.com/tendermint/tendermint/node"
-	tmclient "github.com/tendermint/tendermint/rpc/client"
 	dbm "github.com/tendermint/tm-db"
 	"google.golang.org/grpc"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/server/api"
-	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/baseapp"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/tx"
+	"github.com/line/lbm-sdk/codec"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/crypto/hd"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	"github.com/line/lbm-sdk/server"
+	"github.com/line/lbm-sdk/server/api"
+	srvconfig "github.com/line/lbm-sdk/server/config"
+	servertypes "github.com/line/lbm-sdk/server/types"
+	"github.com/line/lbm-sdk/simapp"
+	"github.com/line/lbm-sdk/simapp/params"
+	storetypes "github.com/line/lbm-sdk/store/types"
+	"github.com/line/lbm-sdk/testutil"
+	sdk "github.com/line/lbm-sdk/types"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	"github.com/line/lbm-sdk/x/genutil"
+	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
 )
 
 // package-wide network lock to only allow one test network at a time
@@ -61,6 +61,7 @@ func NewAppConstructor(encodingCfg params.EncodingConfig) AppConstructor {
 			val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
 			encodingCfg,
 			simapp.EmptyAppOptions{},
+			nil,
 			baseapp.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 			baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 		)
@@ -107,18 +108,19 @@ func DefaultConfig() Config {
 		AccountRetriever:  authtypes.AccountRetriever{},
 		AppConstructor:    NewAppConstructor(encCfg),
 		GenesisState:      simapp.ModuleBasics.DefaultGenesis(encCfg.Marshaler),
-		TimeoutCommit:     2 * time.Second,
-		ChainID:           "chain-" + tmrand.NewRand().Str(6),
-		NumValidators:     4,
-		BondDenom:         sdk.DefaultBondDenom,
-		MinGasPrices:      fmt.Sprintf("0.000006%s", sdk.DefaultBondDenom),
-		AccountTokens:     sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction),
-		StakingTokens:     sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction),
-		BondedTokens:      sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction),
-		PruningStrategy:   storetypes.PruningOptionNothing,
-		CleanupDir:        true,
-		SigningAlgo:       string(hd.Secp256k1Type),
-		KeyringOptions:    []keyring.Option{},
+		// 2 second confirm may make some tests to be failed with `tx already in mempool`
+		TimeoutCommit:   1 * time.Second,
+		ChainID:         "chain-" + ostrand.NewRand().Str(6),
+		NumValidators:   4,
+		BondDenom:       sdk.DefaultBondDenom,
+		MinGasPrices:    fmt.Sprintf("0.000006%s", sdk.DefaultBondDenom),
+		AccountTokens:   sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction),
+		StakingTokens:   sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction),
+		BondedTokens:    sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction),
+		PruningStrategy: storetypes.PruningOptionNothing,
+		CleanupDir:      true,
+		SigningAlgo:     string(hd.Secp256k1Type),
+		KeyringOptions:  []keyring.Option{},
 	}
 }
 
@@ -157,7 +159,7 @@ type (
 		P2PAddress string
 		Address    sdk.AccAddress
 		ValAddress sdk.ValAddress
-		RPCClient  tmclient.Client
+		RPCClient  ostclient.Client
 
 		tmNode  *node.Node
 		api     *api.Server
@@ -242,8 +244,8 @@ func New(t *testing.T, cfg Config) *Network {
 
 		logger := log.NewNopLogger()
 		if cfg.EnableLogging {
-			logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-			logger, _ = tmflags.ParseLogLevel("info", logger, tmcfg.DefaultLogLevel)
+			logger = log.NewOCLogger(log.NewSyncWriter(os.Stdout))
+			logger, _ = ostflags.ParseLogLevel("info", logger, ostcfg.DefaultLogLevel)
 		}
 
 		ctx.Logger = logger
@@ -389,6 +391,44 @@ func New(t *testing.T, cfg Config) *Network {
 	server.TrapSignal(network.Cleanup)
 
 	return network
+}
+
+// New creates a new Network for integration tests without init.
+func NewWithoutInit(t *testing.T, cfg Config, baseDir string, validators []*Validator) *Network {
+	// only one caller/test can create and use a network at a time
+	t.Log("acquiring test network lock")
+	lock.Lock()
+
+	network := &Network{
+		T:          t,
+		BaseDir:    baseDir,
+		Validators: validators,
+		Config:     cfg,
+	}
+
+	t.Log("starting test network...")
+	for _, v := range network.Validators {
+		require.NoError(t, startInProcess(cfg, v))
+	}
+
+	t.Log("started test network")
+
+	// Ensure we cleanup incase any test was abruptly halted (e.g. SIGINT) as any
+	// defer in a test would not be called.
+	server.TrapSignal(network.Cleanup)
+
+	return network
+}
+
+func AddNewValidator(t *testing.T, network *Network, validator *Validator) {
+	t.Log("adding new validator...")
+
+	require.NoError(t, startInProcess(network.Config, validator))
+	network.Validators = append(network.Validators, validator)
+
+	t.Log("added new validator")
+
+	server.TrapSignal(network.Cleanup)
 }
 
 // LatestHeight returns the latest height of the network or an error if the

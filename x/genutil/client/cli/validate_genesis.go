@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	octypes "github.com/line/ostracon/types"
 	"github.com/spf13/cobra"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/server"
+	"github.com/line/lbm-sdk/types/module"
 )
 
 const chainUpgradeGuide = "https://docs.cosmos.network/master/migrations/chain-upgrade-guide-040.html"
@@ -57,8 +57,8 @@ func ValidateGenesisCmd(mbm module.BasicManager) *cobra.Command {
 // validateGenDoc reads a genesis file and validates that it is a correct
 // Tendermint GenesisDoc. This function does not do any cosmos-related
 // validation.
-func validateGenDoc(importGenesisFile string) (*tmtypes.GenesisDoc, error) {
-	genDoc, err := tmtypes.GenesisDocFromFile(importGenesisFile)
+func validateGenDoc(importGenesisFile string) (*octypes.GenesisDoc, error) {
+	genDoc, err := octypes.GenesisDocFromFile(importGenesisFile)
 	if err != nil {
 		return nil, fmt.Errorf("%s. Make sure that"+
 			" you have correctly migrated all Tendermint consensus params, please see the"+

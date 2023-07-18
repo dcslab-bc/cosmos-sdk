@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	v040auth "github.com/cosmos/cosmos-sdk/x/auth/legacy/v040"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/kv"
+	v040auth "github.com/line/lbm-sdk/x/auth/legacy/v040"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
 const (
@@ -29,6 +29,7 @@ const (
 	RouterKey = ModuleName
 )
 
+//nolint:golint
 var (
 	// Keys for store prefixes
 	// Last* values are constant during a block.

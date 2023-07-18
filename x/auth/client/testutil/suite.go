@@ -12,26 +12,28 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	kmultisig "github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authcli "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankcli "github.com/cosmos/cosmos-sdk/x/bank/client/testutil"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	ostcli "github.com/line/ostracon/libs/cli"
+
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/crypto/hd"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	kmultisig "github.com/line/lbm-sdk/crypto/keys/multisig"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	"github.com/line/lbm-sdk/simapp"
+	"github.com/line/lbm-sdk/testutil"
+	clitestutil "github.com/line/lbm-sdk/testutil/cli"
+	"github.com/line/lbm-sdk/testutil/network"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/tx"
+	"github.com/line/lbm-sdk/types/tx/signing"
+	authcli "github.com/line/lbm-sdk/x/auth/client/cli"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
+	bankcli "github.com/line/lbm-sdk/x/bank/client/testutil"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	"github.com/line/lbm-sdk/x/genutil/client/cli"
 )
 
 type IntegrationTestSuite struct {
@@ -142,6 +144,40 @@ func (s *IntegrationTestSuite) TestCLISignBatch() {
 	// Sign batch malformed tx file signature only.
 	_, err = TxSignBatchExec(val.ClientCtx, val.Address, malformedFile.Name(), fmt.Sprintf("--%s=%s", flags.FlagChainID, val.ClientCtx.ChainID), "--signature-only")
 	s.Require().Error(err)
+
+	// make a txn to increase the sequence of sender
+	_, seq, err := val.ClientCtx.AccountRetriever.GetAccountNumberSequence(val.ClientCtx, val.Address)
+	s.Require().NoError(err)
+
+	account1, err := val.ClientCtx.Keyring.Key("newAccount1")
+	s.Require().NoError(err)
+
+	addr := account1.GetAddress()
+	s.Require().NoError(err)
+
+	// Send coins from validator to multisig.
+	_, err = s.createBankMsg(
+		val,
+		addr,
+		sdk.NewCoins(sdk.NewInt64Coin(s.cfg.BondDenom, 1000)),
+	)
+	s.Require().NoError(err)
+	s.Require().NoError(s.network.WaitForNextBlock())
+
+	// fetch the sequence after a tx, should be incremented.
+	_, seq1, err := val.ClientCtx.AccountRetriever.GetAccountNumberSequence(val.ClientCtx, val.Address)
+	s.Require().NoError(err)
+	s.Require().Equal(seq+1, seq1)
+
+	// signing sign-batch should start from the last sequence.
+	signed, err := TxSignBatchExec(val.ClientCtx, val.Address, outputFile.Name(), fmt.Sprintf("--%s=%s", flags.FlagChainID, val.ClientCtx.ChainID), "--signature-only")
+	s.Require().NoError(err)
+	signedTxs := strings.Split(strings.Trim(signed.String(), "\n"), "\n")
+	s.Require().GreaterOrEqual(len(signedTxs), 1)
+
+	sigs, err := s.cfg.TxConfig.UnmarshalSignatureJSON([]byte(signedTxs[0]))
+	s.Require().NoError(err)
+	s.Require().Equal(sigs[0].Sequence, seq1)
 }
 
 func (s *IntegrationTestSuite) TestCLISignAminoJSON() {
@@ -257,6 +293,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByHash() {
 		sdk.NewCoins(sendTokens),
 	)
 	s.Require().NoError(err)
+
 	var txRes sdk.TxResponse
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(out.Bytes(), &txRes))
 	s.Require().NoError(s.network.WaitForNextBlock())
@@ -274,17 +311,17 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByHash() {
 		},
 		{
 			"with invalid hash",
-			[]string{"somethinginvalid", fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+			[]string{"somethinginvalid", fmt.Sprintf("--%s=json", ostcli.OutputFlag)},
 			true, "",
 		},
 		{
 			"with valid and not existing hash",
-			[]string{"C7E7D3A86A17AB3A321172239F3B61357937AF0F25D9FA4D2F4DCCAD9B0D7747", fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+			[]string{"C7E7D3A86A17AB3A321172239F3B61357937AF0F25D9FA4D2F4DCCAD9B0D7747", fmt.Sprintf("--%s=json", ostcli.OutputFlag)},
 			true, "",
 		},
 		{
 			"happy case",
-			[]string{txRes.TxHash, fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+			[]string{txRes.TxHash, fmt.Sprintf("--%s=json", ostcli.OutputFlag)},
 			false,
 			sdk.MsgTypeURL(&banktypes.MsgSend{}),
 		},
@@ -330,7 +367,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 	s.Require().NoError(s.network.WaitForNextBlock())
 
 	// Query the tx by hash to get the inner tx.
-	out, err = clitestutil.ExecTestCLICmd(val.ClientCtx, authcli.QueryTxCmd(), []string{txRes.TxHash, fmt.Sprintf("--%s=json", tmcli.OutputFlag)})
+	out, err = clitestutil.ExecTestCLICmd(val.ClientCtx, authcli.QueryTxCmd(), []string{txRes.TxHash, fmt.Sprintf("--%s=json", ostcli.OutputFlag)})
 	s.Require().NoError(err)
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(out.Bytes(), &txRes))
 	protoTx := txRes.GetTx().(*tx.Tx)
@@ -346,7 +383,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				fmt.Sprintf("--type=%s", "foo"),
 				"bar",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true, "unknown --type value foo",
 		},
@@ -355,7 +392,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				"--type=acc_seq",
 				"",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true, "`acc_seq` type takes an argument '<addr>/<seq>'",
 		},
@@ -364,7 +401,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				"--type=acc_seq",
 				"foobar",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true, "found no txs matching given address and sequence combination",
 		},
@@ -373,7 +410,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				"--type=acc_seq",
 				fmt.Sprintf("%s/%d", val.Address, protoTx.AuthInfo.SignerInfos[0].Sequence),
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			false, "",
 		},
@@ -382,7 +419,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				"--type=signature",
 				"",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true, "argument should be comma-separated signatures",
 		},
@@ -391,7 +428,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				"--type=signature",
 				"foo",
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			true, "found no txs matching given signatures",
 		},
@@ -400,7 +437,7 @@ func (s *IntegrationTestSuite) TestCLIQueryTxCmdByEvents() {
 			[]string{
 				"--type=signature",
 				base64.StdEncoding.EncodeToString(protoTx.Signatures[0]),
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
 			false, "",
 		},
@@ -444,13 +481,14 @@ func (s *IntegrationTestSuite) TestCLIQueryTxsCmdByEvents() {
 	s.Require().NoError(s.network.WaitForNextBlock())
 
 	// Query the tx by hash to get the inner tx.
-	out, err = clitestutil.ExecTestCLICmd(val.ClientCtx, authcli.QueryTxCmd(), []string{txRes.TxHash, fmt.Sprintf("--%s=json", tmcli.OutputFlag)})
+	out, err = clitestutil.ExecTestCLICmd(val.ClientCtx, authcli.QueryTxCmd(), []string{txRes.TxHash, fmt.Sprintf("--%s=json", ostcli.OutputFlag)})
 	s.Require().NoError(err)
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(out.Bytes(), &txRes))
 
 	testCases := []struct {
 		name        string
 		args        []string
+		expectErr   bool
 		expectEmpty bool
 	}{
 		{
@@ -458,8 +496,9 @@ func (s *IntegrationTestSuite) TestCLIQueryTxsCmdByEvents() {
 			[]string{
 				fmt.Sprintf("--events=tx.fee=%s",
 					sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10))).String()),
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
+			false,
 			false,
 		},
 		{
@@ -467,8 +506,18 @@ func (s *IntegrationTestSuite) TestCLIQueryTxsCmdByEvents() {
 			[]string{
 				fmt.Sprintf("--events=tx.fee=%s",
 					sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(0))).String()),
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			},
+			false,
+			true,
+		},
+		{
+			"wrong number of arguments",
+			[]string{
+				"extra",
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
+			},
+			true,
 			true,
 		},
 	}
@@ -480,6 +529,10 @@ func (s *IntegrationTestSuite) TestCLIQueryTxsCmdByEvents() {
 			clientCtx := val.ClientCtx
 
 			out, err := clitestutil.ExecTestCLICmd(clientCtx, cmd, tc.args)
+			if tc.expectErr {
+				s.Require().Error(err)
+				return
+			}
 			s.Require().NoError(err)
 
 			var result sdk.SearchTxsResult
@@ -822,7 +875,7 @@ func (s *IntegrationTestSuite) TestSignWithMultisig() {
 	s.Require().NoError(err)
 
 	// Create an address that is not in the keyring, will be used to simulate `--multisig`
-	multisig := "cosmos1hd6fsrvnz6qkp87s3u86ludegq97agxsdkwzyh"
+	multisig := "link1hd6fsrvnz6qkp87s3u86ludegq97agxsccwqll"
 	multisigAddr, err := sdk.AccAddressFromBech32(multisig)
 	s.Require().NoError(err)
 
@@ -1119,16 +1172,43 @@ func (s *IntegrationTestSuite) TestGetAccountCmd() {
 
 func (s *IntegrationTestSuite) TestGetAccountsCmd() {
 	val := s.network.Validators[0]
-	clientCtx := val.ClientCtx
 
-	out, err := clitestutil.ExecTestCLICmd(clientCtx, authcli.GetAccountsCmd(), []string{
-		fmt.Sprintf("--%s=json", tmcli.OutputFlag),
-	})
-	s.Require().NoError(err)
+	commonArgs := []string{
+		fmt.Sprintf("--%s=json", ostcli.OutputFlag),
+	}
 
-	var res authtypes.QueryAccountsResponse
-	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(out.Bytes(), &res))
-	s.Require().NotEmpty(res.Accounts)
+	testCases := map[string]struct {
+		args  []string
+		valid bool
+	}{
+		"valid request": {
+			valid: true,
+		},
+		"wrong number of args": {
+			args: []string{
+				"extra",
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		tc := tc
+		s.Run(name, func() {
+			cmd := authcli.GetAccountsCmd()
+			clientCtx := val.ClientCtx
+
+			out, err := clitestutil.ExecTestCLICmd(clientCtx, cmd, append(tc.args, commonArgs...))
+			if !tc.valid {
+				s.Require().Error(err)
+				return
+			}
+			s.Require().NoError(err)
+
+			var res authtypes.QueryAccountsResponse
+			s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(out.Bytes(), &res))
+			s.Require().NotEmpty(res.Accounts)
+		})
+	}
 }
 
 func (s *IntegrationTestSuite) TestQueryModuleAccountByNameCmd() {
@@ -1158,7 +1238,7 @@ func (s *IntegrationTestSuite) TestQueryModuleAccountByNameCmd() {
 
 			out, err := clitestutil.ExecTestCLICmd(clientCtx, authcli.QueryModuleAccountByNameCmd(), []string{
 				tc.moduleName,
-				fmt.Sprintf("--%s=json", tmcli.OutputFlag),
+				fmt.Sprintf("--%s=json", ostcli.OutputFlag),
 			})
 			if tc.expectErr {
 				s.Require().Error(err)
@@ -1204,9 +1284,9 @@ func TestGetBroadcastCommandWithoutOfflineFlag(t *testing.T) {
 	// Create new file with tx
 	builder := txCfg.NewTxBuilder()
 	builder.SetGasLimit(200000)
-	from, err := sdk.AccAddressFromBech32("cosmos1cxlt8kznps92fwu3j6npahx4mjfutydyene2qw")
+	from, err := sdk.AccAddressFromBech32("link1xpesesq0zddk2ersedyezgtywr0q92a34ddfku")
 	require.NoError(t, err)
-	to, err := sdk.AccAddressFromBech32("cosmos1cxlt8kznps92fwu3j6npahx4mjfutydyene2qw")
+	to, err := sdk.AccAddressFromBech32("link1xpesesq0zddk2ersedyezgtywr0q92a34ddfku")
 	require.NoError(t, err)
 	err = builder.SetMsgs(banktypes.NewMsgSend(from, to, sdk.Coins{sdk.NewInt64Coin("stake", 10000)}))
 	require.NoError(t, err)
@@ -1231,12 +1311,12 @@ func (s *IntegrationTestSuite) TestQueryParamsCmd() {
 	}{
 		{
 			"happy case",
-			[]string{fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+			[]string{fmt.Sprintf("--%s=json", ostcli.OutputFlag)},
 			false,
 		},
 		{
 			"with specific height",
-			[]string{fmt.Sprintf("--%s=1", flags.FlagHeight), fmt.Sprintf("--%s=json", tmcli.OutputFlag)},
+			[]string{fmt.Sprintf("--%s=1", flags.FlagHeight), fmt.Sprintf("--%s=json", ostcli.OutputFlag)},
 			false,
 		},
 	}
@@ -1293,7 +1373,7 @@ func (s *IntegrationTestSuite) TestTxWithoutPublicKey() {
 	unsignedTxFile := testutil.WriteToNewTempFile(s.T(), string(txJSON))
 
 	// Sign the file with the unsignedTx.
-	signedTx, err := TxSignExec(val1.ClientCtx, val1.Address, unsignedTxFile.Name())
+	signedTx, err := TxSignExec(val1.ClientCtx, val1.Address, unsignedTxFile.Name(), fmt.Sprintf("--%s=true", cli.FlagOverwrite))
 	s.Require().NoError(err)
 
 	// Remove the signerInfo's `public_key` field manually from the signedTx.

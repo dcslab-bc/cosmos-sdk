@@ -7,12 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	gcutils "github.com/cosmos/cosmos-sdk/x/gov/client/utils"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/version"
+	gcutils "github.com/line/lbm-sdk/x/gov/client/utils"
+	"github.com/line/lbm-sdk/x/gov/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -94,13 +94,14 @@ $ %s query gov proposal 1
 func GetCmdQueryProposals() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "proposals",
+		Args:  cobra.NoArgs,
 		Short: "Query proposals with optional filters",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query for a all paginated proposals that match optional filters:
 
 Example:
-$ %s query gov proposals --depositor cosmos1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
-$ %s query gov proposals --voter cosmos1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
+$ %s query gov proposals --depositor link1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
+$ %s query gov proposals --voter link1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
 $ %s query gov proposals --status (DepositPeriod|VotingPeriod|Passed|Rejected)
 $ %s query gov proposals --page=2 --limit=100
 `,
@@ -188,7 +189,7 @@ func GetCmdQueryVote() *cobra.Command {
 			fmt.Sprintf(`Query details for a single vote on a proposal given its identifier.
 
 Example:
-$ %s query gov vote 1 cosmos1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
+$ %s query gov vote 1 link1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
 `,
 				version.AppName,
 			),
@@ -343,7 +344,7 @@ func GetCmdQueryDeposit() *cobra.Command {
 			fmt.Sprintf(`Query details for a single proposal deposit on a proposal by its identifier.
 
 Example:
-$ %s query gov deposit 1 cosmos1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
+$ %s query gov deposit 1 link1skjwj5whet0lpe65qaq4rpq03hjxlwd9nf39lk
 `,
 				version.AppName,
 			),

@@ -3,13 +3,13 @@ package streaming
 import (
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store/streaming/file"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/line/lbm-sdk/codec"
+	codecTypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/store/streaming/file"
+	"github.com/line/lbm-sdk/store/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 type fakeOptions struct{}

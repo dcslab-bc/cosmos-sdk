@@ -3,14 +3,16 @@ package testutil
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+
+	"github.com/line/lbm-sdk/simapp"
+	clitestutil "github.com/line/lbm-sdk/testutil/cli"
+	"github.com/line/lbm-sdk/testutil/network"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/upgrade/client/cli"
+	"github.com/line/lbm-sdk/x/upgrade/types"
 )
 
 func NewIntegrationTestSuite(cfg network.Config) *IntegrationTestSuite {
@@ -30,7 +32,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("setting up integration test suite")
 	app := simapp.Setup(false)
 	s.app = app
-	s.ctx = app.BaseApp.NewContext(false, tmproto.Header{})
+	s.ctx = app.BaseApp.NewContext(false, ocproto.Header{})
 
 	cfg := network.DefaultConfig()
 	cfg.NumValidators = 1
@@ -80,7 +82,8 @@ func (s *IntegrationTestSuite) TestModuleVersionsCLI() {
 	mv := s.app.UpgradeKeeper.GetModuleVersions(s.ctx)
 	s.Require().NotEmpty(vm)
 
-	for _, tc := range testCases {
+	for _, stc := range testCases {
+		tc := stc
 		s.Run(fmt.Sprintf("Case %s", tc.msg), func() {
 			expect := mv
 			if tc.expPass {

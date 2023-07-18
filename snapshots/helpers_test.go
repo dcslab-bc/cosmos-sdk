@@ -13,12 +13,12 @@ import (
 
 	protoio "github.com/gogo/protobuf/io"
 	"github.com/stretchr/testify/require"
-	db "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/snapshots/types"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	dbm "github.com/tendermint/tm-db"
+
+	"github.com/line/lbm-sdk/snapshots"
+	snapshottypes "github.com/line/lbm-sdk/snapshots/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
 )
 
 func checksums(slice [][]byte) [][]byte {
@@ -74,7 +74,7 @@ func snapshotItems(items [][]byte) [][]byte {
 		zWriter, _ := zlib.NewWriterLevel(bufWriter, 7)
 		protoWriter := protoio.NewDelimitedWriter(zWriter)
 		for _, item := range items {
-			types.WriteExtensionItem(protoWriter, item)
+			snapshottypes.WriteExtensionItem(protoWriter, item)
 		}
 		protoWriter.Close()
 		zWriter.Close()
@@ -101,7 +101,7 @@ func (m *mockSnapshotter) Restore(
 	height uint64, format uint32, protoReader protoio.Reader,
 ) (snapshottypes.SnapshotItem, error) {
 	if format == 0 {
-		return snapshottypes.SnapshotItem{}, types.ErrUnknownFormat
+		return snapshottypes.SnapshotItem{}, snapshottypes.ErrUnknownFormat
 	}
 	if m.items != nil {
 		return snapshottypes.SnapshotItem{}, errors.New("already has contents")
@@ -128,7 +128,7 @@ func (m *mockSnapshotter) Restore(
 
 func (m *mockSnapshotter) Snapshot(height uint64, protoWriter protoio.Writer) error {
 	for _, item := range m.items {
-		if err := types.WriteExtensionItem(protoWriter, item); err != nil {
+		if err := snapshottypes.WriteExtensionItem(protoWriter, item); err != nil {
 			return err
 		}
 	}
@@ -153,7 +153,7 @@ func setupBusyManager(t *testing.T) *snapshots.Manager {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = os.RemoveAll(tempdir) })
 
-	store, err := snapshots.NewStore(db.NewMemDB(), tempdir)
+	store, err := snapshots.NewStore(dbm.NewMemDB(), tempdir)
 	require.NoError(t, err)
 	hung := newHungSnapshotter()
 	mgr := snapshots.NewManager(store, hung)

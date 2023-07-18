@@ -3,12 +3,13 @@ package types_test
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
+	"github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/testutil/testdata"
 )
 
 type errOnMarshal struct {
@@ -29,11 +30,17 @@ var eom = &errOnMarshal{}
 // See https://github.com/cosmos/cosmos-sdk/issues/8537
 func TestNewAnyWithCustomTypeURLWithErrorNoAllocation(t *testing.T) {
 	var ms1, ms2 runtime.MemStats
+
+	debug.SetGCPercent(-1) // disable gc. See the comments below for reasons.
 	runtime.ReadMemStats(&ms1)
 	any, err := types.NewAnyWithValue(eom)
 	runtime.ReadMemStats(&ms2)
+	debug.SetGCPercent(100) // resume gc
 	// Ensure that no fresh allocation was made.
 	if diff := ms2.HeapAlloc - ms1.HeapAlloc; diff > 0 {
+		// In some cases, `ms1.HeapAlloc` is larger than `ms2.HeapAlloc`.
+		// It is probably because the gc worked.
+		// That's why we turned off the gc for a while.
 		t.Errorf("Unexpected allocation of %d bytes", diff)
 	}
 	if err == nil {

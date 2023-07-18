@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/x/evidence/types"
 
 	"github.com/spf13/cobra"
 )

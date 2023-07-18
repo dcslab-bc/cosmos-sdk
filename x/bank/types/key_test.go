@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/address"
+	"github.com/line/lbm-sdk/x/bank/types"
 )
 
 func cloneAppend(bz []byte, tail []byte) (res []byte) {
@@ -20,7 +20,7 @@ func cloneAppend(bz []byte, tail []byte) (res []byte) {
 }
 
 func TestAddressFromBalancesStore(t *testing.T) {
-	addr, err := sdk.AccAddressFromBech32("cosmos1n88uc38xhjgxzw9nwre4ep2c8ga4fjxcar6mn7")
+	addr, err := sdk.AccAddressFromBech32("link19tzp7e489drh9qfs9m84k2qe5a5yyknzen48tz")
 	require.NoError(t, err)
 	addrLen := len(addr)
 	require.Equal(t, 20, addrLen)

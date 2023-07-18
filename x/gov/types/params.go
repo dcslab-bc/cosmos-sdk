@@ -6,8 +6,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	sdk "github.com/line/lbm-sdk/types"
+	paramtypes "github.com/line/lbm-sdk/x/params/types"
 )
 
 // Default period for deposits & voting

@@ -2,9 +2,9 @@ package exported
 
 import (
 	"github.com/gogo/protobuf/proto"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	ostbytes "github.com/line/ostracon/libs/bytes"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // Evidence defines the contract which concrete evidence types of misbehavior
@@ -15,7 +15,7 @@ type Evidence interface {
 	Route() string
 	Type() string
 	String() string
-	Hash() tmbytes.HexBytes
+	Hash() ostbytes.HexBytes
 	ValidateBasic() error
 
 	// Height at which the infraction occurred

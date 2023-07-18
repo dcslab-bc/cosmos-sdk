@@ -3,11 +3,11 @@ package tx
 import (
 	"fmt"
 
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	signingtypes "github.com/line/lbm-sdk/types/tx/signing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	sdk "github.com/line/lbm-sdk/types"
+	types "github.com/line/lbm-sdk/types/tx"
+	"github.com/line/lbm-sdk/x/auth/signing"
 )
 
 // signModeDirectHandler defines the SIGN_MODE_DIRECT SignModeHandler
@@ -43,7 +43,7 @@ func (signModeDirectHandler) GetSignBytes(mode signingtypes.SignMode, data signi
 }
 
 // DirectSignBytes returns the SIGN_MODE_DIRECT sign bytes for the provided TxBody bytes, AuthInfo bytes, chain ID,
-// account number and sequence.
+// account number.
 func DirectSignBytes(bodyBytes, authInfoBytes []byte, chainID string, accnum uint64) ([]byte, error) {
 	signDoc := types.SignDoc{
 		BodyBytes:     bodyBytes,

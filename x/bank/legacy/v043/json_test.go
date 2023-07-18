@@ -6,11 +6,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	v043bank "github.com/cosmos/cosmos-sdk/x/bank/legacy/v043"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	v043bank "github.com/line/lbm-sdk/x/bank/legacy/v043"
+	"github.com/line/lbm-sdk/x/bank/types"
 )
 
 func TestMigrateJSON(t *testing.T) {
@@ -20,7 +20,7 @@ func TestMigrateJSON(t *testing.T) {
 		WithTxConfig(encodingConfig.TxConfig).
 		WithCodec(encodingConfig.Marshaler)
 
-	voter, err := sdk.AccAddressFromBech32("cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh")
+	voter, err := sdk.AccAddressFromBech32("link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl")
 	require.NoError(t, err)
 	bankGenState := &types.GenesisState{
 		Balances: []types.Balance{
@@ -59,7 +59,7 @@ func TestMigrateJSON(t *testing.T) {
 	expected := `{
 	"balances": [
 		{
-			"address": "cosmos1fl48vsnmsdzcv85q5d2q4z5ajdha8yu34mf0eh",
+			"address": "link1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3q4fdzl",
 			"coins": [
 				{
 					"amount": "20",

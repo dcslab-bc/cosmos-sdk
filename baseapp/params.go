@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+	octypes "github.com/line/ostracon/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // Paramspace defines the parameter subspace to be used for the paramstore.
@@ -50,7 +51,7 @@ func ValidateBlockParams(i interface{}) error {
 // ValidateEvidenceParams defines a stateless validation on EvidenceParams. This
 // function is called whenever the parameters are updated or stored.
 func ValidateEvidenceParams(i interface{}) error {
-	v, ok := i.(tmproto.EvidenceParams)
+	v, ok := i.(ocproto.EvidenceParams)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
@@ -73,13 +74,22 @@ func ValidateEvidenceParams(i interface{}) error {
 // ValidateValidatorParams defines a stateless validation on ValidatorParams. This
 // function is called whenever the parameters are updated or stored.
 func ValidateValidatorParams(i interface{}) error {
-	v, ok := i.(tmproto.ValidatorParams)
+	v, ok := i.(ocproto.ValidatorParams)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
 
 	if len(v.PubKeyTypes) == 0 {
 		return errors.New("validator allowed pubkey types must not be empty")
+	}
+
+	for _, pubKeyType := range v.PubKeyTypes {
+		switch pubKeyType {
+		case octypes.ABCIPubKeyTypeBls12WithEd25519, octypes.ABCIPubKeyTypeEd25519, octypes.ABCIPubKeyTypeSecp256k1, octypes.ABCIPubKeyTypeBls12:
+			continue
+		default:
+			return fmt.Errorf("not-allowed pubkey type: %s", pubKeyType)
+		}
 	}
 
 	return nil

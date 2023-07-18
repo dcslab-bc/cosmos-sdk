@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"time"
 
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/suite"
-	tmcli "github.com/tendermint/tendermint/libs/cli"
+
+	ostcli "github.com/line/ostracon/libs/cli"
+
+	clitestutil "github.com/line/lbm-sdk/testutil/cli"
+	"github.com/line/lbm-sdk/testutil/network"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/gov/client/cli"
+	"github.com/line/lbm-sdk/x/gov/types"
 )
 
 type DepositTestSuite struct {
@@ -108,7 +110,7 @@ func (s *DepositTestSuite) TestQueryProposalNotEnoughDeposits() {
 	s.Require().NoError(err)
 
 	// query proposal
-	args := []string{"3", fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	args := []string{"3", fmt.Sprintf("--%s=json", ostcli.OutputFlag)}
 	cmd := cli.GetCmdQueryProposal()
 	_, err = clitestutil.ExecTestCLICmd(clientCtx, cmd, args)
 	s.Require().NoError(err)
@@ -135,7 +137,7 @@ func (s *DepositTestSuite) TestRejectedProposalDeposits() {
 
 	// query deposits
 	var deposits types.QueryDepositsResponse
-	args := []string{"4", fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	args := []string{"4", fmt.Sprintf("--%s=json", ostcli.OutputFlag)}
 	cmd := cli.GetCmdQueryDeposits()
 	out, err := clitestutil.ExecTestCLICmd(val.ClientCtx, cmd, args)
 	s.Require().NoError(err)
@@ -150,7 +152,7 @@ func (s *DepositTestSuite) TestRejectedProposalDeposits() {
 
 	time.Sleep(20 * time.Second)
 
-	args = []string{"4", fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	args = []string{"4", fmt.Sprintf("--%s=json", ostcli.OutputFlag)}
 	cmd = cli.GetCmdQueryProposal()
 	_, err = clitestutil.ExecTestCLICmd(clientCtx, cmd, args)
 	s.Require().NoError(err)
@@ -163,7 +165,7 @@ func (s *DepositTestSuite) TestRejectedProposalDeposits() {
 }
 
 func (s *DepositTestSuite) queryDeposits(val *network.Validator, proposalID string, exceptErr bool) types.Deposits {
-	args := []string{proposalID, fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	args := []string{proposalID, fmt.Sprintf("--%s=json", ostcli.OutputFlag)}
 	var depositsRes types.Deposits
 	cmd := cli.GetCmdQueryDeposits()
 	out, err := clitestutil.ExecTestCLICmd(val.ClientCtx, cmd, args)
@@ -177,7 +179,7 @@ func (s *DepositTestSuite) queryDeposits(val *network.Validator, proposalID stri
 }
 
 func (s *DepositTestSuite) queryDeposit(val *network.Validator, proposalID string, exceptErr bool) *types.Deposit {
-	args := []string{proposalID, val.Address.String(), fmt.Sprintf("--%s=json", tmcli.OutputFlag)}
+	args := []string{proposalID, val.Address.String(), fmt.Sprintf("--%s=json", ostcli.OutputFlag)}
 	var depositRes types.Deposit
 	cmd := cli.GetCmdQueryDeposit()
 	out, err := clitestutil.ExecTestCLICmd(val.ClientCtx, cmd, args)

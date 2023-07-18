@@ -5,17 +5,17 @@ import (
 	"testing"
 	"time"
 
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/evidence"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/keeper"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/line/lbm-sdk/crypto/keys/ed25519"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/evidence"
+	"github.com/line/lbm-sdk/x/evidence/exported"
+	"github.com/line/lbm-sdk/x/evidence/keeper"
+	"github.com/line/lbm-sdk/x/evidence/types"
 )
 
 type HandlerTestSuite struct {
@@ -104,7 +104,7 @@ func (suite *HandlerTestSuite) TestMsgSubmitEvidence() {
 	}
 
 	for i, tc := range testCases {
-		ctx := suite.app.BaseApp.NewContext(false, tmproto.Header{Height: suite.app.LastBlockHeight() + 1})
+		ctx := suite.app.BaseApp.NewContext(false, ocproto.Header{Height: suite.app.LastBlockHeight() + 1})
 
 		res, err := suite.handler(ctx, tc.msg)
 		if tc.expectErr {

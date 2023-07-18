@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
+	"github.com/line/lbm-sdk/simapp"
 )
 
 // Issue #7739: Catch parse errors resulting from unexpected EOF in

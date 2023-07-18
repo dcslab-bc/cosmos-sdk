@@ -3,26 +3,26 @@ package upgrade_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	abci "github.com/line/ostracon/abci/types"
+	"github.com/line/ostracon/libs/log"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/line/lbm-sdk/simapp"
+	storetypes "github.com/line/lbm-sdk/store/types"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/module"
+	govtypes "github.com/line/lbm-sdk/x/gov/types"
+	"github.com/line/lbm-sdk/x/upgrade"
+	"github.com/line/lbm-sdk/x/upgrade/keeper"
+	"github.com/line/lbm-sdk/x/upgrade/types"
 )
 
 type TestSuite struct {
@@ -37,7 +37,7 @@ var s TestSuite
 
 func setupTest(height int64, skip map[int64]bool) TestSuite {
 	db := dbm.NewMemDB()
-	app := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, skip, simapp.DefaultNodeHome, 0, simapp.MakeTestEncodingConfig(), simapp.EmptyAppOptions{})
+	app := simapp.NewSimApp(log.NewNopLogger(), db, nil, true, skip, simapp.DefaultNodeHome, 0, simapp.MakeTestEncodingConfig(), simapp.EmptyAppOptions{}, nil)
 	genesisState := simapp.NewDefaultGenesisState(app.AppCodec())
 	stateBytes, err := json.MarshalIndent(genesisState, "", "  ")
 	if err != nil {
@@ -51,7 +51,7 @@ func setupTest(height int64, skip map[int64]bool) TestSuite {
 	)
 
 	s.keeper = app.UpgradeKeeper
-	s.ctx = app.BaseApp.NewContext(false, tmproto.Header{Height: height, Time: time.Now()})
+	s.ctx = app.BaseApp.NewContext(false, ocproto.Header{Height: height, Time: time.Now()})
 
 	s.module = upgrade.NewAppModule(s.keeper)
 	s.querier = s.module.LegacyQuerierHandler(app.LegacyAmino())
@@ -95,7 +95,7 @@ func TestCanOverwriteScheduleUpgrade(t *testing.T) {
 }
 
 func VerifyDoUpgrade(t *testing.T) {
-	t.Log("Verify that a panic happens at the upgrade height")
+	t.Log("Verify that a panic happens at the upgrade time/height")
 	newCtx := s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1).WithBlockTime(time.Now())
 
 	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
@@ -115,7 +115,7 @@ func VerifyDoUpgrade(t *testing.T) {
 }
 
 func VerifyDoUpgradeWithCtx(t *testing.T, newCtx sdk.Context, proposalName string) {
-	t.Log("Verify that a panic happens at the upgrade height")
+	t.Log("Verify that a panic happens at the upgrade time/height")
 	req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
 	require.Panics(t, func() {
 		s.module.BeginBlock(newCtx, req)
@@ -211,13 +211,13 @@ func TestNoSpuriousUpgrades(t *testing.T) {
 func TestPlanStringer(t *testing.T) {
 	require.Equal(t, `Upgrade Plan
   Name: test
-  height: 100
+  Height: 100
   Info: .`, types.Plan{Name: "test", Height: 100, Info: ""}.String())
 
-	require.Equal(t, fmt.Sprintf(`Upgrade Plan
+	require.Equal(t, `Upgrade Plan
   Name: test
-  height: 100
-  Info: .`), types.Plan{Name: "test", Height: 100, Info: ""}.String())
+  Height: 100
+  Info: .`, types.Plan{Name: "test", Height: 100, Info: ""}.String())
 }
 
 func VerifyNotDone(t *testing.T, newCtx sdk.Context, name string) {

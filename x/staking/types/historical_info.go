@@ -4,17 +4,17 @@ import (
 	"sort"
 
 	"github.com/gogo/protobuf/proto"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/line/lbm-sdk/codec"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
 )
 
 // NewHistoricalInfo will create a historical information struct from header and valset
 // it will first sort valset before inclusion into historical info
-func NewHistoricalInfo(header tmproto.Header, valSet Validators, powerReduction sdk.Int) HistoricalInfo {
+func NewHistoricalInfo(header ocproto.Header, valSet Validators, powerReduction sdk.Int) HistoricalInfo {
 	// Must sort in the same way that tendermint does
 	sort.SliceStable(valSet, func(i, j int) bool {
 		return ValidatorsByVotingPower(valSet).Less(i, j, powerReduction)

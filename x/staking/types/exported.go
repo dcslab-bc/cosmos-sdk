@@ -1,10 +1,10 @@
 package types
 
 import (
-	tmprotocrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
+	ocprotocrypto "github.com/line/ostracon/proto/ostracon/crypto"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // DelegationI delegation bond for a delegated proof of stake system
@@ -24,7 +24,7 @@ type ValidatorI interface {
 	IsUnbonding() bool                                      // check if has status unbonding
 	GetOperator() sdk.ValAddress                            // operator address to receive/return validators coins
 	ConsPubKey() (cryptotypes.PubKey, error)                // validation consensus pubkey (cryptotypes.PubKey)
-	TmConsPublicKey() (tmprotocrypto.PublicKey, error)      // validation consensus pubkey (Tendermint)
+	OcConsPublicKey() (ocprotocrypto.PublicKey, error)      // validation consensus pubkey (Ostracon)
 	GetConsAddr() (sdk.ConsAddress, error)                  // validation consensus address
 	GetTokens() sdk.Int                                     // validation tokens
 	GetBondedTokens() sdk.Int                               // validator bonded tokens

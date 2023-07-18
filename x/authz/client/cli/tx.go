@@ -8,15 +8,15 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/version"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	"github.com/cosmos/cosmos-sdk/x/authz"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/client/tx"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/version"
+	authclient "github.com/line/lbm-sdk/x/auth/client"
+	"github.com/line/lbm-sdk/x/authz"
+	bank "github.com/line/lbm-sdk/x/bank/types"
+	staking "github.com/line/lbm-sdk/x/staking/types"
 )
 
 // Flag names and values
@@ -59,8 +59,8 @@ func NewCmdGrantAuthorization() *cobra.Command {
 			fmt.Sprintf(`grant authorization to an address to execute a transaction on your behalf:
 
 Examples:
- $ %s tx %s grant cosmos1skjw.. send %s --spend-limit=1000stake --from=cosmos1skl..
- $ %s tx %s grant cosmos1skjw.. generic --msg-type=/cosmos.gov.v1beta1.MsgVote --from=cosmos1sk..
+ $ %s tx %s grant link1skjw.. send %s --spend-limit=1000stake --from=link1skl..
+ $ %s tx %s grant link1skjw.. generic --msg-type=/cosmos.gov.v1beta1.MsgVote --from=link1sk..
 	`, version.AppName, authz.ModuleName, bank.SendAuthorization{}.MsgTypeURL(), version.AppName, authz.ModuleName),
 		),
 		Args: cobra.ExactArgs(2),
@@ -184,7 +184,7 @@ func NewCmdRevokeAuthorization() *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`revoke authorization from a granter to a grantee:
 Example:
- $ %s tx %s revoke cosmos1skj.. %s --from=cosmos1skj..
+ $ %s tx %s revoke link1skj.. %s --from=link1skj..
 			`, version.AppName, authz.ModuleName, bank.SendAuthorization{}.MsgTypeURL()),
 		),
 		Args: cobra.ExactArgs(2),

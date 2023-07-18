@@ -1,9 +1,9 @@
 package types
 
 import (
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	ostbytes "github.com/line/ostracon/libs/bytes"
 
-	query "github.com/cosmos/cosmos-sdk/types/query"
+	query "github.com/line/lbm-sdk/types/query"
 )
 
 // Querier routes for the evidence module
@@ -13,7 +13,7 @@ const (
 )
 
 // NewQueryEvidenceRequest creates a new instance of QueryEvidenceRequest.
-func NewQueryEvidenceRequest(hash tmbytes.HexBytes) *QueryEvidenceRequest {
+func NewQueryEvidenceRequest(hash ostbytes.HexBytes) *QueryEvidenceRequest {
 	return &QueryEvidenceRequest{EvidenceHash: hash}
 }
 

@@ -1,12 +1,12 @@
 package client
 
 import (
+	rpchttp "github.com/line/ostracon/rpc/client/http"
 	"github.com/spf13/pflag"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/line/lbm-sdk/client/flags"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/query"
 )
 
 // Paginate returns the correct starting and ending index for a paginated query,
@@ -54,6 +54,10 @@ func ReadPageRequest(flagSet *pflag.FlagSet) (*query.PageRequest, error) {
 	page, _ := flagSet.GetUint64(flags.FlagPage)
 	reverse, _ := flagSet.GetBool(flags.FlagReverse)
 
+	return NewPageRequest(pageKey, offset, limit, page, countTotal, reverse)
+}
+
+func NewPageRequest(pageKey string, offset, limit, page uint64, countTotal bool, reverse bool) (*query.PageRequest, error) {
 	if page > 1 && offset > 0 {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "page and offset cannot be used together")
 	}

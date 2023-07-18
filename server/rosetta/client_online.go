@@ -11,26 +11,22 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/version"
-
-	abcitypes "github.com/tendermint/tendermint/abci/types"
-
 	rosettatypes "github.com/coinbase/rosetta-sdk-go/types"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/tendermint/tendermint/rpc/client/http"
-	"google.golang.org/grpc"
+	abcitypes "github.com/line/ostracon/abci/types"
+	ocrpc "github.com/line/ostracon/rpc/client"
+	"github.com/line/ostracon/rpc/client/http"
 
-	crgerrs "github.com/cosmos/cosmos-sdk/server/rosetta/lib/errors"
-	crgtypes "github.com/cosmos/cosmos-sdk/server/rosetta/lib/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	auth "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
-
-	tmrpc "github.com/tendermint/tendermint/rpc/client"
+	crgerrs "github.com/line/lbm-sdk/server/rosetta/lib/errors"
+	crgtypes "github.com/line/lbm-sdk/server/rosetta/lib/types"
+	sdk "github.com/line/lbm-sdk/types"
+	grpctypes "github.com/line/lbm-sdk/types/grpc"
+	"github.com/line/lbm-sdk/version"
+	authtx "github.com/line/lbm-sdk/x/auth/tx"
+	auth "github.com/line/lbm-sdk/x/auth/types"
+	bank "github.com/line/lbm-sdk/x/bank/types"
 )
 
 // interface assertion
@@ -49,7 +45,7 @@ type Client struct {
 
 	auth  auth.QueryClient
 	bank  bank.QueryClient
-	tmRPC tmrpc.Client
+	tmRPC ocrpc.Client
 
 	version string
 
@@ -250,8 +246,7 @@ func (c *Client) TxOperationsAndSignersAccountIdentifiers(signed bool, txBytes [
 }
 
 // GetTx returns a transaction given its hash. For Rosetta we  make a synthetic transaction for BeginBlock
-//
-//	and EndBlock to adhere to balance tracking rules.
+// and EndBlock to adhere to balance tracking rules.
 func (c *Client) GetTx(ctx context.Context, hash string) (*rosettatypes.Transaction, error) {
 	hashBytes, err := hex.DecodeString(hash)
 	if err != nil {

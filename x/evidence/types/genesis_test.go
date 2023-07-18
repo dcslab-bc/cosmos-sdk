@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
+	ostbytes "github.com/line/ostracon/libs/bytes"
 	"github.com/stretchr/testify/require"
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/line/lbm-sdk/codec"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/crypto/keys/ed25519"
+	"github.com/line/lbm-sdk/x/evidence/exported"
+	"github.com/line/lbm-sdk/x/evidence/types"
 )
 
 func TestDefaultGenesisState(t *testing.T) {
@@ -175,8 +175,8 @@ func (*TestEvidence) String() string {
 func (*TestEvidence) ProtoMessage() {}
 func (*TestEvidence) Reset()        {}
 
-func (*TestEvidence) Hash() tmbytes.HexBytes {
-	return tmbytes.HexBytes([]byte("test-hash"))
+func (*TestEvidence) Hash() ostbytes.HexBytes {
+	return ostbytes.HexBytes([]byte("test-hash"))
 }
 
 func (*TestEvidence) ValidateBasic() error {

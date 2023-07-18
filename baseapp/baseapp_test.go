@@ -7,15 +7,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	abci "github.com/line/ostracon/abci/types"
+	"github.com/line/ostracon/libs/log"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/codec/legacy"
+	"github.com/line/lbm-sdk/server/config"
+	"github.com/line/lbm-sdk/snapshots"
+	store "github.com/line/lbm-sdk/store/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/auth/legacy/legacytx"
 )
 
 var (
@@ -24,7 +28,7 @@ var (
 )
 
 func defaultLogger() log.Logger {
-	return log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "sdk/app")
+	return log.NewOCLogger(log.NewSyncWriter(os.Stdout)).With("module", "sdk/app")
 }
 
 func newBaseApp(name string, options ...func(*BaseApp)) *BaseApp {
@@ -41,10 +45,10 @@ func registerTestCodec(cdc *codec.LegacyAmino) {
 
 	// register test types
 	cdc.RegisterConcrete(&txTest{}, "cosmos-sdk/baseapp/txTest", nil)
-	cdc.RegisterConcrete(&msgCounter{}, "cosmos-sdk/baseapp/msgCounter", nil)
-	cdc.RegisterConcrete(&msgCounter2{}, "cosmos-sdk/baseapp/msgCounter2", nil)
-	cdc.RegisterConcrete(&msgKeyValue{}, "cosmos-sdk/baseapp/msgKeyValue", nil)
-	cdc.RegisterConcrete(&msgNoRoute{}, "cosmos-sdk/baseapp/msgNoRoute", nil)
+	legacy.RegisterAminoMsg(cdc, &msgCounter{}, "cosmos-sdk/baseapp/msgCounter")
+	legacy.RegisterAminoMsg(cdc, &msgCounter2{}, "cosmos-sdk/baseapp/msgCounter2")
+	legacy.RegisterAminoMsg(cdc, &msgKeyValue{}, "cosmos-sdk/baseapp/msgKeyValue")
+	legacy.RegisterAminoMsg(cdc, &msgNoRoute{}, "cosmos-sdk/baseapp/msgNoRoute")
 }
 
 // aminoTxEncoder creates a amino TxEncoder for testing purposes.
@@ -101,7 +105,7 @@ func TestLoadVersionPruning(t *testing.T) {
 	// Commit seven blocks, of which 7 (latest) is kept in addition to 6, 5
 	// (keep recent) and 3 (keep every).
 	for i := int64(1); i <= 7; i++ {
-		app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: i}})
+		app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: i}})
 		res := app.Commit()
 		lastCommitID = sdk.CommitID{Version: i, Hash: res.Data}
 	}
@@ -141,7 +145,7 @@ func TestSetMinGasPrices(t *testing.T) {
 func TestGetMaximumBlockGas(t *testing.T) {
 	app := setupBaseApp(t)
 	app.InitChain(abci.RequestInitChain{})
-	ctx := app.NewContext(true, tmproto.Header{})
+	ctx := app.NewContext(true, ocproto.Header{})
 
 	app.StoreConsensusParams(ctx, &abci.ConsensusParams{Block: &abci.BlockParams{MaxGas: 0}})
 	require.Equal(t, uint64(0), app.getMaximumBlockGas(ctx))
@@ -193,4 +197,34 @@ func TestListSnapshots(t *testing.T) {
 		s.Metadata = nil
 	}
 	assert.Equal(t, expected, resp)
+}
+
+func TestSnapshotManager(t *testing.T) {
+	app := newBaseApp(t.Name())
+	require.Nil(t, app.SnapshotManager())
+
+	tempDir := t.TempDir()
+	snapshotDB, err := sdk.NewLevelDB("metadata", tempDir)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	snapshotStore, err := snapshots.NewStore(snapshotDB, tempDir)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	app.SetSnapshotStore(snapshotStore)
+	require.NotNil(t, app.SnapshotManager())
+}
+
+func TestSetChanCheckTxSize(t *testing.T) {
+	logger := defaultLogger()
+	db := dbm.NewMemDB()
+
+	var size = uint(100)
+
+	app := NewBaseApp(t.Name(), logger, db, nil, SetChanCheckTxSize(size))
+	require.Equal(t, int(size), cap(app.chCheckTx))
+
+	app = NewBaseApp(t.Name(), logger, db, nil)
+	require.Equal(t, config.DefaultChanCheckTxSize, cap(app.chCheckTx))
 }

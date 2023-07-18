@@ -5,10 +5,10 @@
 package mocks
 
 import (
-	reflect "reflect"
+	"reflect"
 
-	types "github.com/cosmos/cosmos-sdk/types"
 	gomock "github.com/golang/mock/gomock"
+	types "github.com/line/lbm-sdk/types"
 )
 
 // MockInvariantRegistry is a mock of InvariantRegistry interface.

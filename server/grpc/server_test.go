@@ -18,21 +18,21 @@ import (
 	"google.golang.org/grpc/metadata"
 	rpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	reflectionv1 "github.com/cosmos/cosmos-sdk/client/grpc/reflection"
-	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	reflectionv2 "github.com/cosmos/cosmos-sdk/server/grpc/reflection/v2alpha1"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/testutil/network"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
-	"github.com/cosmos/cosmos-sdk/types/tx"
-	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/client"
+	reflectionv1 "github.com/line/lbm-sdk/client/grpc/reflection"
+	clienttx "github.com/line/lbm-sdk/client/tx"
+	reflectionv2 "github.com/line/lbm-sdk/server/grpc/reflection/v2"
+	"github.com/line/lbm-sdk/simapp"
+	"github.com/line/lbm-sdk/testutil/network"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
+	grpctypes "github.com/line/lbm-sdk/types/grpc"
+	"github.com/line/lbm-sdk/types/tx"
+	txtypes "github.com/line/lbm-sdk/types/tx"
+	"github.com/line/lbm-sdk/types/tx/signing"
+	authclient "github.com/line/lbm-sdk/x/auth/client"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
 )
 
 type IntegrationTestSuite struct {
@@ -230,13 +230,13 @@ func (s *IntegrationTestSuite) TestGRPCUnpacker() {
 	// no unpacked interfaces yet, so ConsAddr will be nil
 	nilAddr, err := validator.Validator.GetConsAddr()
 	require.Error(s.T(), err)
-	require.Nil(s.T(), nilAddr)
+	require.True(s.T(), nilAddr.Empty())
 
 	// unpack the interfaces and now ConsAddr is not nil
 	err = validator.Validator.UnpackInterfaces(ir)
 	require.NoError(s.T(), err)
 	addr, err := validator.Validator.GetConsAddr()
-	require.NotNil(s.T(), addr)
+	require.False(s.T(), addr.Empty())
 	require.NoError(s.T(), err)
 }
 

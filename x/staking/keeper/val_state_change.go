@@ -6,10 +6,9 @@ import (
 	"sort"
 
 	gogotypes "github.com/gogo/protobuf/types"
-	abci "github.com/tendermint/tendermint/abci/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/staking/types"
+	abci "github.com/line/ostracon/abci/types"
 )
 
 // BlockValidatorUpdates calculates the ValidatorUpdates for the current block
@@ -250,7 +249,7 @@ func (k Keeper) unbondedToBonded(ctx sdk.Context, validator types.Validator) (ty
 // UnbondingToUnbonded switches a validator from unbonding state to unbonded state
 func (k Keeper) UnbondingToUnbonded(ctx sdk.Context, validator types.Validator) types.Validator {
 	if !validator.IsUnbonding() {
-		panic(fmt.Sprintf("bad state transition unbondingToBonded, validator: %v\n", validator))
+		panic(fmt.Sprintf("bad state transition unbondingToUnbonded, validator: %v\n", validator))
 	}
 
 	return k.completeUnbondingValidator(ctx, validator)

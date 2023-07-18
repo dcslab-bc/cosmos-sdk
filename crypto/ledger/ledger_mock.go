@@ -9,15 +9,15 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/pkg/errors"
 
-	secp256k1 "github.com/tendermint/btcd/btcec"
-	"github.com/tendermint/tendermint/crypto"
-
 	"github.com/cosmos/go-bip39"
+	secp256k1 "github.com/tendermint/btcd/btcec"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	csecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/ostracon/crypto"
+
+	"github.com/line/lbm-sdk/crypto/hd"
+	csecp256k1 "github.com/line/lbm-sdk/crypto/keys/secp256k1"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // If ledger support (build tag) has been enabled, which implies a CGO dependency,
@@ -80,7 +80,7 @@ func (mock LedgerSECP256K1Mock) GetAddressPubKeySECP256K1(derivationPath []uint3
 	compressedPublicKey := make([]byte, csecp256k1.PubKeySize)
 	copy(compressedPublicKey, cmp.SerializeCompressed())
 
-	// Generate the bech32 addr using existing tmcrypto/etc.
+	// Generate the bech32 addr using existing occrypto/etc.
 	pub := &csecp256k1.PubKey{Key: compressedPublicKey}
 	addr := sdk.AccAddress(pub.Address()).String()
 	return pk, addr, err

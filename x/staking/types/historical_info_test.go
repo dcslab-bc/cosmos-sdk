@@ -6,13 +6,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/codec/legacy"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
-var header = tmproto.Header{
+var header = ocproto.Header{
 	ChainID: "hello",
 	Height:  5,
 }
@@ -32,11 +35,11 @@ func TestHistoricalInfo(t *testing.T) {
 
 	var value []byte
 	require.NotPanics(t, func() {
-		value = types.ModuleCdc.MustMarshal(&hi)
+		value = legacy.Cdc.MustMarshal(&hi)
 	})
 	require.NotNil(t, value, "Marshalled HistoricalInfo is nil")
 
-	recv, err := types.UnmarshalHistoricalInfo(types.ModuleCdc, value)
+	recv, err := types.UnmarshalHistoricalInfo(codec.NewAminoCodec(legacy.Cdc), value)
 	require.Nil(t, err, "Unmarshalling HistoricalInfo failed")
 	require.Equal(t, hi.Header, recv.Header)
 	for i := range hi.Valset {

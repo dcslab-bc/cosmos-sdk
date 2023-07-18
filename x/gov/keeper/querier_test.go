@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/gov/keeper"
+	"github.com/line/lbm-sdk/x/gov/types"
 )
 
 const custom = "custom"
@@ -146,7 +146,7 @@ func getQueriedVotes(t *testing.T, ctx sdk.Context, cdc *codec.LegacyAmino, quer
 
 func TestQueries(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 	legacyQuerierCdc := app.LegacyAmino()
 	querier := keeper.NewQuerier(app.GovKeeper, legacyQuerierCdc)
 
@@ -305,7 +305,7 @@ func TestQueries(t *testing.T) {
 
 func TestPaginatedVotesQuery(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 	legacyQuerierCdc := app.LegacyAmino()
 
 	proposal := types.Proposal{

@@ -41,7 +41,6 @@ Validators can have one of three statuses
   tombstoning, an unbonding of all their delegations begins. All delegations must then wait the UnbondingTime
   before their tokens are moved to their accounts from the `BondedPool`.
 
-Validators objects should be primarily stored and accessed by the
 `OperatorAddr`, an SDK validator address for the operator of the validator. Two
 additional indices are maintained per validator object in order to fulfill
 required lookups for slashing and validator-set updates. A third special index
@@ -72,7 +71,6 @@ where `Jailed` is true are not stored within this index.
 `LastValidatorsPower` is a special index that provides a historical list of the
 last-block's bonded validators. This index remains constant during a block but
 is updated during the validator set update process which takes place in [`EndBlock`](./05_end_block.md).
-
 Each validator's state is stored in a `Validator` struct:
 
 +++ https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/staking.proto#L65-L99
@@ -173,7 +171,7 @@ used is a slight modification of the RFC3339Nano and uses the the format string
 In all cases, the stored timestamp represents the maturation time of the queue
 element.
 
-### UnbondingDelegationQueue
+### UnbondingDelegationEntry
 
 For the purpose of tracking progress of unbonding delegations the unbonding
 delegations queue is kept.

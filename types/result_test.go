@@ -9,13 +9,14 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/bytes"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/line/ostracon/abci/types"
+	"github.com/line/ostracon/libs/bytes"
+	ctypes "github.com/line/ostracon/rpc/core/types"
+
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 type resultTestSuite struct {
@@ -42,13 +43,77 @@ func (s *resultTestSuite) TestParseABCILog() {
 
 func (s *resultTestSuite) TestABCIMessageLog() {
 	cdc := codec.NewLegacyAmino()
-	events := sdk.Events{sdk.NewEvent("transfer", sdk.NewAttribute("sender", "foo"))}
-	msgLog := sdk.NewABCIMessageLog(0, "", events)
-	msgLogs := sdk.ABCIMessageLogs{msgLog}
-	bz, err := cdc.MarshalJSON(msgLogs)
 
-	s.Require().NoError(err)
-	s.Require().Equal(string(bz), msgLogs.String())
+	const maxIter = 5
+
+	tests := []struct {
+		emptyLog   bool
+		emptyType  bool
+		emptyKey   bool
+		emptyValue bool
+	}{
+		{false, false, false, false},
+		{true, false, false, false},
+		{false, true, false, false},
+		{false, false, true, false},
+		{false, false, false, true},
+		{false, false, true, true},
+		{false, true, false, true},
+		{false, true, true, false},
+		{true, false, false, true},
+		{true, false, true, false},
+		{true, true, false, false},
+		{false, true, true, true},
+		{true, false, true, true},
+		{true, true, false, true},
+		{true, true, true, false},
+		{true, true, true, true},
+	}
+
+	for _, tt := range tests {
+		msgLogs := sdk.ABCIMessageLogs{}
+		for numMsgs := 0; numMsgs < maxIter; numMsgs++ {
+			for i := 0; i < numMsgs; i++ {
+				events := sdk.Events{}
+				for numEvents := 0; numEvents < maxIter; numEvents++ {
+					for j := 0; j < numEvents; j++ {
+						var attributes []sdk.Attribute
+						for numAttributes := 0; numAttributes < maxIter; numAttributes++ {
+							for i := 0; i < numAttributes; i++ {
+								key := ""
+								value := ""
+								if !tt.emptyKey {
+									key = fmt.Sprintf("key%d", i)
+								}
+								if !tt.emptyValue {
+									value = fmt.Sprintf("value%d", i)
+								}
+								attributes = append(attributes, sdk.NewAttribute(key, value))
+							}
+						}
+						typeStr := ""
+						if !tt.emptyType {
+							typeStr = fmt.Sprintf("type%d", i)
+						}
+						events = append(events, sdk.NewEvent(typeStr, attributes...))
+					}
+				}
+
+				log := ""
+				if !tt.emptyLog {
+					log = fmt.Sprintf("log%d", i)
+				}
+				msgLogs = append(msgLogs, sdk.NewABCIMessageLog(uint32(i), log, events))
+			}
+		}
+		bz, err := cdc.MarshalJSON(msgLogs)
+
+		s.Require().NoError(err)
+		s.Require().Equal(string(bz), msgLogs.String())
+	}
+
+	var msgLogs sdk.ABCIMessageLogs
+	s.Require().Equal("", msgLogs.String())
 }
 
 func (s *resultTestSuite) TestNewSearchTxsResult() {
@@ -76,6 +141,7 @@ func (s *resultTestSuite) TestResponseResultTx() {
 	resultTx := &ctypes.ResultTx{
 		Hash:     bytes.HexBytes([]byte("test")),
 		Height:   10,
+		Index:    1,
 		TxResult: deliverTxResult,
 	}
 	logs, err := sdk.ParseABCILogs(`[]`)
@@ -95,6 +161,7 @@ func (s *resultTestSuite) TestResponseResultTx() {
 		GasUsed:   90,
 		Tx:        nil,
 		Timestamp: "timestamp",
+		Index:     1,
 	}
 
 	s.Require().Equal(want, sdk.NewResponseResultTx(resultTx, nil, "timestamp"))
@@ -106,6 +173,7 @@ events: []
 gas_used: "90"
 gas_wanted: "100"
 height: "10"
+index: 1
 info: info
 logs: []
 raw_log: '[]'
@@ -250,4 +318,26 @@ func TestWrapServiceResult(t *testing.T) {
 	err = proto.Unmarshal(res.Data, &spot2)
 	require.NoError(t, err)
 	require.Equal(t, spot, spot2)
+}
+
+func TestNewResponseFormatBroadcastTx(t *testing.T) {
+	hash, err := hex.DecodeString("00000000000000000000000000000000")
+	require.NoError(t, err)
+	result := ctypes.ResultBroadcastTx{
+		Code:      1,
+		Data:      []byte("some data"),
+		Log:       `[{"log":"","msg_index":1,"success":true}]`,
+		Codespace: "codespace",
+		Hash:      hash,
+	}
+
+	txResponse := sdk.NewResponseFormatBroadcastTx(&result)
+
+	require.NoError(t, err)
+	require.Equal(t, result.Code, txResponse.Code)
+	require.Equal(t, result.Data.String(), txResponse.Data)
+	require.NotEmpty(t, txResponse.Logs)
+	require.Equal(t, result.Log, txResponse.RawLog)
+	require.Equal(t, result.Codespace, txResponse.Codespace)
+	require.Equal(t, result.Hash.String(), txResponse.TxHash)
 }

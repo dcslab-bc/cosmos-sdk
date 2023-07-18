@@ -5,13 +5,13 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/line/lbm-sdk/store/cachekv"
+	"github.com/line/lbm-sdk/store/listenkv"
+	"github.com/line/lbm-sdk/store/tracekv"
+	"github.com/line/lbm-sdk/store/types"
 )
 
-// Wrapper type for dbm.Db with implementation of KVStore
+// Wrapper type for dbm.DB with implementation of KVStore
 type Store struct {
 	dbm.DB
 }

@@ -7,15 +7,16 @@ import (
 
 	"github.com/gogo/protobuf/grpc"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/server/api"
-	"github.com/cosmos/cosmos-sdk/server/config"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	abci "github.com/line/ostracon/abci/types"
+	"github.com/line/ostracon/libs/log"
+	octypes "github.com/line/ostracon/types"
+
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/server/api"
+	"github.com/line/lbm-sdk/server/config"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // ServerStartTime defines the time duration that the server need to stay running after startup
@@ -50,7 +51,7 @@ type (
 		// simulation, fetching txs by hash...).
 		RegisterTxService(client.Context)
 
-		// RegisterTendermintService registers the gRPC Query service for tendermint queries.
+		// RegisterTendermintService registers the gRPC Query service for ostracon queries.
 		RegisterTendermintService(client.Context)
 
 		// CommitMultiStore Returns the multistore instance
@@ -80,7 +81,7 @@ type (
 		// AppState is the application state as JSON.
 		AppState json.RawMessage
 		// Validators is the exported validator set.
-		Validators []tmtypes.GenesisValidator
+		Validators []octypes.GenesisValidator
 		// Height is the app's latest block height.
 		Height int64
 		// ConsensusParams are the exported consensus params for ABCI.

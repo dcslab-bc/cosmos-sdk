@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/line/lbm-sdk/baseapp"
+	"github.com/line/lbm-sdk/x/params/types"
 )
 
 // ConsensusParamsKeyTable returns an x/params module keyTable to be used in
@@ -19,10 +19,10 @@ func ConsensusParamsKeyTable() types.KeyTable {
 			baseapp.ParamStoreKeyBlockParams, abci.BlockParams{}, baseapp.ValidateBlockParams,
 		),
 		types.NewParamSetPair(
-			baseapp.ParamStoreKeyEvidenceParams, tmproto.EvidenceParams{}, baseapp.ValidateEvidenceParams,
+			baseapp.ParamStoreKeyEvidenceParams, ocproto.EvidenceParams{}, baseapp.ValidateEvidenceParams,
 		),
 		types.NewParamSetPair(
-			baseapp.ParamStoreKeyValidatorParams, tmproto.ValidatorParams{}, baseapp.ValidateValidatorParams,
+			baseapp.ParamStoreKeyValidatorParams, ocproto.ValidatorParams{}, baseapp.ValidateValidatorParams,
 		),
 	)
 }

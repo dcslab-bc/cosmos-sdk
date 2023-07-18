@@ -3,11 +3,11 @@ package utils
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/line/lbm-sdk/client"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	authtx "github.com/line/lbm-sdk/x/auth/tx"
+	"github.com/line/lbm-sdk/x/gov/types"
 )
 
 const (
@@ -257,14 +257,14 @@ func QueryDepositByTxQuery(clientCtx client.Context, params types.QueryDepositPa
 		// Query legacy Msgs event action
 		[]string{
 			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, types.TypeMsgDeposit),
-			fmt.Sprintf("%s.%s='%s'", types.EventTypeProposalDeposit, types.AttributeKeyProposalID, []byte(fmt.Sprintf("%d", params.ProposalID))),
-			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeySender, []byte(params.Depositor.String())),
+			fmt.Sprintf("%s.%s='%d'", types.EventTypeProposalDeposit, types.AttributeKeyProposalID, params.ProposalID),
+			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeySender, params.Depositor.String()),
 		},
-		// Query proto Msgs event action
+		// Query proto Msgs event action v1
 		[]string{
 			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, sdk.MsgTypeURL(&types.MsgDeposit{})),
-			fmt.Sprintf("%s.%s='%s'", types.EventTypeProposalDeposit, types.AttributeKeyProposalID, []byte(fmt.Sprintf("%d", params.ProposalID))),
-			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeySender, []byte(params.Depositor.String())),
+			fmt.Sprintf("%s.%s='%d'", types.EventTypeProposalDeposit, types.AttributeKeyProposalID, params.ProposalID),
+			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeySender, params.Depositor.String()),
 		},
 	)
 	if err != nil {
@@ -343,28 +343,6 @@ func QueryProposalByID(proposalID uint64, clientCtx client.Context, queryRoute s
 	return res, err
 }
 
-// combineEvents queries txs by events with all events from each event group,
-// and combines all those events together.
-//
-// Tx are indexed in tendermint via their Msgs `Type()`, which can be:
-// - via legacy Msgs (amino or proto), their `Type()` is a custom string,
-// - via ADR-031 proto msgs, their `Type()` is the protobuf FQ method name.
-// In searching for events, we search for both `Type()`s, and we use the
-// `combineEvents` function here to merge events.
-func combineEvents(clientCtx client.Context, page int, eventGroups ...[]string) (*sdk.SearchTxsResult, error) {
-	// Only the Txs field will be populated in the final SearchTxsResult.
-	allTxs := []*sdk.TxResponse{}
-	for _, events := range eventGroups {
-		res, err := authtx.QueryTxsByEvents(clientCtx, events, page, defaultLimit, "")
-		if err != nil {
-			return nil, err
-		}
-		allTxs = append(allTxs, res.Txs...)
-	}
-
-	return &sdk.SearchTxsResult{Txs: allTxs}, nil
-}
-
 // queryInitialDepositByTxQuery will query for a initial deposit of a governance proposal by
 // ID.
 func queryInitialDepositByTxQuery(clientCtx client.Context, proposalID uint64) (types.Deposit, error) {
@@ -399,4 +377,26 @@ func queryInitialDepositByTxQuery(clientCtx client.Context, proposalID uint64) (
 	}
 
 	return types.Deposit{}, sdkerrors.ErrNotFound.Wrapf("failed to find the initial deposit for proposalID %d", proposalID)
+}
+
+// combineEvents queries txs by events with all events from each event group,
+// and combines all those events together.
+//
+// Tx are indexed in tendermint via their Msgs `Type()`, which can be:
+// - via legacy Msgs (amino or proto), their `Type()` is a custom string,
+// - via ADR-031 proto msgs, their `Type()` is the protobuf FQ method name.
+// In searching for events, we search for both `Type()`s, and we use the
+// `combineEvents` function here to merge events.
+func combineEvents(clientCtx client.Context, page int, eventGroups ...[]string) (*sdk.SearchTxsResult, error) {
+	// Only the Txs field will be populated in the final SearchTxsResult.
+	allTxs := []*sdk.TxResponse{}
+	for _, events := range eventGroups {
+		res, err := authtx.QueryTxsByEvents(clientCtx, events, page, defaultLimit, "")
+		if err != nil {
+			return nil, err
+		}
+		allTxs = append(allTxs, res.Txs...)
+	}
+
+	return &sdk.SearchTxsResult{Txs: allTxs}, nil
 }

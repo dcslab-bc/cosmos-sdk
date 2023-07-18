@@ -3,15 +3,16 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/internal/conv"
+	"github.com/line/lbm-sdk/store/prefix"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/query"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
+	vestexported "github.com/line/lbm-sdk/x/auth/vesting/exported"
+	"github.com/line/lbm-sdk/x/bank/types"
+	paramtypes "github.com/line/lbm-sdk/x/params/types"
 )
 
 var _ Keeper = (*BaseKeeper)(nil)
@@ -28,6 +29,7 @@ type Keeper interface {
 	HasSupply(ctx sdk.Context, denom string) bool
 	GetPaginatedTotalSupply(ctx sdk.Context, pagination *query.PageRequest) (sdk.Coins, *query.PageResponse, error)
 	IterateTotalSupply(ctx sdk.Context, cb func(sdk.Coin) bool)
+
 	GetDenomMetaData(ctx sdk.Context, denom string) (types.Metadata, bool)
 	SetDenomMetaData(ctx sdk.Context, denomMetaData types.Metadata)
 	IterateAllDenomMetaData(ctx sdk.Context, cb func(types.Metadata) bool)
@@ -249,7 +251,7 @@ func (k BaseKeeper) HasSupply(ctx sdk.Context, denom string) bool {
 // false otherwise.
 func (k BaseKeeper) GetDenomMetaData(ctx sdk.Context, denom string) (types.Metadata, bool) {
 	store := ctx.KVStore(k.storeKey)
-	store = prefix.NewStore(store, types.DenomMetadataKey(denom))
+	store = prefix.NewStore(store, types.DenomMetadataPrefix)
 
 	bz := store.Get([]byte(denom))
 	if bz == nil {
@@ -296,7 +298,7 @@ func (k BaseKeeper) IterateAllDenomMetaData(ctx sdk.Context, cb func(types.Metad
 // SetDenomMetaData sets the denominations metadata
 func (k BaseKeeper) SetDenomMetaData(ctx sdk.Context, denomMetaData types.Metadata) {
 	store := ctx.KVStore(k.storeKey)
-	denomMetaDataStore := prefix.NewStore(store, types.DenomMetadataKey(denomMetaData.Base))
+	denomMetaDataStore := prefix.NewStore(store, types.DenomMetadataPrefix)
 
 	m := k.cdc.MustMarshal(&denomMetaData)
 	denomMetaDataStore.Set([]byte(denomMetaData.Base), m)
@@ -309,7 +311,7 @@ func (k BaseKeeper) SendCoinsFromModuleToAccount(
 	ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins,
 ) error {
 	senderAddr := k.ak.GetModuleAddress(senderModule)
-	if senderAddr == nil {
+	if senderAddr.Empty() {
 		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", senderModule))
 	}
 
@@ -326,7 +328,7 @@ func (k BaseKeeper) SendCoinsFromModuleToModule(
 	ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins,
 ) error {
 	senderAddr := k.ak.GetModuleAddress(senderModule)
-	if senderAddr == nil {
+	if senderAddr.Empty() {
 		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", senderModule))
 	}
 
@@ -472,7 +474,7 @@ func (k BaseKeeper) setSupply(ctx sdk.Context, coin sdk.Coin) {
 
 	// Bank invariants and IBC requires to remove zero coins.
 	if coin.IsZero() {
-		supplyStore.Delete([]byte(coin.GetDenom()))
+		supplyStore.Delete(conv.UnsafeStrToBytes(coin.GetDenom()))
 	} else {
 		supplyStore.Set([]byte(coin.GetDenom()), intBytes)
 	}

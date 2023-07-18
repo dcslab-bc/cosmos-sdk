@@ -6,17 +6,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	tx2 "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/params"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	"github.com/cosmos/cosmos-sdk/types"
-	signing2 "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/line/lbm-sdk/client"
+	tx2 "github.com/line/lbm-sdk/client/tx"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/simapp"
+	"github.com/line/lbm-sdk/simapp/params"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
+	signing2 "github.com/line/lbm-sdk/types/tx/signing"
+	"github.com/line/lbm-sdk/x/auth/legacy/legacytx"
+	"github.com/line/lbm-sdk/x/auth/tx"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
 )
 
 const (
@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	fee            = types.NewCoins(types.NewInt64Coin("bam", 100))
+	fee            = sdk.NewCoins(sdk.NewInt64Coin("bam", 100))
 	_, pub1, addr1 = testdata.KeyTestPubAddr()
 	_, _, addr2    = testdata.KeyTestPubAddr()
 	sig            = signing2.SignatureV2{
@@ -36,8 +36,8 @@ var (
 			Signature: []byte("dummy"),
 		},
 	}
-	msg0 = banktypes.NewMsgSend(addr1, addr2, types.NewCoins(types.NewInt64Coin("wack", 1)))
-	msg1 = banktypes.NewMsgSend(addr1, addr2, types.NewCoins(types.NewInt64Coin("wack", 2)))
+	msg0 = banktypes.NewMsgSend(addr1, addr2, sdk.NewCoins(sdk.NewInt64Coin("wack", 1)))
+	msg1 = banktypes.NewMsgSend(addr1, addr2, sdk.NewCoins(sdk.NewInt64Coin("wack", 2)))
 )
 
 func buildTestTx(t *testing.T, builder client.TxBuilder) {

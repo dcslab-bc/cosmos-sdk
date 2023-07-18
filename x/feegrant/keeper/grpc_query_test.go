@@ -1,8 +1,8 @@
 package keeper_test
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/feegrant"
 )
 
 func (suite *KeeperTestSuite) TestFeeAllowance() {

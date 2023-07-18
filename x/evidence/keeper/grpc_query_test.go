@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/x/evidence/exported"
-	"github.com/cosmos/cosmos-sdk/x/evidence/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/query"
+	"github.com/line/lbm-sdk/x/evidence/exported"
+	"github.com/line/lbm-sdk/x/evidence/types"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
+	ostbytes "github.com/line/ostracon/libs/bytes"
 )
 
 func (suite *KeeperTestSuite) TestQueryEvidence() {
@@ -34,7 +34,7 @@ func (suite *KeeperTestSuite) TestQueryEvidence() {
 		{
 			"invalid request with empty evidence hash",
 			func() {
-				req = &types.QueryEvidenceRequest{EvidenceHash: tmbytes.HexBytes{}}
+				req = &types.QueryEvidenceRequest{EvidenceHash: ostbytes.HexBytes{}}
 			},
 			false,
 			func(res *types.QueryEvidenceResponse) {},

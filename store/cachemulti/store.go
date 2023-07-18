@@ -6,11 +6,11 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/store/cachekv"
-	"github.com/cosmos/cosmos-sdk/store/dbadapter"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	"github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/line/lbm-sdk/store/cachekv"
+	"github.com/line/lbm-sdk/store/dbadapter"
+	"github.com/line/lbm-sdk/store/listenkv"
+	"github.com/line/lbm-sdk/store/tracekv"
+	"github.com/line/lbm-sdk/store/types"
 )
 
 //----------------------------------------
@@ -41,9 +41,6 @@ func NewFromKVStore(
 	keys map[string]types.StoreKey, traceWriter io.Writer, traceContext types.TraceContext,
 	listeners map[types.StoreKey][]types.WriteListener,
 ) Store {
-	if listeners == nil {
-		listeners = make(map[types.StoreKey][]types.WriteListener)
-	}
 	cms := Store{
 		db:           cachekv.NewStore(store),
 		stores:       make(map[types.StoreKey]types.CacheWrap, len(stores)),
@@ -81,8 +78,7 @@ func newCacheMultiStoreFromCMS(cms Store) Store {
 		stores[k] = v
 	}
 
-	// don't pass listeners to nested cache store.
-	return NewFromKVStore(cms.db, stores, nil, cms.traceWriter, cms.traceContext, nil)
+	return NewFromKVStore(cms.db, stores, nil, cms.traceWriter, cms.traceContext, cms.listeners)
 }
 
 // SetTracer sets the tracer for the MultiStore that the underlying

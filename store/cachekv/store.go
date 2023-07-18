@@ -9,13 +9,14 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/internal/conv"
-	"github.com/cosmos/cosmos-sdk/store/listenkv"
-	"github.com/cosmos/cosmos-sdk/store/tracekv"
-	"github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/telemetry"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/tendermint/tendermint/libs/math"
+	"github.com/line/ostracon/libs/math"
+
+	"github.com/line/lbm-sdk/internal/conv"
+	"github.com/line/lbm-sdk/store/listenkv"
+	"github.com/line/lbm-sdk/store/tracekv"
+	"github.com/line/lbm-sdk/store/types"
+	"github.com/line/lbm-sdk/telemetry"
+	"github.com/line/lbm-sdk/types/kv"
 )
 
 // If value is nil but deleted is false, it means the parent doesn't have the
@@ -26,6 +27,7 @@ type cValue struct {
 }
 
 // Store wraps an in-memory cache around an underlying types.KVStore.
+// Set, Delete and Write for the same key must be called sequentially.
 type Store struct {
 	mtx           sync.Mutex
 	cache         map[string]*cValue

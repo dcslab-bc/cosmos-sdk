@@ -2,18 +2,20 @@ package tmservice
 
 import (
 	"context"
+	"crypto/sha256"
 
 	gogogrpc "github.com/gogo/protobuf/grpc"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	abci "github.com/line/ostracon/abci/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/rpc"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	qtypes "github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/rpc"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	qtypes "github.com/line/lbm-sdk/types/query"
+	"github.com/line/lbm-sdk/version"
 )
 
 // This is the struct that we will implement all the handlers on.
@@ -83,6 +85,50 @@ func (s queryServer) GetBlockByHeight(ctx context.Context, req *GetBlockByHeight
 	return &GetBlockByHeightResponse{
 		BlockId: &protoBlockID,
 		Block:   protoBlock,
+	}, nil
+}
+
+// GetBlockByHash implements ServiceServer.GetBlockByHash
+func (s queryServer) GetBlockByHash(_ context.Context, req *GetBlockByHashRequest) (*GetBlockByHashResponse, error) {
+	if n := len(req.Hash); n != sha256.Size {
+		if n == 0 {
+			return nil, status.Error(codes.InvalidArgument, "block hash cannot be empty")
+		}
+		return nil, status.Error(codes.InvalidArgument, "the length of block hash must be 32")
+	}
+
+	res, err := getBlockByHash(s.clientCtx, req.Hash)
+	if err != nil {
+		return nil, err
+	}
+	protoBlockID := res.BlockID.ToProto()
+	protoBlock, err := res.Block.ToProto()
+	if err != nil {
+		return nil, err
+	}
+	return &GetBlockByHashResponse{
+		BlockId: &protoBlockID,
+		Block:   protoBlock,
+	}, nil
+}
+
+// GetBlockResultsByHeight implements ServiceServer.GetBlockResultsByHeight
+func (s queryServer) GetBlockResultsByHeight(_ context.Context, req *GetBlockResultsByHeightRequest) (*GetBlockResultsByHeightResponse, error) {
+	res, err := getBlockResultsByHeight(s.clientCtx, &req.Height)
+	if err != nil {
+		return nil, err
+	}
+	return &GetBlockResultsByHeightResponse{
+		Height:     res.Height,
+		TxsResults: res.TxsResults,
+		ResBeginBlock: &abci.ResponseBeginBlock{
+			Events: res.BeginBlockEvents,
+		},
+		ResEndBlock: &abci.ResponseEndBlock{
+			ValidatorUpdates:      res.ValidatorUpdates,
+			ConsensusParamUpdates: res.ConsensusParamUpdates,
+			Events:                res.EndBlockEvents,
+		},
 	}, nil
 }
 
@@ -181,14 +227,14 @@ func (s queryServer) GetNodeInfo(ctx context.Context, req *GetNodeInfoRequest) (
 	resp := GetNodeInfoResponse{
 		DefaultNodeInfo: protoNodeInfo,
 		ApplicationVersion: &VersionInfo{
-			AppName:          nodeInfo.AppName,
-			Name:             nodeInfo.Name,
-			GitCommit:        nodeInfo.GitCommit,
-			GoVersion:        nodeInfo.GoVersion,
-			Version:          nodeInfo.Version,
-			BuildTags:        nodeInfo.BuildTags,
-			BuildDeps:        deps,
-			CosmosSdkVersion: nodeInfo.CosmosSdkVersion,
+			AppName:       nodeInfo.AppName,
+			Name:          nodeInfo.Name,
+			GitCommit:     nodeInfo.GitCommit,
+			GoVersion:     nodeInfo.GoVersion,
+			Version:       nodeInfo.Version,
+			BuildTags:     nodeInfo.BuildTags,
+			BuildDeps:     deps,
+			LbmSdkVersion: nodeInfo.LbmSdkVersion,
 		},
 	}
 	return &resp, nil

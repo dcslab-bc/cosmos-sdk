@@ -6,9 +6,9 @@ package rest_test
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/rest"
+	"github.com/line/lbm-sdk/x/gov/types"
 )
 
 func (s *IntegrationTestSuite) TestLegacyGetAllProposals() {
@@ -103,7 +103,6 @@ func (s *IntegrationTestSuite) TestLegacyGetVote() {
 			if tc.expErr {
 				var errResp rest.ErrorResponse
 				s.Require().NoError(val.ClientCtx.LegacyAmino.UnmarshalJSON(respJSON, &errResp))
-
 				s.Require().Equal(errResp.Error, tc.expErrMsg)
 			} else {
 				resp := rest.ResponseWithHeight{}

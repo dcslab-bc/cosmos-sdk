@@ -9,11 +9,11 @@
 // At build time, the variables Name, Version, Commit, and BuildTags
 // can be passed as build flags as shown in the following example:
 //
-//	go build -X github.com/cosmos/cosmos-sdk/version.Name=gaia \
-//	 -X github.com/cosmos/cosmos-sdk/version.AppName=gaiad \
-//	 -X github.com/cosmos/cosmos-sdk/version.Version=1.0 \
-//	 -X github.com/cosmos/cosmos-sdk/version.Commit=f0f7b7dab7e36c20b757cebce0e8f4fc5b95de60 \
-//	 -X "github.com/cosmos/cosmos-sdk/version.BuildTags=linux darwin amd64"
+//	go build -X github.com/line/lbm-sdk/version.Name=gaia \
+//	 -X github.com/line/lbm-sdk/version.AppName=gaiad \
+//	 -X github.com/line/lbm-sdk/version.Version=1.0 \
+//	 -X github.com/line/lbm-sdk/version.Commit=f0f7b7dab7e36c20b757cebce0e8f4fc5b95de60 \
+//	 -X "github.com/line/lbm-sdk/version.BuildTags=linux darwin amd64"
 package version
 
 import (
@@ -24,15 +24,15 @@ import (
 )
 
 var (
-	// application's name
+	// Name is application's name
 	Name = ""
-	// application binary name
+	// AppName is application binary name
 	AppName = "<appd>"
-	// application's version string
+	// Version is application's version string
 	Version = ""
-	// commit
+	// Commit is commit
 	Commit = ""
-	// build tags
+	// BuildTags is build tags
 	BuildTags = ""
 )
 
@@ -43,7 +43,7 @@ func getSDKVersion() string {
 	}
 	var sdkVersion string
 	for _, dep := range deps.Deps {
-		if dep.Path == "github.com/cosmos/cosmos-sdk" {
+		if dep.Path == "github.com/line/lbm-sdk" {
 			sdkVersion = dep.Version
 		}
 	}
@@ -53,27 +53,27 @@ func getSDKVersion() string {
 
 // Info defines the application version information.
 type Info struct {
-	Name             string     `json:"name" yaml:"name"`
-	AppName          string     `json:"server_name" yaml:"server_name"`
-	Version          string     `json:"version" yaml:"version"`
-	GitCommit        string     `json:"commit" yaml:"commit"`
-	BuildTags        string     `json:"build_tags" yaml:"build_tags"`
-	GoVersion        string     `json:"go" yaml:"go"`
-	BuildDeps        []buildDep `json:"build_deps" yaml:"build_deps"`
-	CosmosSdkVersion string     `json:"cosmos_sdk_version" yaml:"cosmos_sdk_version"`
+	Name          string     `json:"name" yaml:"name"`
+	AppName       string     `json:"server_name" yaml:"server_name"`
+	Version       string     `json:"version" yaml:"version"`
+	GitCommit     string     `json:"commit" yaml:"commit"`
+	BuildTags     string     `json:"build_tags" yaml:"build_tags"`
+	GoVersion     string     `json:"go" yaml:"go"`
+	BuildDeps     []buildDep `json:"build_deps" yaml:"build_deps"`
+	LbmSdkVersion string     `json:"lbm_sdk_version" yaml:"lbm_sdk_version"`
 }
 
 func NewInfo() Info {
 	sdkVersion := getSDKVersion()
 	return Info{
-		Name:             Name,
-		AppName:          AppName,
-		Version:          Version,
-		GitCommit:        Commit,
-		BuildTags:        BuildTags,
-		GoVersion:        fmt.Sprintf("go version %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH),
-		BuildDeps:        depsFromBuildInfo(),
-		CosmosSdkVersion: sdkVersion,
+		Name:          Name,
+		AppName:       AppName,
+		Version:       Version,
+		GitCommit:     Commit,
+		BuildTags:     BuildTags,
+		GoVersion:     fmt.Sprintf("go version %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH),
+		BuildDeps:     depsFromBuildInfo(),
+		LbmSdkVersion: sdkVersion,
 	}
 }
 

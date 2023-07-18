@@ -12,15 +12,15 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/codec"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	simappparams "github.com/line/lbm-sdk/simapp/params"
+	"github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/rest"
 )
 
 func TestBaseReq_Sanitize(t *testing.T) {
@@ -28,21 +28,21 @@ func TestBaseReq_Sanitize(t *testing.T) {
 	sanitized := rest.BaseReq{
 		ChainID:       "   test",
 		Memo:          "memo     ",
-		From:          " cosmos1cq0sxam6x4l0sv9yz3a2vlqhdhvt2k6jtgcse0 ",
+		From:          " link1zp4lzwuwzvhq7xhe8xj688vv00dxv2zyue4xuj ",
 		Gas:           " ",
 		GasAdjustment: "  0.3",
 	}.Sanitize()
 	require.Equal(t, rest.BaseReq{
 		ChainID:       "test",
 		Memo:          "memo",
-		From:          "cosmos1cq0sxam6x4l0sv9yz3a2vlqhdhvt2k6jtgcse0",
+		From:          "link1zp4lzwuwzvhq7xhe8xj688vv00dxv2zyue4xuj",
 		Gas:           "",
 		GasAdjustment: "0.3",
 	}, sanitized)
 }
 
 func TestBaseReq_ValidateBasic(t *testing.T) {
-	fromAddr := "cosmos1cq0sxam6x4l0sv9yz3a2vlqhdhvt2k6jtgcse0"
+	fromAddr := "link1zp4lzwuwzvhq7xhe8xj688vv00dxv2zyue4xuj"
 	tenstakes, err := types.ParseCoinsNormalized("10stake")
 	require.NoError(t, err)
 	onestake, err := types.ParseDecCoins("1.0stake")

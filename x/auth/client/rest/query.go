@@ -8,14 +8,14 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	clientrest "github.com/cosmos/cosmos-sdk/client/rest"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	genutilrest "github.com/cosmos/cosmos-sdk/x/genutil/client/rest"
+	"github.com/line/lbm-sdk/client"
+	clientrest "github.com/line/lbm-sdk/client/rest"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/rest"
+	authtx "github.com/line/lbm-sdk/x/auth/tx"
+	"github.com/line/lbm-sdk/x/auth/types"
+	genutilrest "github.com/line/lbm-sdk/x/genutil/client/rest"
 )
 
 // QueryAccountRequestHandlerFn is the query accountREST Handler.
@@ -38,15 +38,13 @@ func QueryAccountRequestHandlerFn(storeName string, clientCtx client.Context) ht
 
 		account, height, err := accGetter.GetAccountWithHeight(clientCtx, addr)
 		if err != nil {
-			// TODO: Handle more appropriately based on the error type.
-			// Ref: https://github.com/cosmos/cosmos-sdk/issues/4923
 			if err := accGetter.EnsureExists(clientCtx, addr); err != nil {
 				clientCtx = clientCtx.WithHeight(height)
 				rest.PostProcessResponse(w, clientCtx, types.BaseAccount{})
 				return
 			}
 
-			rest.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+			rest.WriteErrorResponse(w, rest.GetHTTPStatusWithError(err), err.Error())
 			return
 		}
 
@@ -105,7 +103,10 @@ func QueryTxsRequestHandlerFn(clientCtx client.Context) http.HandlerFunc {
 		}
 
 		for _, txRes := range searchResult.Txs {
-			packStdTxResponse(w, clientCtx, txRes)
+			if err = packStdTxResponse(w, clientCtx, txRes); err != nil {
+				// Error is already returned by packStdTxResponse.
+				return
+			}
 		}
 
 		err = checkAminoMarshalError(clientCtx, searchResult, "/cosmos/tx/v1beta1/txs")
@@ -209,7 +210,7 @@ func checkAminoMarshalError(ctx client.Context, resp interface{}, grpcEndPoint s
 		// If there's an unmarshalling error, we assume that it's because we're
 		// using amino to unmarshal a non-amino tx.
 		return fmt.Errorf("this transaction cannot be displayed via legacy REST endpoints, because it does not support"+
-			" Amino serialization. Please either use CLI, gRPC, gRPC-gateway, or directly query the Tendermint RPC"+
+			" Amino serialization. Please either use CLI, gRPC, gRPC-gateway, or directly query the Ostracon RPC"+
 			" endpoint to query this transaction. The new REST endpoint (via gRPC-gateway) is %s. Please also see the"+
 			"REST endpoints migration guide at %s for more info", grpcEndPoint, clientrest.DeprecationURL)
 	}

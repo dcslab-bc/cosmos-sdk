@@ -1,16 +1,20 @@
 package server
 
 import (
+	ostlog "github.com/line/ostracon/libs/log"
 	"github.com/rs/zerolog"
-	tmlog "github.com/tendermint/tendermint/libs/log"
 )
 
-var _ tmlog.Logger = (*ZeroLogWrapper)(nil)
+var _ ostlog.Logger = (*ZeroLogWrapper)(nil)
 
 // ZeroLogWrapper provides a wrapper around a zerolog.Logger instance. It implements
 // Tendermint's Logger interface.
 type ZeroLogWrapper struct {
 	zerolog.Logger
+}
+
+func init() {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
 }
 
 // Info implements Tendermint's Logger interface and logs with level INFO. A set
@@ -37,7 +41,7 @@ func (z ZeroLogWrapper) Debug(msg string, keyVals ...interface{}) {
 // With returns a new wrapped logger with additional context provided by a set
 // of key/value tuples. The number of tuples must be even and the key of the
 // tuple must be a string.
-func (z ZeroLogWrapper) With(keyVals ...interface{}) tmlog.Logger {
+func (z ZeroLogWrapper) With(keyVals ...interface{}) ostlog.Logger {
 	return ZeroLogWrapper{z.Logger.With().Fields(getLogFields(keyVals...)).Logger()}
 }
 

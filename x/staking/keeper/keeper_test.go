@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/baseapp"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/staking/keeper"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
 type KeeperTestSuite struct {
@@ -27,7 +27,7 @@ type KeeperTestSuite struct {
 
 func (suite *KeeperTestSuite) SetupTest() {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 
 	querier := keeper.Querier{Keeper: app.StakingKeeper}
 
@@ -36,7 +36,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	queryClient := types.NewQueryClient(queryHelper)
 
 	addrs, _, validators := createValidators(suite.T(), ctx, app, []int64{9, 8, 7})
-	header := tmproto.Header{
+	header := ocproto.Header{
 		ChainID: "HelloChain",
 		Height:  5,
 	}
@@ -53,7 +53,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 func TestParams(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 
 	expParams := types.DefaultParams()
 

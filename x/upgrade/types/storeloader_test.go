@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 	"testing"
 
+	abci "github.com/line/ostracon/abci/types"
+	"github.com/line/ostracon/libs/log"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/baseapp"
+	"github.com/line/lbm-sdk/store/rootmulti"
+	store "github.com/line/lbm-sdk/store/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 func useUpgradeLoader(height int64, upgrades *store.StoreUpgrades) func(*baseapp.BaseApp) {
@@ -25,7 +25,7 @@ func useUpgradeLoader(height int64, upgrades *store.StoreUpgrades) func(*baseapp
 }
 
 func defaultLogger() log.Logger {
-	return log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "sdk/app")
+	return log.NewOCLogger(log.NewSyncWriter(os.Stdout)).With("module", "sdk/app")
 }
 
 func initStore(t *testing.T, db dbm.DB, storeKey string, k, v []byte) {
@@ -124,7 +124,7 @@ func TestSetLoader(t *testing.T) {
 			require.Nil(t, err)
 
 			for i := int64(2); i <= upgradeHeight-1; i++ {
-				origapp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: i}})
+				origapp.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: i}})
 				res := origapp.Commit()
 				require.NotNil(t, res.Data)
 			}
@@ -140,7 +140,7 @@ func TestSetLoader(t *testing.T) {
 			require.Nil(t, err)
 
 			// "execute" one block
-			app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: upgradeHeight}})
+			app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: upgradeHeight}})
 			res := app.Commit()
 			require.NotNil(t, res.Data)
 

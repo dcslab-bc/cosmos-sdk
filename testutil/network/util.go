@@ -5,22 +5,22 @@ import (
 	"path/filepath"
 	"time"
 
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/p2p"
-	pvm "github.com/tendermint/tendermint/privval"
-	"github.com/tendermint/tendermint/proxy"
-	"github.com/tendermint/tendermint/rpc/client/local"
-	"github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
+	ostos "github.com/line/ostracon/libs/os"
+	"github.com/line/ostracon/node"
+	"github.com/line/ostracon/p2p"
+	pvm "github.com/line/ostracon/privval"
+	"github.com/line/ostracon/proxy"
+	"github.com/line/ostracon/rpc/client/local"
+	"github.com/line/ostracon/types"
+	osttime "github.com/line/ostracon/types/time"
 
-	"github.com/cosmos/cosmos-sdk/server/api"
-	servergrpc "github.com/cosmos/cosmos-sdk/server/grpc"
-	srvtypes "github.com/cosmos/cosmos-sdk/server/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/line/lbm-sdk/server/api"
+	servergrpc "github.com/line/lbm-sdk/server/grpc"
+	srvtypes "github.com/line/lbm-sdk/server/types"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	"github.com/line/lbm-sdk/x/genutil"
+	genutiltypes "github.com/line/lbm-sdk/x/genutil/types"
 )
 
 func startInProcess(cfg Config, val *Validator) error {
@@ -40,9 +40,13 @@ func startInProcess(cfg Config, val *Validator) error {
 	app := cfg.AppConstructor(*val)
 
 	genDocProvider := node.DefaultGenesisDocProviderFunc(tmCfg)
+	pv, err := pvm.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile(), tmCfg.PrivKeyType)
+	if err != nil {
+		return err
+	}
 	tmNode, err := node.NewNode(
 		tmCfg,
-		pvm.LoadOrGenFilePV(tmCfg.PrivValidatorKeyFile(), tmCfg.PrivValidatorStateFile()),
+		pv,
 		nodeKey,
 		proxy.NewLocalClientCreator(app),
 		genDocProvider,
@@ -118,7 +122,7 @@ func startInProcess(cfg Config, val *Validator) error {
 }
 
 func collectGenFiles(cfg Config, vals []*Validator, outputDir string) error {
-	genTime := tmtime.Now()
+	genTime := osttime.Now()
 
 	for i := 0; i < cfg.NumValidators; i++ {
 		tmCfg := vals[i].Ctx.Config
@@ -197,12 +201,12 @@ func writeFile(name string, dir string, contents []byte) error {
 	writePath := filepath.Join(dir) //nolint:gocritic
 	file := filepath.Join(writePath, name)
 
-	err := tmos.EnsureDir(writePath, 0o755)
+	err := ostos.EnsureDir(writePath, 0755)
 	if err != nil {
 		return err
 	}
 
-	err = tmos.WriteFile(file, contents, 0o644)
+	err = ostos.WriteFile(file, contents, 0644)
 	if err != nil {
 		return err
 	}

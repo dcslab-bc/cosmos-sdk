@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/line/lbm-sdk/client"
 )
 
 // Default constants
 const (
 	chainID        = ""
 	keyringBackend = "os"
-	output         = "text"
+	output         = ""
 	node           = "tcp://localhost:26657"
 	broadcastMode  = "sync"
 )

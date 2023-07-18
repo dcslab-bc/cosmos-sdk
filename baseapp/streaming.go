@@ -4,10 +4,10 @@ import (
 	"io"
 	"sync"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/line/ostracon/abci/types"
 
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	"github.com/cosmos/cosmos-sdk/types"
+	store "github.com/line/lbm-sdk/store/types"
+	"github.com/line/lbm-sdk/types"
 )
 
 // ABCIListener interface used to hook into the ABCI message processing of the BaseApp

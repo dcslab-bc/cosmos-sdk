@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/line/ostracon/libs/log"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/line/lbm-sdk/codec"
+	sdk "github.com/line/lbm-sdk/types"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
+	"github.com/line/lbm-sdk/x/gov/types"
 )
 
 // Keeper defines the governance module Keeper
@@ -48,7 +48,7 @@ func NewKeeper(
 	authKeeper types.AccountKeeper, bankKeeper types.BankKeeper, sk types.StakingKeeper, rtr types.Router,
 ) Keeper {
 	// ensure governance module account is set
-	if addr := authKeeper.GetModuleAddress(types.ModuleName); addr == nil {
+	if addr := authKeeper.GetModuleAddress(types.ModuleName); addr.Empty() {
 		panic(fmt.Sprintf("%s module account has not been set", types.ModuleName))
 	}
 

@@ -1,21 +1,22 @@
 package legacy
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/line/lbm-sdk/codec"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // Cdc defines a global generic sealed Amino codec to be used throughout sdk. It
 // has all Tendermint crypto and evidence types registered.
 //
 // TODO: Deprecated - remove this global.
-var Cdc *codec.LegacyAmino
+var Cdc = codec.NewLegacyAmino()
 
 func init() {
-	Cdc = codec.NewLegacyAmino()
 	cryptocodec.RegisterCrypto(Cdc)
 	codec.RegisterEvidences(Cdc)
+	sdk.RegisterLegacyAminoCodec(Cdc)
 }
 
 // PrivKeyFromBytes unmarshals private key bytes and returns a PrivKey

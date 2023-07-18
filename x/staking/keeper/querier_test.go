@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"testing"
 
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking/keeper"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/staking/keeper"
+	"github.com/line/lbm-sdk/x/staking/teststaking"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
 func TestNewQuerier(t *testing.T) {
@@ -33,7 +33,7 @@ func TestNewQuerier(t *testing.T) {
 		app.StakingKeeper.SetValidatorByPowerIndex(ctx, validators[i])
 	}
 
-	header := tmproto.Header{
+	header := ocproto.Header{
 		ChainID: "HelloChain",
 		Height:  5,
 	}
@@ -720,7 +720,7 @@ func TestQueryHistoricalInfo(t *testing.T) {
 	app.StakingKeeper.SetValidator(ctx, val1)
 	app.StakingKeeper.SetValidator(ctx, val2)
 
-	header := tmproto.Header{
+	header := ocproto.Header{
 		ChainID: "HelloChain",
 		Height:  5,
 	}

@@ -6,16 +6,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/feegrant"
 )
 
 func TestPeriodicFeeValidAllow(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{
 		Time: time.Now(),
 	})
 
@@ -192,7 +193,7 @@ func TestPeriodicFeeValidAllow(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			ctx := app.BaseApp.NewContext(false, tmproto.Header{}).WithBlockTime(tc.blockTime)
+			ctx := app.BaseApp.NewContext(false, ocproto.Header{}).WithBlockTime(tc.blockTime)
 			// now try to deduct
 			remove, err := tc.allow.Accept(ctx, tc.fee, []sdk.Msg{})
 			if !tc.accept {

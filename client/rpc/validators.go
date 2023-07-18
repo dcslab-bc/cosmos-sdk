@@ -8,15 +8,15 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	octypes "github.com/line/ostracon/types"
 	"github.com/spf13/cobra"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/rest"
 )
 
 // TODO these next two functions feel kinda hacky based on their placement
@@ -24,8 +24,8 @@ import (
 // ValidatorCommand returns the validator set for a given height
 func ValidatorCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "tendermint-validator-set [height]",
-		Short: "Get the full tendermint validator set at given height",
+		Use:   "ostracon-validator-set [height]",
+		Short: "Get the full ostracon validator set at given height",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -103,8 +103,8 @@ func (rvo ResultValidatorsOutput) String() string {
 	return b.String()
 }
 
-func validatorOutput(validator *tmtypes.Validator) (ValidatorOutput, error) {
-	pk, err := cryptocodec.FromTmPubKeyInterface(validator.PubKey)
+func validatorOutput(validator *octypes.Validator) (ValidatorOutput, error) {
+	pk, err := cryptocodec.FromOcPubKeyInterface(validator.PubKey)
 	if err != nil {
 		return ValidatorOutput{}, err
 	}

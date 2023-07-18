@@ -3,7 +3,7 @@ package types
 import (
 	"reflect"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 type attribute struct {
@@ -13,12 +13,12 @@ type attribute struct {
 
 // KeyTable subspaces appropriate type for each parameter key
 type KeyTable struct {
-	m map[string]attribute
+	m map[string]*attribute
 }
 
 func NewKeyTable(pairs ...ParamSetPair) KeyTable {
 	keyTable := KeyTable{
-		m: make(map[string]attribute),
+		m: make(map[string]*attribute),
 	}
 
 	for _, psp := range pairs {
@@ -52,7 +52,7 @@ func (t KeyTable) RegisterType(psp ParamSetPair) KeyTable {
 		rty = rty.Elem()
 	}
 
-	t.m[keystr] = attribute{
+	t.m[keystr] = &attribute{
 		vfn: psp.ValidatorFn,
 		ty:  rty,
 	}

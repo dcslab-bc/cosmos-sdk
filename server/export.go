@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"os"
 
+	ostjson "github.com/line/ostracon/libs/json"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+	octypes "github.com/line/ostracon/types"
 	"github.com/spf13/cobra"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/server/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 const (
@@ -72,7 +72,7 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 				return fmt.Errorf("error exporting state: %v", err)
 			}
 
-			doc, err := tmtypes.GenesisDocFromFile(serverCtx.Config.GenesisFile())
+			doc, err := octypes.GenesisDocFromFile(serverCtx.Config.GenesisFile())
 			if err != nil {
 				return err
 			}
@@ -80,18 +80,18 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			doc.AppState = exported.AppState
 			doc.Validators = exported.Validators
 			doc.InitialHeight = exported.Height
-			doc.ConsensusParams = &tmproto.ConsensusParams{
-				Block: tmproto.BlockParams{
+			doc.ConsensusParams = &ocproto.ConsensusParams{
+				Block: ocproto.BlockParams{
 					MaxBytes:   exported.ConsensusParams.Block.MaxBytes,
 					MaxGas:     exported.ConsensusParams.Block.MaxGas,
 					TimeIotaMs: doc.ConsensusParams.Block.TimeIotaMs,
 				},
-				Evidence: tmproto.EvidenceParams{
+				Evidence: ocproto.EvidenceParams{
 					MaxAgeNumBlocks: exported.ConsensusParams.Evidence.MaxAgeNumBlocks,
 					MaxAgeDuration:  exported.ConsensusParams.Evidence.MaxAgeDuration,
 					MaxBytes:        exported.ConsensusParams.Evidence.MaxBytes,
 				},
-				Validator: tmproto.ValidatorParams{
+				Validator: ocproto.ValidatorParams{
 					PubKeyTypes: exported.ConsensusParams.Validator.PubKeyTypes,
 				},
 			}
@@ -99,7 +99,7 @@ func ExportCmd(appExporter types.AppExporter, defaultNodeHome string) *cobra.Com
 			// NOTE: Tendermint uses a custom JSON decoder for GenesisDoc
 			// (except for stuff inside AppState). Inside AppState, we're free
 			// to encode as protobuf or amino.
-			encoded, err := tmjson.Marshal(doc)
+			encoded, err := ostjson.Marshal(doc)
 			if err != nil {
 				return err
 			}

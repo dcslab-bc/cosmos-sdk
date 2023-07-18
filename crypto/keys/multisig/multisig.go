@@ -3,12 +3,12 @@ package multisig
 import (
 	fmt "fmt"
 
-	tmcrypto "github.com/tendermint/tendermint/crypto"
+	occrypto "github.com/line/ostracon/crypto"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	multisigtypes "github.com/cosmos/cosmos-sdk/crypto/types/multisig"
-	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/line/lbm-sdk/codec/types"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	multisigtypes "github.com/line/lbm-sdk/crypto/types/multisig"
+	"github.com/line/lbm-sdk/types/tx/signing"
 )
 
 var (
@@ -36,7 +36,7 @@ func NewLegacyAminoPubKey(threshold int, pubKeys []cryptotypes.PubKey) *LegacyAm
 
 // Address implements cryptotypes.PubKey Address method
 func (m *LegacyAminoPubKey) Address() cryptotypes.Address {
-	return tmcrypto.AddressHash(m.Bytes())
+	return occrypto.AddressHash(m.Bytes())
 }
 
 // Bytes returns the proto encoded version of the LegacyAminoPubKey

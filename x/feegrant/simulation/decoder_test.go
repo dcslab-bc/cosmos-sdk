@@ -6,18 +6,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/cosmos/cosmos-sdk/x/feegrant/simulation"
+	"github.com/line/lbm-sdk/crypto/keys/ed25519"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/kv"
+	"github.com/line/lbm-sdk/x/feegrant"
+	"github.com/line/lbm-sdk/x/feegrant/simulation"
 )
 
 var (
 	granterPk   = ed25519.GenPrivKey().PubKey()
 	granterAddr = sdk.AccAddress(granterPk.Address())
-	granteePk   = ed25519.GenPrivKey().PubKey()
 	granteeAddr = sdk.AccAddress(granterPk.Address())
 )
 

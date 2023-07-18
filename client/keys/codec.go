@@ -1,8 +1,8 @@
 package keys
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/line/lbm-sdk/codec"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
 )
 
 // TODO: remove this file https://github.com/cosmos/cosmos-sdk/issues/8047

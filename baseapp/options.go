@@ -6,10 +6,11 @@ import (
 
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/cosmos/cosmos-sdk/store"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/snapshots"
+	"github.com/line/lbm-sdk/store"
+	"github.com/line/lbm-sdk/store/cache"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // File for storing in-package BaseApp optional functions,
@@ -86,6 +87,10 @@ func SetSnapshotKeepRecent(keepRecent uint32) func(*BaseApp) {
 // SetSnapshotStore sets the snapshot store.
 func SetSnapshotStore(snapshotStore *snapshots.Store) func(*BaseApp) {
 	return func(app *BaseApp) { app.SetSnapshotStore(snapshotStore) }
+}
+
+func SetChanCheckTxSize(size uint) func(*BaseApp) {
+	return func(app *BaseApp) { app.SetChanCheckTxSize(size) }
 }
 
 func (app *BaseApp) SetName(name string) {
@@ -246,6 +251,21 @@ func (app *BaseApp) SetInterfaceRegistry(registry types.InterfaceRegistry) {
 	app.interfaceRegistry = registry
 	app.grpcQueryRouter.SetInterfaceRegistry(registry)
 	app.msgServiceRouter.SetInterfaceRegistry(registry)
+}
+
+func (app *BaseApp) SetChanCheckTxSize(chanCheckTxSize uint) {
+	if app.sealed {
+		panic("SetChanCheckTxSize() on sealed BaseApp")
+	}
+	app.chCheckTxSize = chanCheckTxSize
+}
+
+func MetricsProvider(prometheus bool) cache.MetricsProvider {
+	namespace := "app"
+	if prometheus {
+		return cache.PrometheusMetricsProvider(namespace)
+	}
+	return cache.NopMetricsProvider()
 }
 
 // SetStreamingService is used to set a streaming service into the BaseApp hooks and load the listeners into the multistore

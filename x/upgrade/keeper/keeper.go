@@ -9,17 +9,17 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/tendermint/tendermint/libs/log"
-	tmos "github.com/tendermint/tendermint/libs/os"
+	"github.com/line/ostracon/libs/log"
+	ostos "github.com/line/ostracon/libs/os"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
-	store "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	xp "github.com/cosmos/cosmos-sdk/x/upgrade/exported"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/store/prefix"
+	store "github.com/line/lbm-sdk/store/types"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/module"
+	xp "github.com/line/lbm-sdk/x/upgrade/exported"
+	"github.com/line/lbm-sdk/x/upgrade/types"
 )
 
 // UpgradeInfoFileName file to store upgrade information
@@ -398,7 +398,7 @@ func (k Keeper) DumpUpgradeInfoWithInfoToDisk(height int64, name string, info st
 // GetUpgradeInfoPath returns the upgrade info file path
 func (k Keeper) GetUpgradeInfoPath() (string, error) {
 	upgradeInfoFileDir := path.Join(k.getHomeDir(), "data")
-	err := tmos.EnsureDir(upgradeInfoFileDir, os.ModePerm)
+	err := ostos.EnsureDir(upgradeInfoFileDir, os.ModePerm)
 	if err != nil {
 		return "", err
 	}

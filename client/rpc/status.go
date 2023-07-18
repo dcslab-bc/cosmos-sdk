@@ -6,19 +6,19 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/p2p"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/line/ostracon/libs/bytes"
+	"github.com/line/ostracon/p2p"
+	ctypes "github.com/line/ostracon/rpc/core/types"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	"github.com/line/lbm-sdk/types/rest"
+	"github.com/line/lbm-sdk/version"
 )
 
-// ValidatorInfo is info about the node's validator, same as Tendermint,
+// ValidatorInfo is info about the node's validator, same as Ostracon,
 // except that we use our own PubKey.
 type validatorInfo struct {
 	Address     bytes.HexBytes
@@ -26,7 +26,7 @@ type validatorInfo struct {
 	VotingPower int64
 }
 
-// ResultStatus is node's info, same as Tendermint, except that we use our own
+// ResultStatus is node's info, same as Ostracon, except that we use our own
 // PubKey.
 type resultStatus struct {
 	NodeInfo      p2p.DefaultNodeInfo
@@ -50,8 +50,8 @@ func StatusCommand() *cobra.Command {
 				return err
 			}
 
-			// `status` has TM pubkeys, we need to convert them to our pubkeys.
-			pk, err := cryptocodec.FromTmPubKeyInterface(status.ValidatorInfo.PubKey)
+			// `status` has OC pubkeys, we need to convert them to our pubkeys.
+			pk, err := cryptocodec.FromOcPubKeyInterface(status.ValidatorInfo.PubKey)
 			if err != nil {
 				return err
 			}

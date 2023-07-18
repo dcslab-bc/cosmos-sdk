@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	tmcli "github.com/tendermint/tendermint/libs/cli"
-
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
+	ostcli "github.com/line/ostracon/libs/cli"
+
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
 )
 
 // Cmd returns a CLI command to interactively create an application CLI
@@ -52,7 +52,7 @@ func runConfigCmd(cmd *cobra.Command, args []string) error {
 			cmd.Println(conf.ChainID)
 		case flags.FlagKeyringBackend:
 			cmd.Println(conf.KeyringBackend)
-		case tmcli.OutputFlag:
+		case ostcli.OutputFlag:
 			cmd.Println(conf.Output)
 		case flags.FlagNode:
 			cmd.Println(conf.Node)
@@ -72,7 +72,7 @@ func runConfigCmd(cmd *cobra.Command, args []string) error {
 			conf.SetChainID(value)
 		case flags.FlagKeyringBackend:
 			conf.SetKeyringBackend(value)
-		case tmcli.OutputFlag:
+		case ostcli.OutputFlag:
 			conf.SetOutput(value)
 		case flags.FlagNode:
 			conf.SetNode(value)

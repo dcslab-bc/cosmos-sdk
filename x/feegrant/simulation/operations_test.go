@@ -7,15 +7,15 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/cosmos/cosmos-sdk/x/feegrant/simulation"
+	"github.com/line/lbm-sdk/simapp"
+	simappparams "github.com/line/lbm-sdk/simapp/params"
+	sdk "github.com/line/lbm-sdk/types"
+	simtypes "github.com/line/lbm-sdk/types/simulation"
+	"github.com/line/lbm-sdk/x/feegrant"
+	"github.com/line/lbm-sdk/x/feegrant/simulation"
 )
 
 type SimTestSuite struct {
@@ -29,7 +29,7 @@ func (suite *SimTestSuite) SetupTest() {
 	checkTx := false
 	app := simapp.Setup(checkTx)
 	suite.app = app
-	suite.ctx = app.BaseApp.NewContext(checkTx, tmproto.Header{
+	suite.ctx = app.BaseApp.NewContext(checkTx, ocproto.Header{
 		Time: time.Now(),
 	})
 }
@@ -42,7 +42,7 @@ func (suite *SimTestSuite) getTestingAccounts(r *rand.Rand, n int) []simtypes.Ac
 
 	// add coins to the accounts
 	for _, account := range accounts {
-		err := simapp.FundAccount(suite.app.BankKeeper, suite.ctx, account.Address, initCoins)
+		err := simapp.FundAccount(suite.app, suite.ctx, account.Address, initCoins)
 		suite.Require().NoError(err)
 	}
 
@@ -104,7 +104,7 @@ func (suite *SimTestSuite) TestSimulateMsgGrantAllowance() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash}})
+	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: app.LastBlockHeight() + 1, AppHash: app.LastCommitID().Hash}})
 
 	// execute operation
 	op := simulation.SimulateMsgGrantAllowance(app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper)
@@ -112,7 +112,7 @@ func (suite *SimTestSuite) TestSimulateMsgGrantAllowance() {
 	require.NoError(err)
 
 	var msg feegrant.MsgGrantAllowance
-	suite.app.AppCodec().UnmarshalJSON(operationMsg.Msg, &msg)
+	suite.app.LegacyAmino().UnmarshalJSON(operationMsg.Msg, &msg)
 
 	require.True(operationMsg.OK)
 	require.Equal(accounts[2].Address.String(), msg.Granter)
@@ -129,7 +129,7 @@ func (suite *SimTestSuite) TestSimulateMsgRevokeAllowance() {
 	accounts := suite.getTestingAccounts(r, 3)
 
 	// begin a new block
-	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
+	app.BeginBlock(abci.RequestBeginBlock{Header: ocproto.Header{Height: suite.app.LastBlockHeight() + 1, AppHash: suite.app.LastCommitID().Hash}})
 
 	feeAmt := app.StakingKeeper.TokensFromConsensusPower(ctx, 200000)
 	feeCoins := sdk.NewCoins(sdk.NewCoin("foo", feeAmt))
@@ -154,7 +154,7 @@ func (suite *SimTestSuite) TestSimulateMsgRevokeAllowance() {
 	require.NoError(err)
 
 	var msg feegrant.MsgRevokeAllowance
-	suite.app.AppCodec().UnmarshalJSON(operationMsg.Msg, &msg)
+	suite.app.LegacyAmino().UnmarshalJSON(operationMsg.Msg, &msg)
 
 	require.True(operationMsg.OK)
 	require.Equal(granter.Address.String(), msg.Granter)

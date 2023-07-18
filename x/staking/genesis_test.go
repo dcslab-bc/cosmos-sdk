@@ -5,18 +5,18 @@ import (
 	"log"
 	"testing"
 
+	abci "github.com/line/ostracon/abci/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/staking"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	codectypes "github.com/line/lbm-sdk/codec/types"
+	"github.com/line/lbm-sdk/crypto/keys/ed25519"
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/x/staking"
+	"github.com/line/lbm-sdk/x/staking/teststaking"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
 func bootstrapGenesisTest(numAddrs int) (*simapp.SimApp, sdk.Context, []sdk.AccAddress) {
@@ -65,7 +65,7 @@ func TestInitGenesis(t *testing.T) {
 	// mint coins in the bonded pool representing the validators coins
 	require.NoError(t,
 		simapp.FundModuleAccount(
-			app.BankKeeper,
+			app,
 			ctx,
 			types.BondedPoolName,
 			sdk.NewCoins(
@@ -107,7 +107,7 @@ func TestInitGenesis(t *testing.T) {
 
 func TestInitGenesis_PoolsBalanceMismatch(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.NewContext(false, tmproto.Header{})
+	ctx := app.NewContext(false, ocproto.Header{})
 
 	consPub, err := codectypes.NewAnyWithValue(PKs[0])
 	require.NoError(t, err)
@@ -183,7 +183,7 @@ func TestInitGenesisLargeValidatorSet(t *testing.T) {
 	// mint coins in the bonded pool representing the validators coins
 	require.NoError(t,
 		simapp.FundModuleAccount(
-			app.BankKeeper,
+			app,
 			ctx,
 			types.BondedPoolName,
 			sdk.NewCoins(sdk.NewCoin(params.BondDenom, bondedPoolAmt)),

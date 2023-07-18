@@ -7,20 +7,20 @@ import (
 	"time"
 
 	"github.com/cosmos/go-bip39"
-	cfg "github.com/tendermint/tendermint/config"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/p2p"
-	"github.com/tendermint/tendermint/privval"
-	tmtypes "github.com/tendermint/tendermint/types"
+	cfg "github.com/line/ostracon/config"
+	osted25519 "github.com/line/ostracon/crypto/ed25519"
+	ostos "github.com/line/ostracon/libs/os"
+	"github.com/line/ostracon/p2p"
+	"github.com/line/ostracon/privval"
+	octypes "github.com/line/ostracon/types"
 
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	cryptocodec "github.com/line/lbm-sdk/crypto/codec"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
 )
 
 // ExportGenesisFile creates and writes the genesis configuration to disk. An
 // error is returned if building or writing the configuration to file fails.
-func ExportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
+func ExportGenesisFile(genDoc *octypes.GenesisDoc, genFile string) error {
 	if err := genDoc.ValidateAndComplete(); err != nil {
 		return err
 	}
@@ -31,10 +31,10 @@ func ExportGenesisFile(genDoc *tmtypes.GenesisDoc, genFile string) error {
 // ExportGenesisFileWithTime creates and writes the genesis configuration to disk.
 // An error is returned if building or writing the configuration to file fails.
 func ExportGenesisFileWithTime(
-	genFile, chainID string, validators []tmtypes.GenesisValidator,
+	genFile, chainID string, validators []octypes.GenesisValidator,
 	appState json.RawMessage, genTime time.Time,
 ) error {
-	genDoc := tmtypes.GenesisDoc{
+	genDoc := octypes.GenesisDoc{
 		GenesisTime: genTime,
 		ChainID:     chainID,
 		Validators:  validators,
@@ -68,20 +68,23 @@ func InitializeNodeValidatorFilesFromMnemonic(config *cfg.Config, mnemonic strin
 	nodeID = string(nodeKey.ID())
 
 	pvKeyFile := config.PrivValidatorKeyFile()
-	if err := tmos.EnsureDir(filepath.Dir(pvKeyFile), 0o777); err != nil {
+	if err := ostos.EnsureDir(filepath.Dir(pvKeyFile), 0777); err != nil {
 		return "", nil, err
 	}
 
 	pvStateFile := config.PrivValidatorStateFile()
-	if err := tmos.EnsureDir(filepath.Dir(pvStateFile), 0o777); err != nil {
+	if err := ostos.EnsureDir(filepath.Dir(pvStateFile), 0777); err != nil {
 		return "", nil, err
 	}
 
 	var filePV *privval.FilePV
 	if len(mnemonic) == 0 {
-		filePV = privval.LoadOrGenFilePV(pvKeyFile, pvStateFile)
+		filePV, err = privval.LoadOrGenFilePV(pvKeyFile, pvStateFile, config.PrivKeyType)
+		if err != nil {
+			return "", nil, err
+		}
 	} else {
-		privKey := tmed25519.GenPrivKeyFromSecret([]byte(mnemonic))
+		privKey := osted25519.GenPrivKeyFromSecret([]byte(mnemonic))
 		filePV = privval.NewFilePV(privKey, pvKeyFile, pvStateFile)
 	}
 
@@ -90,7 +93,7 @@ func InitializeNodeValidatorFilesFromMnemonic(config *cfg.Config, mnemonic strin
 		return "", nil, err
 	}
 
-	valPubKey, err = cryptocodec.FromTmPubKeyInterface(tmValPubKey)
+	valPubKey, err = cryptocodec.FromOcPubKeyInterface(tmValPubKey)
 	if err != nil {
 		return "", nil, err
 	}

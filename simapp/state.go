@@ -8,18 +8,18 @@ import (
 	"os"
 	"time"
 
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmtypes "github.com/tendermint/tendermint/types"
+	ostjson "github.com/line/ostracon/libs/json"
+	octypes "github.com/line/ostracon/types"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/codec"
+	"github.com/line/lbm-sdk/crypto/keys/secp256k1"
+	simappparams "github.com/line/lbm-sdk/simapp/params"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/module"
+	simtypes "github.com/line/lbm-sdk/types/simulation"
+	authtypes "github.com/line/lbm-sdk/x/auth/types"
+	banktypes "github.com/line/lbm-sdk/x/bank/types"
+	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
 )
 
 // AppStateFn returns the initial application state using a genesis or the simulation parameters.
@@ -107,20 +107,10 @@ func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simty
 			panic(err)
 		}
 
-		stakingAddr := authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String()
-		var found bool
-		for _, balance := range bankState.Balances {
-			if balance.Address == stakingAddr {
-				found = true
-				break
-			}
-		}
-		if !found {
-			bankState.Balances = append(bankState.Balances, banktypes.Balance{
-				Address: stakingAddr,
-				Coins:   sdk.NewCoins(notBondedCoins),
-			})
-		}
+		bankState.Balances = append(bankState.Balances, banktypes.Balance{
+			Address: authtypes.NewModuleAddress(stakingtypes.NotBondedPoolName).String(),
+			Coins:   sdk.NewCoins(notBondedCoins),
+		})
 
 		// change appState back
 		rawState[stakingtypes.ModuleName] = cdc.MustMarshalJSON(stakingState)
@@ -192,15 +182,15 @@ func AppStateRandomizedFn(
 
 // AppStateFromGenesisFileFn util function to generate the genesis AppState
 // from a genesis.json file.
-func AppStateFromGenesisFileFn(r io.Reader, cdc codec.JSONCodec, genesisFile string) (tmtypes.GenesisDoc, []simtypes.Account) {
+func AppStateFromGenesisFileFn(r io.Reader, cdc codec.JSONCodec, genesisFile string) (octypes.GenesisDoc, []simtypes.Account) {
 	bytes, err := os.ReadFile(genesisFile)
 	if err != nil {
 		panic(err)
 	}
 
-	var genesis tmtypes.GenesisDoc
+	var genesis octypes.GenesisDoc
 	// NOTE: Tendermint uses a custom JSON decoder for GenesisDoc
-	err = tmjson.Unmarshal(bytes, &genesis)
+	err = ostjson.Unmarshal(bytes, &genesis)
 	if err != nil {
 		panic(err)
 	}

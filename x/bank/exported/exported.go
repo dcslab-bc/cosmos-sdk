@@ -1,7 +1,7 @@
 package exported
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 // GenesisBalance defines a genesis balance interface that allows for account

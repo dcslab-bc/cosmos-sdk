@@ -2,18 +2,19 @@ package rest
 
 import (
 	"net/http"
+	"time"
 
-	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/line/lbm-sdk/client/tx"
 
 	"github.com/gorilla/mux"
 
-	govrest "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
+	govrest "github.com/line/lbm-sdk/x/gov/client/rest"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/rest"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/line/lbm-sdk/client"
+	sdk "github.com/line/lbm-sdk/types"
+	"github.com/line/lbm-sdk/types/rest"
+	govtypes "github.com/line/lbm-sdk/x/gov/types"
+	"github.com/line/lbm-sdk/x/upgrade/types"
 )
 
 func registerTxHandlers(
@@ -32,6 +33,7 @@ type PlanRequest struct {
 	Deposit       sdk.Coins    `json:"deposit" yaml:"deposit"`
 	UpgradeName   string       `json:"upgrade_name" yaml:"upgrade_name"`
 	UpgradeHeight int64        `json:"upgrade_height" yaml:"upgrade_height"`
+	UpgradeTime   string       `json:"upgrade_time" yaml:"upgrade_time"`
 	UpgradeInfo   string       `json:"upgrade_info" yaml:"upgrade_info"`
 }
 
@@ -75,7 +77,16 @@ func newPostPlanHandler(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		plan := types.Plan{Name: req.UpgradeName, Height: req.UpgradeHeight, Info: req.UpgradeInfo}
+		var t time.Time
+		if req.UpgradeTime != "" {
+			var err error
+			t, err = time.Parse(time.RFC3339, req.UpgradeTime)
+			if rest.CheckBadRequestError(w, err) {
+				return
+			}
+		}
+
+		plan := types.Plan{Name: req.UpgradeName, Time: t, Height: req.UpgradeHeight, Info: req.UpgradeInfo}
 		content := types.NewSoftwareUpgradeProposal(req.Title, req.Description, plan)
 		msg, err := govtypes.NewMsgSubmitProposal(content, req.Deposit, fromAddr)
 		if rest.CheckBadRequestError(w, err) {

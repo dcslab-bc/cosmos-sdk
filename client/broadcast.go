@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tendermint/tendermint/mempool"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/line/ostracon/mempool"
+	octypes "github.com/line/ostracon/types"
+
+	"github.com/line/lbm-sdk/client/flags"
+	sdk "github.com/line/lbm-sdk/types"
+	sdkerrors "github.com/line/lbm-sdk/types/errors"
+	"github.com/line/lbm-sdk/types/tx"
 )
 
 // BroadcastTx broadcasts a transactions either synchronously or asynchronously
@@ -46,7 +47,7 @@ func (ctx Context) BroadcastTx(txBytes []byte) (res *sdk.TxResponse, err error) 
 // TODO: Avoid brittle string matching in favor of error matching. This requires
 // a change to Tendermint's RPCError type to allow retrieval or matching against
 // a concrete error type.
-func CheckTendermintError(err error, tx tmtypes.Tx) *sdk.TxResponse {
+func CheckTendermintError(err error, tx octypes.Tx) *sdk.TxResponse {
 	if err == nil {
 		return nil
 	}

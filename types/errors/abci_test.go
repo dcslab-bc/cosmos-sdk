@@ -125,7 +125,7 @@ func (s *abciTestSuite) TestABCIInfoStacktrace() {
 		},
 	}
 
-	const thisTestSrc = "github.com/cosmos/cosmos-sdk/types/errors.(*abciTestSuite).TestABCIInfoStacktrace"
+	const thisTestSrc = "github.com/line/lbm-sdk/types/errors.(*abciTestSuite).TestABCIInfoStacktrace"
 
 	for testName, tc := range cases {
 		s.T().Run(testName, func(t *testing.T) {
@@ -185,6 +185,12 @@ func (s *abciTestSuite) TestABCIInfoSerializeErr() {
 		_, _, log := ABCIInfo(spec.src, spec.debug)
 		s.Require().Equal(spec.exp, log, msg)
 	}
+}
+
+func (s *abciTestSuite) TestQueryResultWithDebug() {
+	q := QueryResultWithDebug(Wrap(errInternal, "test error"), true)
+	s.Require().Equal(q.Code, uint32(1))
+	s.Require().Equal(q.Codespace, "undefined")
 }
 
 // customErr is a custom implementation of an error that provides an ABCICode

@@ -9,11 +9,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	"github.com/line/lbm-sdk/testutil"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 func Test_runImportCmd(t *testing.T) {
@@ -61,15 +61,15 @@ func Test_runImportCmd(t *testing.T) {
 		},
 	}
 
-	armoredKey := `-----BEGIN TENDERMINT PRIVATE KEY-----
-salt: A790BB721D1C094260EA84F5E5B72289
+	armoredKey := `-----BEGIN OSTRACON PRIVATE KEY-----
 kdf: bcrypt
+salt: A53F628182B827E07DD11A96EAB9D526
+type: secp256k1
 
-HbP+c6JmeJy9JXe2rbbF1QtCX1gLqGcDQPBXiCtFvP7/8wTZtVOPj8vREzhZ9ElO
-3P7YnrzPQThG0Q+ZnRSbl9MAS8uFAM4mqm5r/Ys=
-=f3l4
------END TENDERMINT PRIVATE KEY-----
-`
+Ax9IQsSq+jOWkPRDJQ69a5/uUm4XliPim/CbYDVoXO6D3fts5IEXcUTmIa60ynC/
+8hzYAawzYMO95Kwi0NI8WW9wUv3TseSWFv6/RpU=
+=umYd
+-----END OSTRACON PRIVATE KEY-----`
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"io"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmstrings "github.com/tendermint/tendermint/libs/strings"
+	abci "github.com/line/ostracon/abci/types"
+	oststrings "github.com/line/ostracon/libs/strings"
 	dbm "github.com/tendermint/tm-db"
 
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/types/kv"
+	snapshottypes "github.com/line/lbm-sdk/snapshots/types"
+	"github.com/line/lbm-sdk/types/kv"
 )
 
 type Store interface {
@@ -70,7 +70,7 @@ func (s *StoreUpgrades) IsAdded(key string) bool {
 	if s == nil {
 		return false
 	}
-	return tmstrings.StringInSlice(key, s.Added)
+	return oststrings.StringInSlice(key, s.Added)
 }
 
 // IsDeleted returns true if the given key should be deleted
@@ -205,7 +205,7 @@ type CommitMultiStore interface {
 type KVStore interface {
 	Store
 
-	// Get returns nil iff key doesn't exist. Panics on nil key.
+	// Get returns nil if key doesn't exist. Panics on nil key.
 	Get(key []byte) []byte
 
 	// Has checks if a key exists. Panics on nil key.

@@ -5,19 +5,20 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 
-	bip39 "github.com/cosmos/go-bip39"
+	"github.com/cosmos/go-bip39"
 	"github.com/spf13/cobra"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/input"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/multisig"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/line/lbm-sdk/client"
+	"github.com/line/lbm-sdk/client/flags"
+	"github.com/line/lbm-sdk/client/input"
+	"github.com/line/lbm-sdk/crypto/hd"
+	"github.com/line/lbm-sdk/crypto/keyring"
+	"github.com/line/lbm-sdk/crypto/keys/multisig"
+	cryptotypes "github.com/line/lbm-sdk/crypto/types"
+	sdk "github.com/line/lbm-sdk/types"
 )
 
 const (
@@ -31,8 +32,9 @@ const (
 	flagNoSort      = "nosort"
 	flagHDPath      = "hd-path"
 
-	// DefaultKeyPass contains the default key password for genesis transactions
-	DefaultKeyPass = "12345678"
+	// CoinTypeNotAssigned means a coin type not assigned
+	// lbm-sdk cannot support the coin type MaxUint32
+	CoinTypeNotAssigned = math.MaxUint32
 )
 
 // AddKeyCommand defines a keys command to add a generated or recovered private key to keybase.
@@ -103,6 +105,7 @@ output
 */
 func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *bufio.Reader) error {
 	var err error
+	var multisigThreshold int
 
 	name := args[0]
 	interactive, _ := cmd.Flags().GetBool(flagInteractive)
@@ -116,6 +119,18 @@ func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 	algo, err := keyring.NewSigningAlgoFromString(algoStr, keyringAlgos)
 	if err != nil {
 		return err
+	}
+	multisigKeys, _ := cmd.Flags().GetStringSlice(flagMultisig)
+	if len(multisigKeys) != 0 {
+		multisigThreshold, _ = cmd.Flags().GetInt(flagMultiSigThreshold)
+		if err = validateMultisigThreshold(multisigThreshold, len(multisigKeys)); err != nil {
+			return err
+		}
+
+		err = verifyMultisigTarget(kb, multisigKeys, name)
+		if err != nil {
+			return err
+		}
 	}
 
 	if dryRun, _ := cmd.Flags().GetBool(flags.FlagDryRun); dryRun {
@@ -140,13 +155,8 @@ func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 			}
 		}
 
-		multisigKeys, _ := cmd.Flags().GetStringSlice(flagMultisig)
 		if len(multisigKeys) != 0 {
 			pks := make([]cryptotypes.PubKey, len(multisigKeys))
-			multisigThreshold, _ := cmd.Flags().GetInt(flagMultiSigThreshold)
-			if err := validateMultisigThreshold(multisigThreshold, len(multisigKeys)); err != nil {
-				return err
-			}
 
 			for i, keyname := range multisigKeys {
 				k, err := kb.Key(keyname)
@@ -190,6 +200,9 @@ func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 	}
 
 	coinType, _ := cmd.Flags().GetUint32(flagCoinType)
+	if coinType == CoinTypeNotAssigned {
+		coinType = sdk.GetConfig().GetCoinType()
+	}
 	account, _ := cmd.Flags().GetUint32(flagAccount)
 	index, _ := cmd.Flags().GetUint32(flagIndex)
 	hdPath, _ := cmd.Flags().GetString(flagHDPath)
@@ -238,7 +251,7 @@ func runAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 	}
 
 	if len(mnemonic) == 0 {
-		// read entropy seed straight from tmcrypto.Rand and convert to mnemonic
+		// read entropy seed straight from occrypto.Rand and convert to mnemonic
 		entropySeed, err := bip39.NewEntropy(mnemonicEntropySize)
 		if err != nil {
 			return err
@@ -319,6 +332,20 @@ func printCreate(cmd *cobra.Command, info keyring.Info, showMnemonic bool, mnemo
 
 	default:
 		return fmt.Errorf("invalid output format %s", outputFormat)
+	}
+
+	return nil
+}
+
+func verifyMultisigTarget(kb keyring.Keyring, multisigKeys []string, newkey string) error {
+	if _, err := kb.Key(newkey); err == nil {
+		return errors.New("you cannot specify a new key as one of the names of the keys that make up a multisig")
+	}
+
+	for _, k := range multisigKeys {
+		if _, err := kb.Key(k); err != nil {
+			return errors.New("part of the multisig target key does not exist")
+		}
 	}
 
 	return nil

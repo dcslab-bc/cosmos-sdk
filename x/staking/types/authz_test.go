@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 
-	"github.com/cosmos/cosmos-sdk/simapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ocproto "github.com/line/ostracon/proto/ostracon/types"
+
+	"github.com/line/lbm-sdk/simapp"
+	sdk "github.com/line/lbm-sdk/types"
+	stakingtypes "github.com/line/lbm-sdk/x/staking/types"
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 
 func TestAuthzAuthorizations(t *testing.T) {
 	app := simapp.Setup(false)
-	ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+	ctx := app.BaseApp.NewContext(false, ocproto.Header{})
 
 	// verify ValidateBasic returns error for the AUTHORIZATION_TYPE_UNSPECIFIED authorization type
 	delAuth, err := stakingtypes.NewStakeAuthorization([]sdk.ValAddress{val1, val2}, []sdk.ValAddress{}, stakingtypes.AuthorizationType_AUTHORIZATION_TYPE_UNSPECIFIED, &coin100)
@@ -122,7 +123,20 @@ func TestAuthzAuthorizations(t *testing.T) {
 			false,
 			nil,
 		},
-
+		{
+			"delegate: testing with a validator out of denylist",
+			[]sdk.ValAddress{},
+			[]sdk.ValAddress{val1},
+			stakingtypes.AuthorizationType_AUTHORIZATION_TYPE_DELEGATE,
+			nil,
+			stakingtypes.NewMsgDelegate(delAddr, val2, coin100),
+			false,
+			false,
+			&stakingtypes.StakeAuthorization{
+				Validators: &stakingtypes.StakeAuthorization_DenyList{
+					DenyList: &stakingtypes.StakeAuthorization_Validators{Address: []string{val1.String()}},
+				}, MaxTokens: nil, AuthorizationType: stakingtypes.AuthorizationType_AUTHORIZATION_TYPE_DELEGATE},
+		},
 		{
 			"undelegate: expect 0 remaining coins",
 			[]sdk.ValAddress{val1, val2},

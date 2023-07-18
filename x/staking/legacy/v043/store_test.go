@@ -7,13 +7,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/testutil"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	v040staking "github.com/cosmos/cosmos-sdk/x/staking/legacy/v040"
-	v043staking "github.com/cosmos/cosmos-sdk/x/staking/legacy/v043"
-	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
-	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/line/lbm-sdk/testutil"
+	"github.com/line/lbm-sdk/testutil/testdata"
+	sdk "github.com/line/lbm-sdk/types"
+	v040staking "github.com/line/lbm-sdk/x/staking/legacy/v040"
+	v043staking "github.com/line/lbm-sdk/x/staking/legacy/v043"
+	"github.com/line/lbm-sdk/x/staking/teststaking"
+	"github.com/line/lbm-sdk/x/staking/types"
 )
 
 func TestStoreMigration(t *testing.T) {
@@ -28,7 +28,7 @@ func TestStoreMigration(t *testing.T) {
 	_, pk1, addr2 := testdata.KeyTestPubAddr()
 	valAddr2 := sdk.ValAddress(addr2)
 	_, _, addr3 := testdata.KeyTestPubAddr()
-	consAddr := sdk.ConsAddress(addr3.String())
+	consAddr := sdk.ConsAddress(addr3)
 	_, _, addr4 := testdata.KeyTestPubAddr()
 	now := time.Now()
 	// Use dummy value for all keys.
