@@ -228,6 +228,23 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 // will contain releveant error information. Regardless of tx execution outcome,
 // the ResponseCheckTx will contain relevant gas execution context.
 func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
+	/*
+		var mode runTxMode
+
+		switch {
+		case req.Type == abci.CheckTxType_New:
+			mode = runTxModeCheck
+
+		case req.Type == abci.CheckTxType_Recheck:
+			mode = runTxModeReCheck
+
+		default:
+			panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
+		}
+
+		gInfo, result, anteEvents, priority, err := app.runTx(mode, req.Tx)
+	*/
+
 	tx, err := app.txDecoder(req.Tx)
 	if err != nil {
 		return sdkerrors.ResponseCheckTx(err, 0, 0, app.trace)
@@ -237,8 +254,8 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
 	}
 
-	// gInfo, result, anteEvents, priority, err := app.runTx(mode, req.Tx)
 	gInfo, err := app.checkTx(req.Tx, tx, req.Type == abci.CheckTxType_Recheck)
+
 	if err != nil {
 		// return sdkerrors.ResponseCheckTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
 		return sdkerrors.ResponseCheckTx(err, gInfo.GasWanted, gInfo.GasUsed, app.trace)
@@ -250,7 +267,7 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 		// Log:       result.Log,
 		// Data:      result.Data,
 		// Events:    sdk.MarkEventsToIndex(result.Events, app.indexEvents),
-		// Priority:  priority,
+		// Priority: priority,
 	}
 }
 
@@ -272,11 +289,6 @@ func (app *BaseApp) EndRecheckTx(req abci.RequestEndRecheckTx) abci.ResponseEndR
 // Regardless of tx execution outcome, the ResponseDeliverTx will contain relevant
 // gas execution context.
 func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliverTx) {
-	tx, err := app.txDecoder(req.Tx)
-	if err != nil {
-		return sdkerrors.ResponseDeliverTx(err, 0, 0, app.trace)
-	}
-
 	gInfo := sdk.GasInfo{}
 	resultStr := "successful"
 
@@ -296,11 +308,17 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 	}()
 
 	// gInfo, result, anteEvents, _, err := app.runTx(runTxModeDeliver, req.Tx)
-	gInfo, result, anteEvents, _, err := app.runTx(req.Tx, tx, false)
+	tx, err := app.txDecoder(req.Tx)
 	if err != nil {
-		resultStr = "failed"
-		return sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, sdk.MarkEventsToIndex(anteEvents, app.indexEvents), app.trace)
+		return sdkerrors.ResponseDeliverTx(err, 0, 0, app.trace)
 	}
+
+	gInfo, result, err := app.runTx(req.Tx, tx, false)
+	// if err != nil {
+	// 	resultStr = "failed"
+	// 	// return sdkerrors.ResponseDeliverTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, sdk.MarkEventsToIndex(anteEvents, app.indexEvents), app.trace)
+	// 	return sdkerrors.ResponseCheckTx(err, gInfo.GasWanted, gInfo.GasUsed, app.trace)
+	// }
 
 	return abci.ResponseDeliverTx{
 		GasWanted: int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
@@ -313,8 +331,8 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 
 // Commit implements the ABCI interface. It will commit all state that exists in
 // the deliver state's multi-store and includes the resulting commit ID in the
-// returned abci.ResponseCommit. Commit will set the check state based on the
-// latest header and reset the deliver state. Also, if a non-zero halt height is
+// returned abci.ResponseCommit. Commit will /*set the check state based on the
+// latest header and */ reset the deliver state. Also, if a non-zero halt height is
 // defined in config, Commit will execute a deferred function call to check
 // against that height and gracefully halt if it matches the latest committed
 // height.
@@ -342,10 +360,10 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 
 	app.logger.Info("commit synced", "commit", fmt.Sprintf("%X", commitID))
 
-	// Reset the Check state to the latest committed.
-	//
-	// NOTE: This is safe because Tendermint holds a lock on the mempool for
-	// Commit. Use the header from this latest block.
+	// // Reset the Check state to the latest committed.
+	// //
+	// // NOTE: This is safe because Tendermint holds a lock on the mempool for
+	// // Commit. Use the header from this latest block.
 	// app.setCheckState(header)
 
 	// empty/reset the deliver state
