@@ -49,12 +49,14 @@ func BenchmarkOneBankSendTxPerBlock(b *testing.B) {
 	// Committing, and what time comes from Check/Deliver Tx.
 	for i := 0; i < b.N; i++ {
 		benchmarkApp.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: height}})
-		_, _, err := benchmarkApp.SimCheck(txGen.TxEncoder(), txs[i])
+		// _, _, err := benchmarkApp.SimCheck(txGen.TxEncoder(), txs[i])
+		_, err := benchmarkApp.SimCheck(txGen.TxEncoder(), txs[i])
 		if err != nil {
 			panic("something is broken in checking transaction")
 		}
 
-		_, _, err = benchmarkApp.SimDeliver(txGen.TxEncoder(), txs[i])
+		// _, _, err = benchmarkApp.SimDeliver(txGen.TxEncoder(), txs[i])
+		_, err = benchmarkApp.SimDeliver(txGen.TxEncoder(), txs[i])
 		require.NoError(b, err)
 		benchmarkApp.EndBlock(abci.RequestEndBlock{Height: height})
 		benchmarkApp.Commit()
