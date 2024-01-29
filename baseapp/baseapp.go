@@ -700,9 +700,10 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 			//TODO: anteCtx 바꾸는거 있는지 체크할 것
 			newCtx, err = app.concurrentAnteHandler(anteCtx, tx, mode == runTxModeSimulate)
 		}()
+		newCtx, err = app.concurrentAnteHandler(newCtx, tx, mode == runTxModeSimulate)
 		//antehandler sequentail
 		// fmt.Println(tmstate.TestString)
-		newCtx, err = app.sequentialAnteHandler(anteCtx, tx, mode == runTxModeSimulate)
+		newCtx, err = app.sequentialAnteHandler(newCtx, tx, mode == runTxModeSimulate)
 	} else if mode == runTxModeCheck {
 		newCtx, err = app.anteHandler(anteCtx, tx, simulate)
 	}
@@ -781,10 +782,12 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	// }
 
 	msgs := tx.GetMsgs()
-	// if err := validateBasicTxMsgs(msgs); err != nil {
-	if err = validateBasicTxMsgs(msgs); err != nil {
-		// return sdk.GasInfo{}, nil, nil, 0, err
-		return sdk.GasInfo{}, nil, err
+	if mode == runTxModeAnteVerify {
+		// if err := validateBasicTxMsgs(msgs); err != nil {
+		if err = validateBasicTxMsgs(msgs); err != nil {
+			// return sdk.GasInfo{}, nil, nil, 0, err
+			return sdk.GasInfo{}, nil, err
+		}
 	}
 
 	/*
@@ -863,7 +866,7 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	// result, err = app.runMsgs(runMsgCtx, msgs, mode)
 	// if err == nil {
 	result, err = app.runMsgs(runMsgCtx, msgs)
-	if err == nil && !simulate {
+	if err == nil && mode == runTxModeDeliver {
 		// Run optional postHandlers.
 		//
 		// Note: If the postHandler fails, we also revert the runMsgs state.
