@@ -312,10 +312,10 @@ func (app *BaseApp) AnteVerifyTx(req abci.RequestAnteVerifyTx) (res abci.Respons
 	// 	return sdkerrors.ResponseDeliverTx(err, 0, 0, app.trace)
 	// }
 
-	gInfo, result, _ := app.runTx(req.Tx, tx, false, runTxModeAnteVerify)
-	gInfo = gInfo
-	result = result
-
+	err := app.verifyDeliverTx(req.Tx, tx)
+	if err != nil {
+		fmt.Println("AnteVerifyTx err:", err)
+	}
 	// fmt.Println("AnteVerifyTx")
 	return abci.ResponseAnteVerifyTx{
 		Log: "AnteVerifyTx~",
