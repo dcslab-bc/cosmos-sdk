@@ -354,12 +354,13 @@ func (svd DeliverTxSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 		}
 
 		// Check account sequence number.
-		if sig.Sequence != (acc.GetSequence() + 1) { //updated by mssong
+		if (sig.Sequence + 1) != acc.GetSequence() { //updated by mssong
 			return ctx, sdkerrors.Wrapf(
 				sdkerrors.ErrWrongSequence,
 				"account sequence mismatch, expected %d, got %d", acc.GetSequence(), sig.Sequence,
 			)
 		}
+		// fmt.Println("sig.Sequence+1", sig.Sequence+1, "acc.GetSequence()", acc.GetSequence())
 
 		// retrieve signer data
 		genesis := ctx.BlockHeight() == 0
