@@ -39,3 +39,26 @@ func VerifySignature(pubKey cryptotypes.PubKey, signerData SignerData, sigData s
 		return fmt.Errorf("unexpected SignatureData %T", sigData)
 	}
 }
+
+// updated by msong
+func SkipVerifySignature(pubKey cryptotypes.PubKey, signerData SignerData, sigData signing.SignatureData, handler SignModeHandler, tx sdk.Tx) error {
+	switch data := sigData.(type) {
+	case *signing.SingleSignatureData:
+		return nil
+
+	case *signing.MultiSignatureData:
+		multiPK, ok := pubKey.(multisig.PubKey)
+		if !ok {
+			return fmt.Errorf("expected %T, got %T", (multisig.PubKey)(nil), pubKey)
+		}
+		err := multiPK.VerifyMultisignature(func(mode signing.SignMode) ([]byte, error) {
+			return handler.GetSignBytes(mode, signerData, tx)
+		}, data)
+		if err != nil {
+			return err
+		}
+		return nil
+	default:
+		return fmt.Errorf("unexpected SignatureData %T", sigData)
+	}
+}

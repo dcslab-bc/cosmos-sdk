@@ -52,8 +52,9 @@ type BaseApp struct { // nolint: maligned
 	interfaceRegistry codectypes.InterfaceRegistry
 	txDecoder         sdk.TxDecoder // unmarshal []byte into sdk.Tx
 
-	anteHandler           sdk.AnteHandler // ante handler for fee and auth
-	postHandler           sdk.AnteHandler // post handler, optional, e.g. for tips
+	anteHandler sdk.AnteHandler // ante handler for fee and auth
+	postHandler sdk.AnteHandler // post handler, optional, e.g. for tips
+
 	concurrentAnteHandler sdk.AnteHandler //updated by mssong
 	sequentialAnteHandler sdk.AnteHandler //updated by mssong
 
@@ -679,6 +680,13 @@ func (app *BaseApp) checkTx(txBytes []byte, tx sdk.Tx, recheck bool) (gInfo sdk.
 func (app *BaseApp) verifyDeliverTx(txBytes []byte, tx sdk.Tx) (err error) {
 	ctx := app.getCheckContextForTx(txBytes, false)
 
+	msgs := tx.GetMsgs()
+
+	if err = validateBasicTxMsgs(msgs); err != nil {
+		// return sdk.GasInfo{}, nil, nil, 0, err
+		return err
+	}
+
 	_, err = app.anteTx(ctx, txBytes, tx, false, runTxModeAnteVerify)
 
 	return err
@@ -698,9 +706,11 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 	// performance benefits, but it'll be more difficult to get right.
 	var newCtx sdk.Context
 	var err error
+	// if mode == runTxModeCheck || mode == runTxModeDeliver {
 	if mode == runTxModeCheck {
 		anteCtx, msCache := app.cacheTxContext(ctx, txBytes)
 		anteCtx = anteCtx.WithEventManager(sdk.NewEventManager())
+		//skip the signature verification
 		newCtx, err = app.anteHandler(anteCtx, tx, simulate)
 		if err != nil {
 			return newCtx, err
@@ -710,19 +720,19 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 	} else if mode == runTxModeAnteVerify {
 		go func() {
 			defer tmState.AnteWg.Done()
-
 			msgs := tx.GetMsgs()
 			var err_temp error
 			if err_temp = validateBasicTxMsgs(msgs); err != nil {
 				err = err_temp
 				return
 			}
-			_, err_temp = app.concurrentAnteHandler(ctx, tx, mode == runTxModeSimulate)
+			_, err_temp = app.concurrentAnteHandler(ctx, tx, simulate)
 			err = err_temp
 		}()
 		if err != nil {
 			return ctx, err
 		}
+		// }
 	} else if mode == runTxModeDeliver {
 		anteCtx, msCache := app.cacheTxContext(ctx, txBytes)
 		anteCtx = anteCtx.WithEventManager(sdk.NewEventManager())
@@ -792,7 +802,7 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	// NOTE: This must exist in a separate defer function for the above recovery
 	// to recover from this one.
 	// if mode == runTxModeDeliver {
-	if mode == runTxModeDeliver {
+	if !simulate {
 		defer consumeBlockGas()
 	}
 
@@ -802,10 +812,10 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	// }
 
 	msgs := tx.GetMsgs()
-	// if mode == runTxModeAnteVerify {
-	// 			if err = validateBasicTxMsgs(msgs); err != nil {
-	// 		return sdk.GasInfo{}, nil, err
-	// 	}
+
+	// if err = validateBasicTxMsgs(msgs); err != nil {
+	// 	// return sdk.GasInfo{}, nil, nil, 0, err
+	// 	return sdk.GasInfo{}, nil, err
 	// }
 
 	/*
@@ -851,22 +861,24 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 		}
 	*/
 
-	if mode == runTxModeDeliver {
-		newCtx, err := app.anteTx(ctx, txBytes, tx, simulate, runTxModeDeliver)
-		if !newCtx.IsZero() { //here
-			// At this point, newCtx.MultiStore() is a store branch, or something else
-			// replaced by the AnteHandler. We want the original multistore.
-			//
-			// Also, in the case of the tx aborting, we need to track gas consumed via
-			// the instantiated gas meter in the AnteHandler, so we update the context
-			// prior to returning.
+	// if mode == runTxModeDeliver {
 
-			ctx = newCtx.WithMultiStore(ms)
-		}
-		if err != nil {
-			return gInfo, nil, err
-		}
+	// }
+	var newCtx sdk.Context
+	newCtx, err = app.anteTx(ctx, txBytes, tx, simulate, runTxModeDeliver)
+	if !newCtx.IsZero() { //here
+		// At this point, newCtx.MultiStore() is a store branch, or something else
+		// replaced by the AnteHandler. We want the original multistore.
+		//
+		// Also, in the case of the tx aborting, we need to track gas consumed via
+		// the instantiated gas meter in the AnteHandler, so we update the context
+		// prior to returning.
+
+		ctx = newCtx.WithMultiStore(ms)
 	}
+	// if err != nil {
+	// 	return gInfo, nil, err
+	// }
 
 	events := ctx.EventManager().Events()
 	anteEvents := events.ToABCIEvents()
@@ -886,10 +898,8 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	// Result if any single message fails or does not have a registered Handler.
 	// result, err = app.runMsgs(runMsgCtx, msgs, mode)
 	// if err == nil {
-	if mode == runTxModeDeliver {
-		result, err = app.runMsgs(runMsgCtx, msgs)
-	}
-	if err == nil && mode == runTxModeDeliver {
+	result, err = app.runMsgs(runMsgCtx, msgs)
+	if err == nil && !simulate {
 		// Run optional postHandlers.
 		//
 		// Note: If the postHandler fails, we also revert the runMsgs state.
