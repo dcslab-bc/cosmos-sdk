@@ -72,8 +72,15 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress,
 }
 
 // BeforeValidatorSlashed - call hook if registered
-func (k Keeper) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, fraction sdk.Dec) {
+func (k Keeper) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, slashHeight int64, slashFactor sdk.Dec, effectiveSlashFactor sdk.Dec) {
 	if k.hooks != nil {
-		k.hooks.BeforeValidatorSlashed(ctx, valAddr, fraction)
+		k.hooks.BeforeValidatorSlashed(ctx, valAddr, slashHeight, slashFactor, effectiveSlashFactor)
+	}
+}
+
+// AfterValidatorSlashed - call hook if registered
+func (k Keeper) AfterValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, slashHeight int64, slashFactor sdk.Dec, effectiveSlashFactor sdk.Dec) {
+	if k.hooks != nil {
+		k.hooks.AfterValidatorSlashed(ctx, valAddr, slashHeight, slashFactor, effectiveSlashFactor)
 	}
 }

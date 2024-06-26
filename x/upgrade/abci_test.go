@@ -68,9 +68,9 @@ func TestRequireName(t *testing.T) {
 	require.True(t, errors.Is(sdkerrors.ErrInvalidRequest, err), err)
 }
 
-func TestRequireFutureBlock(t *testing.T) {
+func TestRequireNotPastBlock(t *testing.T) {
 	s := setupTest(10, map[int64]bool{})
-	err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "prop", Plan: types.Plan{Name: "test", Height: s.ctx.BlockHeight()}})
+	err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "prop", Plan: types.Plan{Name: "test", Height: s.ctx.BlockHeight() - 1}})
 	require.NotNil(t, err)
 	require.True(t, errors.Is(sdkerrors.ErrInvalidRequest, err), err)
 }
@@ -410,71 +410,4 @@ func TestDumpUpgradeInfoToFile(t *testing.T) {
 	// clear the test file
 	err = os.Remove(upgradeInfoFilePath)
 	require.Nil(t, err)
-}
-
-// TODO: add testcase to for `no upgrade handler is present for last applied upgrade`.
-func TestBinaryVersion(t *testing.T) {
-	var skipHeight int64 = 15
-	s := setupTest(10, map[int64]bool{skipHeight: true})
-
-	testCases := []struct {
-		name        string
-		preRun      func() (sdk.Context, abci.RequestBeginBlock)
-		expectPanic bool
-	}{
-		{
-			"test not panic: no scheduled upgrade or applied upgrade is present",
-			func() (sdk.Context, abci.RequestBeginBlock) {
-				req := abci.RequestBeginBlock{Header: s.ctx.BlockHeader()}
-				return s.ctx, req
-			},
-			false,
-		},
-		{
-			"test not panic: upgrade handler is present for last applied upgrade",
-			func() (sdk.Context, abci.RequestBeginBlock) {
-				s.keeper.SetUpgradeHandler("test0", func(_ sdk.Context, _ types.Plan, vm module.VersionMap) (module.VersionMap, error) {
-					return vm, nil
-				})
-
-				err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "Upgrade test", Plan: types.Plan{Name: "test0", Height: s.ctx.BlockHeight() + 2}})
-				require.Nil(t, err)
-
-				newCtx := s.ctx.WithBlockHeight(12)
-				s.keeper.ApplyUpgrade(newCtx, types.Plan{
-					Name:   "test0",
-					Height: 12,
-				})
-
-				req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
-				return newCtx, req
-			},
-			false,
-		},
-		{
-			"test panic: upgrade needed",
-			func() (sdk.Context, abci.RequestBeginBlock) {
-				err := s.handler(s.ctx, &types.SoftwareUpgradeProposal{Title: "Upgrade test", Plan: types.Plan{Name: "test2", Height: 13}})
-				require.Nil(t, err)
-
-				newCtx := s.ctx.WithBlockHeight(13)
-				req := abci.RequestBeginBlock{Header: newCtx.BlockHeader()}
-				return newCtx, req
-			},
-			true,
-		},
-	}
-
-	for _, tc := range testCases {
-		ctx, req := tc.preRun()
-		if tc.expectPanic {
-			require.Panics(t, func() {
-				s.module.BeginBlock(ctx, req)
-			})
-		} else {
-			require.NotPanics(t, func() {
-				s.module.BeginBlock(ctx, req)
-			})
-		}
-	}
 }

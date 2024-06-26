@@ -49,6 +49,9 @@ var DefaultConsensusParams = &abci.ConsensusParams{
 			tmtypes.ABCIPubKeyTypeEd25519,
 		},
 	},
+	Version: &tmproto.VersionParams{
+		AppVersion: 0, // must be 0 during chain initialization.
+	},
 }
 
 func setup(withGenesis bool, invCheckPeriod uint) (*SimApp, GenesisState) {
@@ -314,7 +317,7 @@ func TestAddr(addr string, bech string) (sdk.AccAddress, error) {
 // CheckBalance checks the balance of an account.
 func CheckBalance(t *testing.T, app *SimApp, addr sdk.AccAddress, balances sdk.Coins) {
 	ctxCheck := app.BaseApp.NewContext(true, tmproto.Header{})
-	require.True(t, balances.IsEqual(app.BankKeeper.GetAllBalances(ctxCheck, addr)))
+	require.Equal(t, balances.String(), app.BankKeeper.GetAllBalances(ctxCheck, addr).String())
 }
 
 // SignCheckDeliver checks a generated signed transaction and simulates a

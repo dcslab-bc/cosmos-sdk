@@ -10,7 +10,7 @@ BINDIR ?= $(GOPATH)/bin
 BUILDDIR ?= $(CURDIR)/build
 SIMAPP = ./simapp
 MOCKS_DIR = $(CURDIR)/tests/mocks
-HTTPS_GIT := https://github.com/cosmos/cosmos-sdk.git
+HTTPS_GIT := https://github.com/osmosis-labs/cosmos-sdk.git
 DOCKER := $(shell which docker)
 DOCKER_BUF := $(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace bufbuild/buf
 
@@ -415,7 +415,7 @@ proto-lint:
 	@$(DOCKER_BUF) lint --error-format=json
 
 proto-check-breaking:
-	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=master
+	@$(DOCKER_BUF) breaking --against $(HTTPS_GIT)#branch=v0.44.3x-osmo-v5
 
 
 TM_URL              = https://raw.githubusercontent.com/tendermint/tendermint/v0.34.0-rc6/proto/tendermint
@@ -480,17 +480,30 @@ proto-update-deps:
 ###                                Localnet                                 ###
 ###############################################################################
 
-# Run a 4-node testnet locally
-localnet-start: build-linux localnet-stop
-	$(if $(shell $(DOCKER) inspect -f '{{ .Id }}' cosmossdk/simd-env 2>/dev/null),$(info found image cosmossdk/simd-env),$(MAKE) -C contrib/images simd-env)
-	$(DOCKER) run --rm -v $(CURDIR)/localnet:/data cosmossdk/simd-env \
-		testnet init-files --v 4 -o /data --starting-ip-address 192.168.10.2 --keyring-backend=test
+localnet-build-env:
+	$(MAKE) -C contrib/images simd-env
+
+localnet-build-dlv:
+	$(MAKE) -C contrib/images simd-dlv
+
+localnet-build-nodes:
+	$(DOCKER) run --rm -v $(CURDIR)/.testnets:/data cosmossdk/simd \
+			  testnet init-files --v 4 -o /data --starting-ip-address 192.168.10.2 --keyring-backend=test
 	docker-compose up -d
 
 localnet-stop:
 	docker-compose down
 
-.PHONY: localnet-start localnet-stop
+# localnet-start will run a 4-node testnet locally. The nodes are
+# based off the docker images in: ./contrib/images/simd-env
+localnet-start: localnet-stop localnet-build-env localnet-build-nodes
+
+# localnet-debug will run a 4-node testnet locally in debug mode
+# you can read more about the debug mode here: ./contrib/images/simd-dlv/README.md
+localnet-debug: localnet-stop localnet-build-dlv localnet-build-nodes
+
+.PHONY: localnet-start localnet-stop localnet-debug localnet-build-env \
+localnet-build-dlv localnet-build-nodes
 
 ###############################################################################
 ###                                rosetta                                  ###

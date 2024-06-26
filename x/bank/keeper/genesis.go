@@ -16,10 +16,7 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 
 	genState.Balances = types.SanitizeGenesisBalances(genState.Balances)
 	for _, balance := range genState.Balances {
-		addr, err := sdk.AccAddressFromBech32(balance.Address)
-		if err != nil {
-			panic(err)
-		}
+		addr := balance.GetAddress()
 
 		if err := k.initBalances(ctx, addr, balance.Coins); err != nil {
 			panic(fmt.Errorf("error on setting balances %w", err))
@@ -39,6 +36,10 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	for _, meta := range genState.DenomMetadata {
 		k.SetDenomMetaData(ctx, meta)
 	}
+
+	for _, supplyOffset := range genState.SupplyOffsets {
+		k.setSupplyOffset(ctx, supplyOffset.Denom, supplyOffset.Offset)
+	}
 }
 
 // ExportGenesis returns the bank module's genesis state.
@@ -53,5 +54,5 @@ func (k BaseKeeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		k.GetAccountsBalances(ctx),
 		totalSupply,
 		k.GetAllDenomMetaData(ctx),
-	)
+	).WithSupplyOffsets(k.getGenesisSupplyOffsets(ctx))
 }

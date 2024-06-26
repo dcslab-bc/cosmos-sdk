@@ -35,11 +35,7 @@ func (keeper Keeper) Tally(ctx sdk.Context, proposal types.Proposal) (passes boo
 
 	keeper.IterateVotes(ctx, proposal.ProposalId, func(vote types.Vote) bool {
 		// if validator, just record it in the map
-		voter, err := sdk.AccAddressFromBech32(vote.Voter)
-
-		if err != nil {
-			panic(err)
-		}
+		voter := sdk.MustAccAddressFromBech32(vote.Voter)
 
 		valAddrStr := sdk.ValAddress(voter.Bytes()).String()
 		if val, ok := currValidators[valAddrStr]; ok {
@@ -115,8 +111,10 @@ func (keeper Keeper) Tally(ctx sdk.Context, proposal types.Proposal) (passes boo
 		return false, true, tallyResults
 	}
 
-	// If more than 1/2 of non-abstaining voters vote Yes, proposal passes
-	if results[types.OptionYes].Quo(totalVotingPower.Sub(results[types.OptionAbstain])).GT(tallyParams.Threshold) {
+	threshold := tallyParams.GetThreshold(proposal.IsExpedited)
+	// If more than threshold of non-abstaining voters vote Yes, proposal passes
+	// default value for regular proposals is 1/2. For expedited 2/3
+	if results[types.OptionYes].Quo(totalVotingPower.Sub(results[types.OptionAbstain])).GT(threshold) {
 		return true, false, tallyResults
 	}
 

@@ -14,6 +14,7 @@ import (
 	db "github.com/tendermint/tm-db"
 
 	"github.com/cosmos/cosmos-sdk/snapshots/types"
+	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -291,6 +292,23 @@ func (s *Store) Save(
 	snapshot.Chunks = index
 	snapshot.Hash = snapshotHasher.Sum(nil)
 	return snapshot, s.saveSnapshot(snapshot)
+}
+
+// CacheWrap implements the Store interface. It panics because a Store
+// cannot be branched.
+func (*Store) CacheWrap() store.CacheWrap {
+	panic("cannot CacheWrap a snapshot Store")
+}
+
+// CacheWrapWithTrace implements the Store interface. It panics as a
+// Store cannot be branched.
+func (*Store) CacheWrapWithTrace(_ io.Writer, _ store.TraceContext) store.CacheWrap {
+	panic("cannot CacheWrapWithTrace a snapshot Store")
+}
+
+// CacheWrapWithListeners implements the Store interface.
+func (*Store) CacheWrapWithListeners(_ store.StoreKey, _ []store.WriteListener) store.CacheWrap {
+	panic("cannot CacheWrapWithListeners a snapshot Store")
 }
 
 // saveSnapshot saves snapshot metadata to the database.

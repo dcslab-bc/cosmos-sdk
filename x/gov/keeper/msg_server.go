@@ -26,7 +26,13 @@ var _ types.MsgServer = msgServer{}
 
 func (k msgServer) SubmitProposal(goCtx context.Context, msg *types.MsgSubmitProposal) (*types.MsgSubmitProposalResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	proposal, err := k.Keeper.SubmitProposal(ctx, msg.GetContent())
+	initialDeposit := msg.GetInitialDeposit()
+
+	if err := k.validateInitialDeposit(ctx, initialDeposit); err != nil {
+		return nil, err
+	}
+
+	proposal, err := k.Keeper.SubmitProposal(ctx, msg.GetContent(), msg.IsExpedited)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +67,12 @@ func (k msgServer) SubmitProposal(goCtx context.Context, msg *types.MsgSubmitPro
 
 func (k msgServer) Vote(goCtx context.Context, msg *types.MsgVote) (*types.MsgVoteResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	accAddr, accErr := sdk.AccAddressFromBech32(msg.Voter)
-	if accErr != nil {
-		return nil, accErr
+	accAddr, err := sdk.AccAddressFromBech32(msg.Voter)
+	if err != nil {
+		return nil, err
 	}
-	err := k.Keeper.AddVote(ctx, msg.ProposalId, accAddr, types.NewNonSplitVoteOption(msg.Option))
+
+	err = k.Keeper.AddVote(ctx, msg.ProposalId, accAddr, types.NewNonSplitVoteOption(msg.Option))
 	if err != nil {
 		return nil, err
 	}

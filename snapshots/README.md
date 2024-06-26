@@ -28,8 +28,8 @@ filesystem under `<node_home>/data/snapshots/`, with metadata in a LevelDB datab
 
 Snapshots are taken asynchronously, i.e. new blocks will be applied concurrently
 with snapshots being taken. This is possible because IAVL supports querying
-immutable historical heights. However, this requires `state-sync.snapshot-interval`
-to be a multiple of `pruning-keep-every`, to prevent a height from being removed
+immutable historical heights. However, this requires heights that are multiples of `state-sync.snapshot-interval`
+to be kept until after the snapshot is complete. It is done to prevent a height from being removed
 while it is being snapshotted.
 
 When a remote node is state syncing, Tendermint calls the ABCI method
@@ -48,6 +48,52 @@ corruption and non-determinism, but these are not tied to the chain state and
 can be trivially forged by an adversary. This was considered out of scope for
 the initial implementation, but can be added later without changes to the
 ABCI state sync protocol.
+
+## Relationship to Pruning
+
+Snapshot settings are optional. However, if set, they have an effect on how pruning is done by
+persisting the heights that are multiples of `state-sync.snapshot-interval` until after the snapshot is complete.
+
+If pruning is enabled (not `pruning = "nothing"`), we avoid pruning heights that are multiples of
+`state-sync.snapshot-interval` in the regular logic determined by the 
+pruning settings and applied after every `Commit()`. This is done to prevent a 
+height from being removed before a snapshot is complete. Therefore, we keep 
+such heights until after a snapshot is done. At this point, the height is sent to 
+the `pruning.Manager` to be pruned according to the pruning settings after the next `Commit()`.
+
+To illustrate, assume that we are currently at height 960 with `pruning-keep-recent = 50`,
+`pruning-interval = 10`, and `state-sync.snapshot-interval = 100`. Let's assume that
+the snapshot that was triggered at height `900` **just finishes**. Then, we can prune height
+`900` right away (that is, when we call `Commit()` at height 960 because 900 is less than `960 - 50 = 910`.
+
+Let's now assume that all conditions stay the same but the snapshot at height 900 is **not complete yet**.
+Then, we cannot prune it to avoid deleting a height that is still being snapshotted. Therefore, we keep track
+of this height until the snapshot is complete. The height 900 will be pruned at the first height h that satisfied the following conditions:
+- the snapshot is complete
+- h is a multiple of `pruning-interval`
+- snapshot height is less than h - `pruning-keep-recent`
+
+Note that in both examples, if we let current height = C, and previous height P = C - 1, then for every height h that is:
+
+P - `pruning-keep-recent` - `pruning-interval` <= h <= P - `pruning-keep-recent`
+
+we can prune height h. In our first example, all heights 899 - 909 fall in this range and are pruned at height 960 as long as 
+h is not a snapshot height (E.g. 900).
+
+That is, we always use current height to determine at which height to prune (960) while we use previous
+to determine which heights are to be pruned (959 - 50 - 10 = 899-909 = 959 - 50).
+
+
+## Configuration
+
+- `state-sync.snapshot-interval`
+   * the interval at which to take snapshots.
+   * the value of 0 disables snapshots.
+   * if pruning is enabled, it is done after a snapshot is complete for the heights that are multiples of this interval.
+
+- `state-sync.snapshot-keep-recent`:
+   * the number of recent snapshots to keep.
+   * 0 means keep all.
 
 ## Snapshot Metadata
 
@@ -84,9 +130,21 @@ message Metadata {
 }
 ```
 
-The `format` is currently `1`, defined in `snapshots.types.CurrentFormat`. This
+The `format` is currently `2`, defined in `snapshots.types.CurrentFormat`. This
 must be increased whenever the binary snapshot format changes, and it may be
 useful to support past formats in newer versions.
+
+CurrentFormat of 1 is the original format introduced at the time state-sync
+was implemented.
+CurrentFormat of 2 serializes the app version in addition to the original 
+snapshot data.
+
+Format 1 has been causing issues with state sync due to missing the app
+version. As a result, Tendermint would fail to finalize the snapshot 
+application on the state-synching node since the node did not update
+its app version. Therefore, CurrentFormat 1 is now deprecated and, instead,
+format 2 should be used going forward. Contrary to the recommendation above,
+supporting format 2 is not compatible with format 1.
 
 The `hash` is a SHA-256 hash of the entire binary snapshot, used to guard
 against IO corruption and non-determinism across nodes. Note that this is not
@@ -183,7 +241,9 @@ concurrently.
 During `BaseApp.Commit`, once a state transition has been committed, the height
 is checked against the `state-sync.snapshot-interval` setting. If the committed
 height should be snapshotted, a goroutine `BaseApp.snapshot()` is spawned that
-calls `snapshots.Manager.Create()` to create the snapshot.
+calls `snapshots.Manager.Create()` to create the snapshot. Once a snapshot is
+complete and if pruning is enabled, the snapshot height is pruned away by the manager
+with the call `PruneSnapshotHeight(...)` to the `snapshots.types.Snapshotter`.
 
 `Manager.Create()` will do some basic pre-flight checks, and then start
 generating a snapshot by calling `rootmulti.Store.Snapshot()`. The chunk stream

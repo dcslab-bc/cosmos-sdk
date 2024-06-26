@@ -5,13 +5,11 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
-
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
 
 func (suite *IntegrationTestSuite) TestQueryBalance() {
@@ -98,6 +96,22 @@ func (suite *IntegrationTestSuite) TestQueryTotalSupply() {
 	suite.Require().NotNil(res)
 
 	suite.Require().Equal(expectedTotalSupply, res.Supply)
+
+	// test total supply query with supply offset
+	app.BankKeeper.AddSupplyOffset(ctx, "test", sdk.NewInt(-100000000))
+	res, err = queryClient.TotalSupply(gocontext.Background(), &types.QueryTotalSupplyRequest{})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res)
+
+	suite.Require().Equal(expectedTotalSupply.Sub(sdk.NewCoins(sdk.NewInt64Coin("test", 100000000))), res.Supply)
+
+	// make sure query without offsets hasn't changed
+	res2, err := queryClient.TotalSupplyWithoutOffset(gocontext.Background(), &types.QueryTotalSupplyWithoutOffsetRequest{})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res2)
+
+	suite.Require().Equal(expectedTotalSupply, res2.Supply)
+
 }
 
 func (suite *IntegrationTestSuite) TestQueryTotalSupplyOf() {
@@ -118,6 +132,29 @@ func (suite *IntegrationTestSuite) TestQueryTotalSupplyOf() {
 	suite.Require().NotNil(res)
 
 	suite.Require().Equal(test1Supply, res.Amount)
+
+	// test total supply of query with supply offset
+	app.BankKeeper.AddSupplyOffset(ctx, "test1", sdk.NewInt(-1000000))
+	res, err = queryClient.SupplyOf(gocontext.Background(), &types.QuerySupplyOfRequest{Denom: test1Supply.Denom})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res)
+
+	suite.Require().Equal(test1Supply.Sub(sdk.NewInt64Coin("test1", 1000000)), res.Amount)
+
+	// make sure query without offsets hasn't changed
+	res2, err := queryClient.SupplyOfWithoutOffset(gocontext.Background(), &types.QuerySupplyOfWithoutOffsetRequest{Denom: test1Supply.Denom})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res2)
+
+	suite.Require().Equal(test1Supply, res2.Amount)
+
+	// try to make SupplyWithOffset negative, should return as 0
+	app.BankKeeper.AddSupplyOffset(ctx, "test1", sdk.NewInt(-100000000000))
+	res, err = queryClient.SupplyOf(gocontext.Background(), &types.QuerySupplyOfRequest{Denom: test1Supply.Denom})
+	suite.Require().NoError(err)
+	suite.Require().NotNil(res)
+
+	suite.Require().Equal(sdk.NewInt64Coin("test1", 0), res.Amount)
 }
 
 func (suite *IntegrationTestSuite) TestQueryParams() {
@@ -301,6 +338,55 @@ func (suite *IntegrationTestSuite) QueryDenomMetadataRequest() {
 				suite.Require().Equal(expMetadata, res.Metadata)
 			} else {
 				suite.Require().Error(err)
+			}
+		})
+	}
+}
+
+func (s *IntegrationTestSuite) TestGRPC_BaseDenom() {
+	testCases := []struct {
+		name         string
+		req          *types.QueryBaseDenomRequest
+		expectErr    bool
+		expectResult *types.QueryBaseDenomResponse
+	}{
+		{
+			name:         "valid base denom",
+			req:          &types.QueryBaseDenomRequest{Denom: "uatom"},
+			expectErr:    false,
+			expectResult: &types.QueryBaseDenomResponse{BaseDenom: "uatom"},
+		},
+		{
+			name:         "valid denom",
+			req:          &types.QueryBaseDenomRequest{Denom: "atom"},
+			expectErr:    false,
+			expectResult: &types.QueryBaseDenomResponse{BaseDenom: "uatom"},
+		},
+		{
+			name:      "invalid denom",
+			req:       &types.QueryBaseDenomRequest{Denom: "foo"},
+			expectErr: true,
+		},
+	}
+
+	expMetadata := s.getTestMetadata()
+	for _, md := range expMetadata {
+		s.app.BankKeeper.SetDenomMetaData(s.ctx, md)
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		s.Run(tc.name, func() {
+			ctx := sdk.WrapSDKContext(s.ctx)
+
+			res, err := s.queryClient.BaseDenom(ctx, tc.req)
+			if tc.expectErr {
+				s.Require().Error(err)
+				s.Require().Nil(res)
+			} else {
+				s.Require().NoError(err)
+				s.Require().Equal(tc.expectResult, res)
 			}
 		})
 	}

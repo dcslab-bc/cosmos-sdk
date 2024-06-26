@@ -3,9 +3,11 @@ package cachekv
 import (
 	"bytes"
 	"io"
+	"reflect"
 	"sort"
 	"sync"
 	"time"
+	"unsafe"
 
 	dbm "github.com/tendermint/tm-db"
 
@@ -268,12 +270,50 @@ func findEndIndex(strL []string, endQ string) int {
 	return -1
 }
 
+//nolint
+func findStartEndIndex(strL []string, startStr, endStr string) (int, int) {
+	// Now find the values within the domain
+	//  [start, end)
+	startIndex := findStartIndex(strL, startStr)
+	endIndex := findEndIndex(strL, endStr)
+
+	if endIndex < 0 {
+		endIndex = len(strL) - 1
+	}
+	if startIndex < 0 {
+		startIndex = 0
+	}
+	return startIndex, endIndex
+}
+
 type sortState int
 
 const (
 	stateUnsorted sortState = iota
 	stateAlreadySorted
 )
+
+// strToByte is meant to make a zero allocation conversion
+// from string -> []byte to speed up operations, it is not meant
+// to be used generally, but for a specific pattern to check for available
+// keys within a domain.
+func strToByte(s string) []byte {
+	var b []byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	hdr.Cap = len(s)
+	hdr.Len = len(s)
+	hdr.Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
+	return b
+}
+
+// byteSliceToStr is meant to make a zero allocation conversion
+// from []byte -> string to speed up operations, it is not meant
+// to be used generally, but for a specific pattern to delete keys
+// from a map.
+func byteSliceToStr(b []byte) string {
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&b))
+	return *(*string)(unsafe.Pointer(hdr))
+}
 
 // Constructs a slice of dirty items, to use w/ memIterator.
 func (store *Store) dirtyItems(start, end []byte) {
@@ -291,65 +331,40 @@ func (store *Store) dirtyItems(start, end []byte) {
 	// O(N^2) overhead.
 	// Even without that, too many range checks eventually becomes more expensive
 	// than just not having the cache.
-	if n < 1024 {
+	if n >= 256 {
 		for key := range store.unsortedCache {
-			if dbm.IsKeyInDomain(conv.UnsafeStrToBytes(key), start, end) {
+			cacheValue := store.cache[key]
+			keyBz := strToByte(key)
+			unsorted = append(unsorted, &kv.Pair{Key: keyBz, Value: cacheValue.value})
+		}
+	} else {
+		// else do a linear scan to determine if the unsorted pairs are in the pool.
+		for key := range store.unsortedCache {
+			keyBz := strToByte(key)
+			if dbm.IsKeyInDomain(keyBz, start, end) {
 				cacheValue := store.cache[key]
-				unsorted = append(unsorted, &kv.Pair{Key: []byte(key), Value: cacheValue.value})
+				unsorted = append(unsorted, &kv.Pair{Key: keyBz, Value: cacheValue.value})
 			}
 		}
-		store.clearUnsortedCacheSubset(unsorted, stateUnsorted)
-		return
 	}
-
-	// Otherwise it is large so perform a modified binary search to find
-	// the target ranges for the keys that we should be looking for.
-	strL := make([]string, 0, n)
-	for key := range store.unsortedCache {
-		strL = append(strL, key)
-	}
-	sort.Strings(strL)
-
-	// Now find the values within the domain
-	//  [start, end)
-	startIndex := findStartIndex(strL, startStr)
-	endIndex := findEndIndex(strL, endStr)
-
-	if endIndex < 0 {
-		endIndex = len(strL) - 1
-	}
-	if startIndex < 0 {
-		startIndex = 0
-	}
-
-	kvL := make([]*kv.Pair, 0)
-	for i := startIndex; i <= endIndex; i++ {
-		key := strL[i]
-		cacheValue := store.cache[key]
-		kvL = append(kvL, &kv.Pair{Key: []byte(key), Value: cacheValue.value})
-	}
-
-	// kvL was already sorted so pass it in as is.
-	store.clearUnsortedCacheSubset(kvL, stateAlreadySorted)
+	store.clearUnsortedCacheSubset(unsorted)
 }
 
-func (store *Store) clearUnsortedCacheSubset(unsorted []*kv.Pair, sortState sortState) {
+func (store *Store) clearUnsortedCacheSubset(unsorted []*kv.Pair) {
 	n := len(store.unsortedCache)
 	if len(unsorted) == n { // This pattern allows the Go compiler to emit the map clearing idiom for the entire map.
 		for key := range store.unsortedCache {
 			delete(store.unsortedCache, key)
 		}
+		store.unsortedCache = make(map[string]struct{}, 300)
 	} else { // Otherwise, normally delete the unsorted keys from the map.
 		for _, kv := range unsorted {
-			delete(store.unsortedCache, conv.UnsafeBytesToStr(kv.Key))
+			delete(store.unsortedCache, byteSliceToStr(kv.Key))
 		}
 	}
-
-	if sortState == stateUnsorted {
-		sort.Slice(unsorted, func(i, j int) bool {
-			return bytes.Compare(unsorted[i].Key, unsorted[j].Key) < 0
-		})
-	}
+	sort.Slice(unsorted, func(i, j int) bool {
+		return bytes.Compare(unsorted[i].Key, unsorted[j].Key) < 0
+	})
 
 	for _, item := range unsorted {
 		if item.Value == nil {
@@ -370,7 +385,7 @@ func (store *Store) clearUnsortedCacheSubset(unsorted []*kv.Pair, sortState sort
 
 // Only entrypoint to mutate store.cache.
 func (store *Store) setCacheValue(key, value []byte, deleted bool, dirty bool) {
-	keyStr := conv.UnsafeBytesToStr(key)
+	keyStr := byteSliceToStr(key)
 	store.cache[keyStr] = &cValue{
 		value: value,
 		dirty: dirty,
@@ -381,7 +396,7 @@ func (store *Store) setCacheValue(key, value []byte, deleted bool, dirty bool) {
 		delete(store.deleted, keyStr)
 	}
 	if dirty {
-		store.unsortedCache[conv.UnsafeBytesToStr(key)] = struct{}{}
+		store.unsortedCache[keyStr] = struct{}{}
 	}
 }
 

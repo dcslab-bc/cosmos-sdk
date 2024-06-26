@@ -101,11 +101,12 @@ func (c configurator) runModuleMigrations(ctx sdk.Context, moduleName string, fr
 
 	// Run in-place migrations for the module sequentially until toVersion.
 	for i := fromVersion; i < toVersion; i++ {
+		ctx.Logger().Info(fmt.Sprintf("Running migration for module: %s, fromVersion %d, toVersion %d",
+			moduleName, i, i+1))
 		migrateFn, found := moduleMigrationsMap[i]
 		if !found {
 			return sdkerrors.Wrapf(sdkerrors.ErrNotFound, "no migration found for module %s from version %d to version %d", moduleName, i, i+1)
 		}
-		ctx.Logger().Info(fmt.Sprintf("migrating module %s from version %d to version %d", moduleName, i, i+1))
 
 		err := migrateFn(ctx)
 		if err != nil {

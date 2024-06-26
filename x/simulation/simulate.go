@@ -40,6 +40,8 @@ func initChain(
 		ConsensusParams: consensusParams,
 		Time:            genesisTimestamp,
 	}
+	// Valid app version can only be zero on app initialization.
+	req.ConsensusParams.Version.AppVersion = 0
 	res := app.InitChain(req)
 	validators := newMockValidators(r, res.Validators, params)
 
@@ -297,10 +299,10 @@ func createBlockSimulator(testingMode bool, tb testing.TB, w io.Writer, params P
 
 			if err != nil {
 				logWriter.PrintLogs()
-				tb.Fatalf(`error on block  %d/%d, operation (%d/%d) from x/%s:
+				tb.Fatalf(`error on block  %d/%d, operation (%d/%d) from x/%s (%s):
 %v
 Comment: %s`,
-					header.Height, config.NumBlocks, opCount, blocksize, opMsg.Route, err, opMsg.Comment)
+					header.Height, config.NumBlocks, opCount, blocksize, opMsg.Route, opMsg.Name, err, opMsg.Comment)
 			}
 
 			queueOperations(operationQueue, timeOperationQueue, futureOps)

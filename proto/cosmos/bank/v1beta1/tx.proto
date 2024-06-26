@@ -9,10 +9,13 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/bank/types";
 
 // Msg defines the bank Msg service.
 service Msg {
-  // Send defines a method for sending coins from one account to another account.
+  // Send defines a method for sending coins from one account to another
+  // account.
   rpc Send(MsgSend) returns (MsgSendResponse);
 
-  // MultiSend defines a method for sending coins from some accounts to other accounts.
+  // MultiSend defines a method for sending coins from a single account to
+  // multiple accounts. It can be seen as a single message representation of
+  // multiple individual MsgSend messages.
   rpc MultiSend(MsgMultiSend) returns (MsgMultiSendResponse);
 }
 

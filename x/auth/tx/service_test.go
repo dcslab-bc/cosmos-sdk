@@ -98,31 +98,34 @@ func (s IntegrationTestSuite) TestSimulateTx_GRPC() {
 	s.Require().NoError(err)
 
 	testCases := []struct {
-		name      string
-		req       *tx.SimulateRequest
-		expErr    bool
-		expErrMsg string
+		name        string
+		req         *tx.SimulateRequest
+		expErr      bool
+		expErrMsg   string
+		repeatCount int
 	}{
-		{"nil request", nil, true, "request cannot be nil"},
-		{"empty request", &tx.SimulateRequest{}, true, "empty txBytes is not allowed"},
-		{"valid request with proto tx (deprecated)", &tx.SimulateRequest{Tx: protoTx}, false, ""},
-		{"valid request with tx_bytes", &tx.SimulateRequest{TxBytes: txBytes}, false, ""},
+		{"nil request", nil, true, "request cannot be nil", 1},
+		{"empty request", &tx.SimulateRequest{}, true, "empty txBytes is not allowed", 1},
+		{"valid request with proto tx (deprecated)", &tx.SimulateRequest{Tx: protoTx}, false, "", 1},
+		{"valid request with tx_bytes", &tx.SimulateRequest{TxBytes: txBytes}, false, "", 1000},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		s.Run(tc.name, func() {
-			// Broadcast the tx via gRPC via the validator's clientCtx (which goes
-			// through Tendermint).
-			res, err := s.queryClient.Simulate(context.Background(), tc.req)
-			if tc.expErr {
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), tc.expErrMsg)
-			} else {
-				s.Require().NoError(err)
-				// Check the result and gas used are correct.
-				s.Require().Equal(len(res.GetResult().GetEvents()), 6) // 1 coin recv 1 coin spent, 1 transfer, 3 messages.
-				s.Require().True(res.GetGasInfo().GetGasUsed() > 0)    // Gas used sometimes change, just check it's not empty.
+			for i := 0; i < tc.repeatCount; i++ {
+				// Broadcast the tx via gRPC via the validator's clientCtx (which goes
+				// through Tendermint).
+				res, err := s.queryClient.Simulate(context.Background(), tc.req)
+				if tc.expErr {
+					s.Require().Error(err)
+					s.Require().Contains(err.Error(), tc.expErrMsg)
+				} else {
+					s.Require().NoError(err)
+					// Check the result and gas used are correct.
+					s.Require().Equal(len(res.GetResult().GetEvents()), 6) // 1 coin recv 1 coin spent, 1 transfer, 3 messages.
+					s.Require().True(res.GetGasInfo().GetGasUsed() > 0)    // Gas used sometimes change, just check it's not empty.
+				}
 			}
 		})
 	}
@@ -331,8 +334,8 @@ func (s IntegrationTestSuite) TestGetTx_GRPC() {
 		expErrMsg string
 	}{
 		{"nil request", nil, true, "request cannot be nil"},
-		{"empty request", &tx.GetTxRequest{}, true, "tx hash cannot be empty"},
-		{"request with dummy hash", &tx.GetTxRequest{Hash: "deadbeef"}, true, "code = NotFound desc = tx not found: deadbeef"},
+		{"empty request", &tx.GetTxRequest{}, true, "transaction hash cannot be empty"},
+		{"request with dummy hash", &tx.GetTxRequest{Hash: "deadbeef"}, true, "tx (DEADBEEF) not found"},
 		{"good request", &tx.GetTxRequest{Hash: s.txRes.TxHash}, false, ""},
 	}
 	for _, tc := range testCases {
@@ -361,12 +364,12 @@ func (s IntegrationTestSuite) TestGetTx_GRPCGateway() {
 		{
 			"empty params",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/", val.APIAddress),
-			true, "tx hash cannot be empty",
+			true, "transaction hash cannot be empty",
 		},
 		{
 			"dummy hash",
 			fmt.Sprintf("%s/cosmos/tx/v1beta1/txs/%s", val.APIAddress, "deadbeef"),
-			true, "code = NotFound desc = tx not found: deadbeef",
+			true, "tx (DEADBEEF) not found",
 		},
 		{
 			"good hash",
@@ -439,6 +442,7 @@ func (s IntegrationTestSuite) TestBroadcastTx_GRPC() {
 
 func (s IntegrationTestSuite) TestBroadcastTx_GRPCGateway() {
 	val := s.network.Validators[0]
+	val.ClientCtx.GRPCConcurrency = true
 	txBuilder := s.mkTxBuilder()
 	txBytes, err := val.ClientCtx.TxConfig.TxEncoder()(txBuilder.GetTx())
 	s.Require().NoError(err)

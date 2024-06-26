@@ -194,10 +194,12 @@ func (s *KeeperTestSuite) TestSetUpgradedClient() {
 
 }
 
-// Test that the protocol version successfully increments after an
+// Test that the app version successfully increments after an
 // upgrade and is successfully set on BaseApp's appVersion.
-func (s *KeeperTestSuite) TestIncrementProtocolVersion() {
-	oldProtocolVersion := s.app.BaseApp.AppVersion()
+func (s *KeeperTestSuite) TestIncrementAppVersion() {
+	oldAppVersion, err := s.app.BaseApp.GetAppVersion()
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), oldAppVersion)
 	s.app.UpgradeKeeper.SetUpgradeHandler("dummy", func(_ sdk.Context, _ types.Plan, vm module.VersionMap) (module.VersionMap, error) { return vm, nil })
 	dummyPlan := types.Plan{
 		Name:   "dummy",
@@ -205,9 +207,9 @@ func (s *KeeperTestSuite) TestIncrementProtocolVersion() {
 		Height: 100,
 	}
 	s.app.UpgradeKeeper.ApplyUpgrade(s.ctx, dummyPlan)
-	upgradedProtocolVersion := s.app.BaseApp.AppVersion()
-
-	s.Require().Equal(oldProtocolVersion+1, upgradedProtocolVersion)
+	upgradedAppVersion, err := s.app.BaseApp.GetAppVersion()
+	s.Require().NoError(err)
+	s.Require().Equal(oldAppVersion+1, upgradedAppVersion)
 }
 
 // Tests that the underlying state of x/upgrade is set correctly after
@@ -230,45 +232,6 @@ func (s *KeeperTestSuite) TestMigrations() {
 	s.app.UpgradeKeeper.ApplyUpgrade(s.ctx, dummyPlan)
 	vm := s.app.UpgradeKeeper.GetModuleVersionMap(s.ctx)
 	s.Require().Equal(vmBefore["bank"]+1, vm["bank"])
-}
-
-func (s *KeeperTestSuite) TestLastCompletedUpgrade() {
-	keeper := s.app.UpgradeKeeper
-	require := s.Require()
-
-	s.T().Log("verify empty name if applied upgrades are empty")
-	name, height := keeper.GetLastCompletedUpgrade(s.ctx)
-	require.Equal("", name)
-	require.Equal(int64(0), height)
-
-	keeper.SetUpgradeHandler("test0", func(_ sdk.Context, _ types.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		return vm, nil
-	})
-
-	keeper.ApplyUpgrade(s.ctx, types.Plan{
-		Name:   "test0",
-		Height: 10,
-	})
-
-	s.T().Log("verify valid upgrade name and height")
-	name, height = keeper.GetLastCompletedUpgrade(s.ctx)
-	require.Equal("test0", name)
-	require.Equal(int64(10), height)
-
-	keeper.SetUpgradeHandler("test1", func(_ sdk.Context, _ types.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		return vm, nil
-	})
-
-	newCtx := s.ctx.WithBlockHeight(15)
-	keeper.ApplyUpgrade(newCtx, types.Plan{
-		Name:   "test1",
-		Height: 15,
-	})
-
-	s.T().Log("verify valid upgrade name and height with multiple upgrades")
-	name, height = keeper.GetLastCompletedUpgrade(newCtx)
-	require.Equal("test1", name)
-	require.Equal(int64(15), height)
 }
 
 func TestKeeperTestSuite(t *testing.T) {

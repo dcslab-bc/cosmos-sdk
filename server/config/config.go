@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/spf13/viper"
 
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -20,6 +21,14 @@ const (
 
 	// DefaultGRPCWebAddress defines the default address to bind the gRPC-web server to.
 	DefaultGRPCWebAddress = "0.0.0.0:9091"
+
+	// DefaultGRPCMaxRecvMsgSize defines the default gRPC max message size in
+	// bytes the server can receive.
+	DefaultGRPCMaxRecvMsgSize = 1024 * 1024 * 10
+
+	// DefaultGRPCMaxSendMsgSize defines the default gRPC max message size in
+	// bytes the server can send.
+	DefaultGRPCMaxSendMsgSize = math.MaxInt32
 )
 
 // BaseConfig defines the server's basic configuration
@@ -31,7 +40,6 @@ type BaseConfig struct {
 
 	Pruning           string `mapstructure:"pruning"`
 	PruningKeepRecent string `mapstructure:"pruning-keep-recent"`
-	PruningKeepEvery  string `mapstructure:"pruning-keep-every"`
 	PruningInterval   string `mapstructure:"pruning-interval"`
 
 	// HaltHeight contains a non-zero block height at which a node will gracefully
@@ -134,6 +142,18 @@ type GRPCConfig struct {
 
 	// Address defines the API server to listen on
 	Address string `mapstructure:"address"`
+
+	// MaxRecvMsgSize defines the max message size in bytes the server can receive.
+	// The default value is 10MB.
+	MaxRecvMsgSize int `mapstructure:"max-recv-msg-size"`
+
+	// MaxSendMsgSize defines the max message size in bytes the server can send.
+	// The default value is math.MaxInt32.
+	MaxSendMsgSize int `mapstructure:"max-send-msg-size"`
+
+	// Concurrency defines if node queries should be done in parallel.
+	// The default value is false
+	Concurrency bool `mapstructure:"concurrency"`
 }
 
 // GRPCWebConfig defines configuration for the gRPC-web server.
@@ -205,9 +225,8 @@ func DefaultConfig() *Config {
 		BaseConfig: BaseConfig{
 			MinGasPrices:      defaultMinGasPrices,
 			InterBlockCache:   true,
-			Pruning:           storetypes.PruningOptionDefault,
+			Pruning:           pruningtypes.PruningOptionDefault,
 			PruningKeepRecent: "0",
-			PruningKeepEvery:  "0",
 			PruningInterval:   "0",
 			MinRetainBlocks:   0,
 			IndexEvents:       make([]string, 0),
@@ -226,8 +245,11 @@ func DefaultConfig() *Config {
 			RPCMaxBodyBytes:    1000000,
 		},
 		GRPC: GRPCConfig{
-			Enable:  true,
-			Address: DefaultGRPCAddress,
+			Enable:         true,
+			Address:        DefaultGRPCAddress,
+			MaxRecvMsgSize: DefaultGRPCMaxRecvMsgSize,
+			MaxSendMsgSize: DefaultGRPCMaxSendMsgSize,
+			Concurrency:    false,
 		},
 		Rosetta: RosettaConfig{
 			Enable:     false,
@@ -249,11 +271,18 @@ func DefaultConfig() *Config {
 }
 
 // GetConfig returns a fully parsed Config object.
-func GetConfig(v *viper.Viper) Config {
-	globalLabelsRaw := v.Get("telemetry.global-labels").([]interface{})
+func GetConfig(v *viper.Viper) (Config, error) {
+	globalLabelsRaw, ok := v.Get("telemetry.global-labels").([]interface{})
+	if !ok {
+		return Config{}, fmt.Errorf("failed to parse global-labels config")
+	}
+
 	globalLabels := make([][]string, 0, len(globalLabelsRaw))
-	for _, glr := range globalLabelsRaw {
-		labelsRaw := glr.([]interface{})
+	for idx, glr := range globalLabelsRaw {
+		labelsRaw, ok := glr.([]interface{})
+		if !ok {
+			return Config{}, fmt.Errorf("failed to parse global label number %d from config", idx)
+		}
 		if len(labelsRaw) == 2 {
 			globalLabels = append(globalLabels, []string{labelsRaw[0].(string), labelsRaw[1].(string)})
 		}
@@ -265,7 +294,6 @@ func GetConfig(v *viper.Viper) Config {
 			InterBlockCache:   v.GetBool("inter-block-cache"),
 			Pruning:           v.GetString("pruning"),
 			PruningKeepRecent: v.GetString("pruning-keep-recent"),
-			PruningKeepEvery:  v.GetString("pruning-keep-every"),
 			PruningInterval:   v.GetString("pruning-interval"),
 			HaltHeight:        v.GetUint64("halt-height"),
 			HaltTime:          v.GetUint64("halt-time"),
@@ -301,8 +329,11 @@ func GetConfig(v *viper.Viper) Config {
 			Offline:    v.GetBool("rosetta.offline"),
 		},
 		GRPC: GRPCConfig{
-			Enable:  v.GetBool("grpc.enable"),
-			Address: v.GetString("grpc.address"),
+			Enable:         v.GetBool("grpc.enable"),
+			Address:        v.GetString("grpc.address"),
+			MaxRecvMsgSize: v.GetInt("grpc.max-recv-msg-size"),
+			MaxSendMsgSize: v.GetInt("grpc.max-send-msg-size"),
+			Concurrency:    v.GetBool("grpc.concurrency"),
 		},
 		GRPCWeb: GRPCWebConfig{
 			Enable:           v.GetBool("grpc-web.enable"),
@@ -313,7 +344,7 @@ func GetConfig(v *viper.Viper) Config {
 			SnapshotInterval:   v.GetUint64("state-sync.snapshot-interval"),
 			SnapshotKeepRecent: v.GetUint32("state-sync.snapshot-keep-recent"),
 		},
-	}
+	}, nil
 }
 
 // ValidateBasic returns an error if min-gas-prices field is empty in BaseConfig. Otherwise, it returns nil.

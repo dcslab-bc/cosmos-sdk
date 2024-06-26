@@ -28,6 +28,7 @@ type Context struct {
 	header        tmproto.Header
 	headerHash    tmbytes.HexBytes
 	chainID       string
+	isGenesis     bool
 	txBytes       []byte
 	logger        log.Logger
 	voteInfo      []abci.VoteInfo
@@ -49,6 +50,7 @@ func (c Context) MultiStore() MultiStore      { return c.ms }
 func (c Context) BlockHeight() int64          { return c.header.Height }
 func (c Context) BlockTime() time.Time        { return c.header.Time }
 func (c Context) ChainID() string             { return c.chainID }
+func (c Context) IsGenesis() bool             { return c.isGenesis }
 func (c Context) TxBytes() []byte             { return c.txBytes }
 func (c Context) Logger() log.Logger          { return c.logger }
 func (c Context) VoteInfos() []abci.VoteInfo  { return c.voteInfo }
@@ -196,6 +198,12 @@ func (c Context) WithIsReCheckTx(isRecheckTx bool) Context {
 	return c
 }
 
+// WithIsGenesis sets isGenesis
+func (c Context) WithIsGenesis(isGenesis bool) Context {
+	c.isGenesis = isGenesis
+	return c
+}
+
 // WithMinGasPrices returns a Context with an updated minimum gas price value
 func (c Context) WithMinGasPrices(gasPrices DecCoins) Context {
 	c.minGasPrice = gasPrices
@@ -254,11 +262,19 @@ func (c Context) TransientStore(key StoreKey) KVStore {
 
 // CacheContext returns a new Context with the multi-store cached and a new
 // EventManager. The cached context is written to the context when writeCache
-// is called.
+// is called. Note, events are automatically emitted on the parent context's
+// EventManager when the caller executes the write.
 func (c Context) CacheContext() (cc Context, writeCache func()) {
 	cms := c.MultiStore().CacheMultiStore()
 	cc = c.WithMultiStore(cms).WithEventManager(NewEventManager())
-	return cc, cms.Write
+
+	writeCache = func() {
+		// commented out for compatability with SDK v0.45.10. Relayers depend on this
+		// c.EventManager().EmitEvents(cc.EventManager().Events())
+		cms.Write()
+	}
+
+	return cc, writeCache
 }
 
 // ContextKey defines a type alias for a stdlib Context key.

@@ -62,13 +62,21 @@ func (gs GenesisState) Validate() error {
 }
 
 // NewGenesisState creates a new genesis state.
-func NewGenesisState(params Params, balances []Balance, supply sdk.Coins, denomMetaData []Metadata) *GenesisState {
+func NewGenesisState(params Params, balances []Balance, supply sdk.Coins,
+	denomMetaData []Metadata) *GenesisState {
 	return &GenesisState{
 		Params:        params,
 		Balances:      balances,
 		Supply:        supply,
 		DenomMetadata: denomMetaData,
+		SupplyOffsets: []GenesisSupplyOffset{},
 	}
+}
+
+// WithSupplyOffsets adds supply offsets to a genesis state
+func (gs *GenesisState) WithSupplyOffsets(supplyOffsets []GenesisSupplyOffset) *GenesisState {
+	gs.SupplyOffsets = supplyOffsets
+	return gs
 }
 
 // DefaultGenesisState returns a default bank module genesis state.

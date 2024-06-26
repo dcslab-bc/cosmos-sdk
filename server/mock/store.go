@@ -3,8 +3,11 @@ package mock
 import (
 	"io"
 
+	protoio "github.com/gogo/protobuf/io"
 	dbm "github.com/tendermint/tm-db"
 
+	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -63,11 +66,11 @@ func (ms multiStore) LastCommitID() sdk.CommitID {
 	panic("not implemented")
 }
 
-func (ms multiStore) SetPruning(opts sdk.PruningOptions) {
+func (ms multiStore) SetPruning(opts pruningtypes.PruningOptions) {
 	panic("not implemented")
 }
 
-func (ms multiStore) GetPruning() sdk.PruningOptions {
+func (ms multiStore) GetPruning() pruningtypes.PruningOptions {
 	panic("not implemented")
 }
 
@@ -79,7 +82,7 @@ func (ms multiStore) GetCommitStore(key sdk.StoreKey) sdk.CommitStore {
 	panic("not implemented")
 }
 
-func (ms multiStore) MountStoreWithDB(key sdk.StoreKey, typ sdk.StoreType, db dbm.DB) {
+func (ms multiStore) MountStoreWithDB(key store.StoreKey, typ store.StoreType, db dbm.DB) {
 	ms.kv[key] = kvStore{store: make(map[string][]byte)}
 }
 
@@ -111,6 +114,10 @@ func (ms multiStore) GetStoreType() sdk.StoreType {
 	panic("not implemented")
 }
 
+func (ms multiStore) PruneSnapshotHeight(height int64) {
+	panic("not implemented")
+}
+
 func (ms multiStore) SetInterBlockCache(_ sdk.MultiStorePersistentCache) {
 	panic("not implemented")
 }
@@ -122,13 +129,25 @@ func (ms multiStore) SetInitialVersion(version int64) error {
 	panic("not implemented")
 }
 
-func (ms multiStore) Snapshot(height uint64, format uint32) (<-chan io.ReadCloser, error) {
+func (ms multiStore) SetSnapshotInterval(snapshotInterval uint64) {
+	panic("not implemented")
+}
+
+func (ms multiStore) Snapshot(height uint64, protoWriter protoio.Writer) error {
 	panic("not implemented")
 }
 
 func (ms multiStore) Restore(
-	height uint64, format uint32, chunks <-chan io.ReadCloser, ready chan<- struct{},
-) error {
+	height uint64, format uint32, protoReader protoio.Reader,
+) (snapshottypes.SnapshotItem, error) {
+	panic("not implemented")
+}
+
+func (ms multiStore) SetAppVersion(_ uint64) error {
+	panic("not implemented")
+}
+
+func (ms multiStore) GetAppVersion() (uint64, error) {
 	panic("not implemented")
 }
 

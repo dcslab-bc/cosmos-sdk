@@ -3,7 +3,6 @@ package keeper
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -19,7 +18,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	xp "github.com/cosmos/cosmos-sdk/x/upgrade/exported"
+	vm "github.com/cosmos/cosmos-sdk/x/upgrade/exported"
 	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
@@ -32,8 +31,7 @@ type Keeper struct {
 	storeKey           sdk.StoreKey                    // key to access x/upgrade store
 	cdc                codec.BinaryCodec               // App-wide binary codec
 	upgradeHandlers    map[string]types.UpgradeHandler // map of plan name to upgrade handler
-	versionSetter      xp.ProtocolVersionSetter        // implements setting the protocol version field on BaseApp
-	downgradeVerified  bool                            // tells if we've already sanity checked that this binary version isn't being used against an old state.
+	versionManager     vm.AppVersionManager            // implements setting the app version field on BaseApp
 }
 
 // NewKeeper constructs an upgrade Keeper which requires the following arguments:
@@ -41,15 +39,15 @@ type Keeper struct {
 // storeKey - a store key with which to access upgrade's store
 // cdc - the app-wide binary codec
 // homePath - root directory of the application's config
-// vs - the interface implemented by baseapp which allows setting baseapp's protocol version field
-func NewKeeper(skipUpgradeHeights map[int64]bool, storeKey sdk.StoreKey, cdc codec.BinaryCodec, homePath string, vs xp.ProtocolVersionSetter) Keeper {
+// vs - the interface implemented by baseapp which allows setting baseapp's app version field
+func NewKeeper(skipUpgradeHeights map[int64]bool, storeKey sdk.StoreKey, cdc codec.BinaryCodec, homePath string, vs vm.AppVersionManager) Keeper {
 	return Keeper{
 		homePath:           homePath,
 		skipUpgradeHeights: skipUpgradeHeights,
 		storeKey:           storeKey,
 		cdc:                cdc,
 		upgradeHandlers:    map[string]types.UpgradeHandler{},
-		versionSetter:      vs,
+		versionManager:     vs,
 	}
 }
 
@@ -58,28 +56,6 @@ func NewKeeper(skipUpgradeHeights map[int64]bool, storeKey sdk.StoreKey, cdc cod
 // must be set even if it is a no-op function.
 func (k Keeper) SetUpgradeHandler(name string, upgradeHandler types.UpgradeHandler) {
 	k.upgradeHandlers[name] = upgradeHandler
-}
-
-// setProtocolVersion sets the protocol version to state
-func (k Keeper) setProtocolVersion(ctx sdk.Context, v uint64) {
-	store := ctx.KVStore(k.storeKey)
-	versionBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(versionBytes, v)
-	store.Set([]byte{types.ProtocolVersionByte}, versionBytes)
-}
-
-// getProtocolVersion gets the protocol version from state
-func (k Keeper) getProtocolVersion(ctx sdk.Context) uint64 {
-	store := ctx.KVStore(k.storeKey)
-	ok := store.Has([]byte{types.ProtocolVersionByte})
-	if ok {
-		pvBytes := store.Get([]byte{types.ProtocolVersionByte})
-		protocolVersion := binary.BigEndian.Uint64(pvBytes)
-
-		return protocolVersion
-	}
-	// default value
-	return 0
 }
 
 // SetModuleVersionMap saves a given version map to state
@@ -105,6 +81,11 @@ func (k Keeper) SetModuleVersionMap(ctx sdk.Context, vm module.VersionMap) {
 			versionStore.Set(nameBytes, verBytes)
 		}
 	}
+}
+
+// SetAppVersion sets app version to version
+func (k Keeper) SetAppVersion(ctx sdk.Context, version uint64) error {
+	return k.versionManager.SetAppVersion(version)
 }
 
 // GetModuleVersionMap returns a map of key module name and value module consensus version
@@ -164,14 +145,16 @@ func (k Keeper) getModuleVersion(ctx sdk.Context, name string) (uint64, bool) {
 // ScheduleUpgrade schedules an upgrade based on the specified plan.
 // If there is another Plan already scheduled, it will overwrite it
 // (implicitly cancelling the current plan)
-// ScheduleUpgrade will also write the upgraded client to the upgraded client path
-// if an upgraded client is specified in the plan
+// ScheduleUpgrade will also write the upgraded IBC ClientState to the upgraded client
+// path if it is specified in the plan.
 func (k Keeper) ScheduleUpgrade(ctx sdk.Context, plan types.Plan) error {
 	if err := plan.ValidateBasic(); err != nil {
 		return err
 	}
 
-	if plan.Height <= ctx.BlockHeight() {
+	// NOTE: allow for the possibility of chains to schedule upgrades in begin block of the same block
+	// as a strategy for emergency hard fork recoveries
+	if plan.Height < ctx.BlockHeight() {
 		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "upgrade cannot be scheduled in the past")
 	}
 
@@ -228,26 +211,6 @@ func (k Keeper) GetUpgradedConsensusState(ctx sdk.Context, lastHeight int64) ([]
 	}
 
 	return bz, true
-}
-
-// GetLastCompletedUpgrade returns the last applied upgrade name and height.
-func (k Keeper) GetLastCompletedUpgrade(ctx sdk.Context) (string, int64) {
-	iter := sdk.KVStoreReversePrefixIterator(ctx.KVStore(k.storeKey), []byte{types.DoneByte})
-	defer iter.Close()
-	if iter.Valid() {
-		return parseDoneKey(iter.Key()), int64(binary.BigEndian.Uint64(iter.Value()))
-	}
-
-	return "", 0
-}
-
-// parseDoneKey - split upgrade name from the done key
-func parseDoneKey(key []byte) string {
-	if len(key) < 2 {
-		panic(fmt.Sprintf("expected key of length at least %d, got %d", 2, len(key)))
-	}
-
-	return string(key[1:])
 }
 
 // GetDoneHeight returns the height at which the given upgrade was executed
@@ -327,12 +290,15 @@ func (k Keeper) ApplyUpgrade(ctx sdk.Context, plan types.Plan) {
 
 	k.SetModuleVersionMap(ctx, updatedVM)
 
-	// incremement the protocol version and set it in state and baseapp
-	nextProtocolVersion := k.getProtocolVersion(ctx) + 1
-	k.setProtocolVersion(ctx, nextProtocolVersion)
-	if k.versionSetter != nil {
-		// set protocol version on BaseApp
-		k.versionSetter.SetProtocolVersion(nextProtocolVersion)
+	if k.versionManager != nil {
+		// increment the app version and set it in state and baseapp
+		appVersion, err := k.versionManager.GetAppVersion()
+		if err != nil {
+			panic(err)
+		}
+		if err := k.versionManager.SetAppVersion(appVersion + 1); err != nil {
+			panic(err)
+		}
 	}
 
 	// Must clear IBC state after upgrade is applied as it is stored separately from the upgrade plan.
@@ -431,14 +397,4 @@ type upgradeInfo struct {
 	Height int64 `json:"height,omitempty"`
 	// Height has types.Plan.Height value
 	Info string `json:"info,omitempty"`
-}
-
-// SetDowngradeVerified updates downgradeVerified.
-func (k *Keeper) SetDowngradeVerified(v bool) {
-	k.downgradeVerified = v
-}
-
-// DowngradeVerified returns downgradeVerified.
-func (k Keeper) DowngradeVerified() bool {
-	return k.downgradeVerified
 }
