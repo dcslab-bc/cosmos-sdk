@@ -23,7 +23,7 @@ func (app *BaseApp) Simulate(txBytes []byte) (sdk.GasInfo, *sdk.Result, error) {
 	if err != nil {
 		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	return app.runTx(txBytes, tx, true)
+	return app.runTx(txBytes, tx, true, runTxModeSimulate)
 }
 
 func (app *BaseApp) Deliver(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *sdk.Result, error) {
@@ -32,7 +32,7 @@ func (app *BaseApp) Deliver(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *s
 	if err != nil {
 		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	return app.runTx(txBytes, tx, false)
+	return app.runTx(txBytes, tx, false, runTxModeDeliver)
 }
 
 // Context with current {check, deliver}State of the app used by tests.
