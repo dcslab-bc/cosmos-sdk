@@ -999,6 +999,10 @@ func TestCheckTx(t *testing.T) {
 	app.EndBlock(abci.RequestEndBlock{})
 	app.Commit()
 
+	// Recheck before reviewing `checkStateStore`
+	app.BeginRecheckTx(abci.RequestBeginRecheckTx{Header: header})
+	app.EndRecheckTx(abci.RequestEndRecheckTx{})
+
 	checkStateStore = app.checkState.ctx.KVStore(capKey1)
 	storedBytes := checkStateStore.Get(counterKey)
 	require.Nil(t, storedBytes)
@@ -1332,7 +1336,7 @@ func TestTxGasLimits(t *testing.T) {
 				}
 			}()
 
-			count := tx.(txTest).Counter
+			count := tx.(*txTest).Counter
 			newCtx.GasMeter().ConsumeGas(uint64(count), "counter-ante")
 
 			return newCtx, nil
@@ -1342,7 +1346,7 @@ func TestTxGasLimits(t *testing.T) {
 
 	routerOpt := func(bapp *BaseApp) {
 		r := sdk.NewRoute(routeMsgCounter, func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-			count := msg.(*msgCounter).Counter
+			count := msg.(msgCounter).Counter
 			ctx.GasMeter().ConsumeGas(uint64(count), "counter-handler")
 			return &sdk.Result{}, nil
 		})
@@ -1418,7 +1422,7 @@ func TestMaxBlockGasLimits(t *testing.T) {
 				}
 			}()
 
-			count := tx.(txTest).Counter
+			count := tx.(*txTest).Counter
 			newCtx.GasMeter().ConsumeGas(uint64(count), "counter-ante")
 
 			return
@@ -1427,7 +1431,7 @@ func TestMaxBlockGasLimits(t *testing.T) {
 
 	routerOpt := func(bapp *BaseApp) {
 		r := sdk.NewRoute(routeMsgCounter, func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {
-			count := msg.(*msgCounter).Counter
+			count := msg.(msgCounter).Counter
 			ctx.GasMeter().ConsumeGas(uint64(count), "counter-handler")
 			return &sdk.Result{}, nil
 		})
@@ -1474,7 +1478,7 @@ func TestMaxBlockGasLimits(t *testing.T) {
 		for j := 0; j < tc.numDelivers; j++ {
 			_, result, err := app.Deliver(aminoTxEncoder(), tx)
 
-			ctx := app.getState(runTxModeDeliver).ctx
+			ctx := app.deliverState.ctx
 
 			// check for failed transactions
 			if tc.fail && (j+1) > tc.failAfterDeliver {
@@ -1579,7 +1583,7 @@ func TestBaseAppAnteHandler(t *testing.T) {
 	require.Empty(t, res.Events)
 	require.False(t, res.IsOK(), fmt.Sprintf("%v", res))
 
-	ctx := app.getState(runTxModeDeliver).ctx
+	ctx := app.deliverState.ctx
 	store := ctx.KVStore(capKey1)
 	require.Equal(t, int64(0), getIntFromStore(store, anteKey))
 
@@ -1596,7 +1600,7 @@ func TestBaseAppAnteHandler(t *testing.T) {
 	require.NotEmpty(t, res.Events)
 	require.False(t, res.IsOK(), fmt.Sprintf("%v", res))
 
-	ctx = app.getState(runTxModeDeliver).ctx
+	ctx = app.deliverState.ctx
 	store = ctx.KVStore(capKey1)
 	require.Equal(t, int64(1), getIntFromStore(store, anteKey))
 	require.Equal(t, int64(0), getIntFromStore(store, deliverKey))
@@ -1612,7 +1616,7 @@ func TestBaseAppAnteHandler(t *testing.T) {
 	require.NotEmpty(t, res.Events)
 	require.True(t, res.IsOK(), fmt.Sprintf("%v", res))
 
-	ctx = app.getState(runTxModeDeliver).ctx
+	ctx = app.deliverState.ctx
 	store = ctx.KVStore(capKey1)
 	require.Equal(t, int64(2), getIntFromStore(store, anteKey))
 	require.Equal(t, int64(1), getIntFromStore(store, deliverKey))
