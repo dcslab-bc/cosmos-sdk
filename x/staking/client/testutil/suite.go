@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/suite"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
@@ -65,7 +67,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 		val.ValAddress,
 		val2.ValAddress,
 		unbond,
-		fmt.Sprintf("--%s=%d", flags.FlagGas, 300000),
+		fmt.Sprintf("--%s=%d", flags.FlagGas, 306313), //  306313 is the required
 	)
 	s.Require().NoError(err)
 	var txRes sdk.TxResponse
@@ -120,6 +122,9 @@ func (s *IntegrationTestSuite) TestNewCreateValidatorCmd() {
 		fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
 		fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10))).String()),
 	)
+	require.NoError(err)
+
+	randomEVMAddress, err := teststaking.RandomEVMAddress()
 	require.NoError(err)
 
 	testCases := []struct {
@@ -204,6 +209,7 @@ func (s *IntegrationTestSuite) TestNewCreateValidatorCmd() {
 				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
 				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
 				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10))).String()),
+				fmt.Sprintf("--%s=%s", flags.FlagEVMAddress, randomEVMAddress.Hex()),
 			},
 			false, 0, &sdk.TxResponse{},
 		},

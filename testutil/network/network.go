@@ -3,6 +3,7 @@ package network
 import (
 	"bufio"
 	"context"
+	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +16,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
+
 	"cosmossdk.io/math"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
@@ -168,6 +172,9 @@ type (
 		api     *api.Server
 		grpc    *grpc.Server
 		grpcWeb *http.Server
+
+		EVMPrivateKey *ecdsa.PrivateKey
+		EVMAddr       common.Address
 	}
 )
 
@@ -400,6 +407,13 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			return nil, err
 		}
 
+		evmPrivateKey, err := crypto.GenerateKey()
+		if err != nil {
+			return nil, err
+		}
+		orchEVMPublicKey := evmPrivateKey.Public().(*ecdsa.PublicKey)
+		evmAddr := crypto.PubkeyToAddress(*orchEVMPublicKey)
+
 		createValMsg, err := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
@@ -407,6 +421,7 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
 			stakingtypes.NewCommissionRates(commission, sdk.OneDec(), sdk.OneDec()),
 			sdk.OneInt(),
+			evmAddr,
 		)
 		if err != nil {
 			return nil, err
@@ -463,18 +478,20 @@ func New(l Logger, baseDir string, cfg Config) (*Network, error) {
 			WithAccountRetriever(cfg.AccountRetriever)
 
 		network.Validators[i] = &Validator{
-			AppConfig:  appCfg,
-			ClientCtx:  clientCtx,
-			Ctx:        ctx,
-			Dir:        filepath.Join(network.BaseDir, nodeDirName),
-			NodeID:     nodeID,
-			PubKey:     pubKey,
-			Moniker:    nodeDirName,
-			RPCAddress: tmCfg.RPC.ListenAddress,
-			P2PAddress: tmCfg.P2P.ListenAddress,
-			APIAddress: apiAddr,
-			Address:    addr,
-			ValAddress: sdk.ValAddress(addr),
+			AppConfig:     appCfg,
+			ClientCtx:     clientCtx,
+			Ctx:           ctx,
+			Dir:           filepath.Join(network.BaseDir, nodeDirName),
+			NodeID:        nodeID,
+			PubKey:        pubKey,
+			Moniker:       nodeDirName,
+			RPCAddress:    tmCfg.RPC.ListenAddress,
+			P2PAddress:    tmCfg.P2P.ListenAddress,
+			APIAddress:    apiAddr,
+			Address:       addr,
+			ValAddress:    sdk.ValAddress(addr),
+			EVMPrivateKey: evmPrivateKey,
+			EVMAddr:       evmAddr,
 		}
 	}
 
