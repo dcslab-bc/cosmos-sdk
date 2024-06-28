@@ -51,7 +51,8 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
     --commission-rate=0.07 \
     --details="..." \
     --security-contact="..." \
-    --website="..."
+    --website="..." \
+    --evm-address="..."
 `, defaultsDesc, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -109,8 +110,18 @@ $ %s gentx my-key-name 1000000stake --home=/path/to/home/dir --keyring-backend=o
 				moniker = m
 			}
 
+			evmAddress, err := cmd.Flags().GetString(flags.FlagEVMAddress)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get the EVM address")
+			}
+
 			// set flags for creating a gentx
-			createValCfg, err := cli.PrepareConfigForTxCreateValidator(cmd.Flags(), moniker, nodeID, genDoc.ChainID, valPubKey)
+			createValCfg, err := cli.PrepareConfigForTxCreateValidator(
+				cmd.Flags(), moniker,
+				nodeID, genDoc.ChainID,
+				valPubKey,
+				evmAddress,
+			)
 			if err != nil {
 				return errors.Wrap(err, "error creating configuration to create validator msg")
 			}

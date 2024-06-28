@@ -18,6 +18,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // default values
@@ -79,6 +80,7 @@ func NewCreateValidatorCmd() *cobra.Command {
 	cmd.Flags().AddFlagSet(flagSetDescriptionCreate())
 	cmd.Flags().AddFlagSet(FlagSetCommissionCreate())
 	cmd.Flags().AddFlagSet(FlagSetMinSelfDelegation())
+	cmd.Flags().AddFlagSet(FlagSetEVMAddress())
 
 	cmd.Flags().String(FlagIP, "", fmt.Sprintf("The node's public IP. It takes effect only when used in combination with --%s", flags.FlagGenerateOnly))
 	cmd.Flags().String(FlagNodeID, "", "The node's ID")
@@ -88,6 +90,7 @@ func NewCreateValidatorCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired(FlagAmount)
 	_ = cmd.MarkFlagRequired(FlagPubKey)
 	_ = cmd.MarkFlagRequired(FlagMoniker)
+	_ = cmd.MarkFlagRequired(flags.FlagEVMAddress)
 
 	return cmd
 }
@@ -134,7 +137,22 @@ func NewEditValidatorCmd() *cobra.Command {
 				newMinSelfDelegation = &msb
 			}
 
-			msg := types.NewMsgEditValidator(sdk.ValAddress(valAddr), description, newRate, newMinSelfDelegation)
+			evmAddrString, _ := cmd.Flags().GetString(flags.FlagEVMAddress)
+
+			var evmAddr *common.Address
+			if evmAddrString != "" {
+				if !common.IsHexAddress(evmAddrString) {
+					return types.ErrEVMAddressNotHex
+				}
+				addr := common.HexToAddress(evmAddrString)
+				evmAddr = &addr
+			}
+
+			msg := types.NewMsgEditValidator(
+				sdk.ValAddress(valAddr), description,
+				newRate, newMinSelfDelegation,
+				evmAddr,
+			)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
@@ -143,6 +161,7 @@ func NewEditValidatorCmd() *cobra.Command {
 	cmd.Flags().AddFlagSet(flagSetDescriptionEdit())
 	cmd.Flags().AddFlagSet(flagSetCommissionUpdate())
 	cmd.Flags().AddFlagSet(FlagSetMinSelfDelegation())
+	cmd.Flags().AddFlagSet(FlagSetEVMAddress())
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
@@ -385,8 +404,18 @@ func newBuildCreateValidatorMsg(clientCtx client.Context, txf tx.Factory, fs *fl
 		return txf, nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "minimum self delegation must be a positive integer")
 	}
 
+	evmAddrString, _ := fs.GetString(flags.FlagEVMAddress)
+
+	if !common.IsHexAddress(evmAddrString) {
+		return txf, nil, types.ErrEVMAddressNotHex
+	}
+	evmAddr := common.HexToAddress(evmAddrString)
+
 	msg, err := types.NewMsgCreateValidator(
-		sdk.ValAddress(valAddr), pk, amount, description, commissionRates, minSelfDelegation,
+		sdk.ValAddress(valAddr), pk,
+		amount, description,
+		commissionRates, minSelfDelegation,
+		evmAddr,
 	)
 	if err != nil {
 		return txf, nil, err
@@ -423,6 +452,7 @@ func CreateValidatorMsgFlagSet(ipDefault string) (fs *flag.FlagSet, defaultsDesc
 	fsCreateValidator.AddFlagSet(FlagSetMinSelfDelegation())
 	fsCreateValidator.AddFlagSet(FlagSetAmount())
 	fsCreateValidator.AddFlagSet(FlagSetPublicKey())
+	fsCreateValidator.AddFlagSet(FlagSetEVMAddress())
 
 	defaultsDesc = fmt.Sprintf(`
 	delegation amount:           %s
@@ -456,9 +486,11 @@ type TxCreateValidatorConfig struct {
 	SecurityContact string
 	Details         string
 	Identity        string
+
+	EVMAddress string
 }
 
-func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, chainID string, valPubKey cryptotypes.PubKey) (TxCreateValidatorConfig, error) {
+func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, chainID string, valPubKey cryptotypes.PubKey, evmAddr string) (TxCreateValidatorConfig, error) {
 	c := TxCreateValidatorConfig{}
 
 	ip, err := flagSet.GetString(FlagIP)
@@ -549,6 +581,11 @@ func PrepareConfigForTxCreateValidator(flagSet *flag.FlagSet, moniker, nodeID, c
 		c.MinSelfDelegation = defaultMinSelfDelegation
 	}
 
+	c.EVMAddress, err = flagSet.GetString(flags.FlagEVMAddress)
+	if err != nil {
+		return c, err
+	}
+
 	return c, nil
 }
 
@@ -586,8 +623,16 @@ func BuildCreateValidatorMsg(clientCtx client.Context, config TxCreateValidatorC
 		return txBldr, nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "minimum self delegation must be a positive integer")
 	}
 
+	if !common.IsHexAddress(config.EVMAddress) {
+		return txBldr, nil, types.ErrEVMAddressNotHex
+	}
+	evmAddr := common.HexToAddress(config.EVMAddress)
+
 	msg, err := types.NewMsgCreateValidator(
-		sdk.ValAddress(valAddr), config.PubKey, amount, description, commissionRates, minSelfDelegation,
+		sdk.ValAddress(valAddr), config.PubKey,
+		amount, description,
+		commissionRates, minSelfDelegation,
+		evmAddr,
 	)
 	if err != nil {
 		return txBldr, msg, err

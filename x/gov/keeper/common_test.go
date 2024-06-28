@@ -3,6 +3,8 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/simapp"
@@ -50,11 +52,19 @@ func createValidators(t *testing.T, ctx sdk.Context, app *simapp.SimApp, powers 
 		app.GetSubspace(stakingtypes.ModuleName),
 	)
 
-	val1, err := stakingtypes.NewValidator(valAddrs[0], pks[0], stakingtypes.Description{})
+	randomEVMAddress1, err := teststaking.RandomEVMAddress()
 	require.NoError(t, err)
-	val2, err := stakingtypes.NewValidator(valAddrs[1], pks[1], stakingtypes.Description{})
+	val1, err := stakingtypes.NewValidator(valAddrs[0], pks[0], stakingtypes.Description{}, *randomEVMAddress1)
 	require.NoError(t, err)
-	val3, err := stakingtypes.NewValidator(valAddrs[2], pks[2], stakingtypes.Description{})
+
+	randomEVMAddress2, err := teststaking.RandomEVMAddress()
+	require.NoError(t, err)
+	val2, err := stakingtypes.NewValidator(valAddrs[1], pks[1], stakingtypes.Description{}, *randomEVMAddress2)
+	require.NoError(t, err)
+
+	randomEVMAddress3, err := teststaking.RandomEVMAddress()
+	require.NoError(t, err)
+	val3, err := stakingtypes.NewValidator(valAddrs[2], pks[2], stakingtypes.Description{}, *randomEVMAddress3)
 	require.NoError(t, err)
 
 	app.StakingKeeper.SetValidator(ctx, val1)

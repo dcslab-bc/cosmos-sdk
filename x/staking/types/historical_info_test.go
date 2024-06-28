@@ -5,6 +5,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 
@@ -21,10 +23,16 @@ var header = tmproto.Header{
 }
 
 func createValidators(t *testing.T) []types.Validator {
+	randomEVMAddress1, err := teststaking.RandomEVMAddress()
+	require.NoError(t, err)
+	randomEVMAddress2, err := teststaking.RandomEVMAddress()
+	require.NoError(t, err)
+	randomEVMAddress3, err := teststaking.RandomEVMAddress()
+	require.NoError(t, err)
 	return []types.Validator{
-		newValidator(t, valAddr1, pk1),
-		newValidator(t, valAddr2, pk2),
-		newValidator(t, valAddr3, pk3),
+		newValidator(t, valAddr1, pk1, *randomEVMAddress1),
+		newValidator(t, valAddr2, pk2, *randomEVMAddress2),
+		newValidator(t, valAddr3, pk3, *randomEVMAddress3),
 	}
 }
 

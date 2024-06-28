@@ -45,7 +45,9 @@ func TestVerifyProposerRewardAssignement(t *testing.T) {
 		validators[i].addr = sdk.ValAddress(addrs[i])
 		validators[i].pubkey = ed25519.GenPrivKey().PubKey()
 		validators[i].votes = make([]abci.VoteInfo, totalValidators)
-		tstaking.CreateValidatorWithValPower(validators[i].addr, validators[i].pubkey, power, true)
+		randomEVMAddress, err := teststaking.RandomEVMAddress()
+		require.NoError(t, err)
+		tstaking.CreateValidatorWithValPower(validators[i].addr, validators[i].pubkey, power, *randomEVMAddress, true)
 	}
 	app.EndBlock(abci.RequestEndBlock{})
 	require.NotEmpty(t, app.Commit())
