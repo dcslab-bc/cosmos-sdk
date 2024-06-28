@@ -15,11 +15,11 @@ const (
 	// failures due to state changes that might occur between the tx simulation
 	// and the actual run.
 	DefaultGasAdjustment = 1.0
-	DefaultGasLimit      = 210000
+	DefaultGasLimit      = 200000
 	GasFlagAuto          = "auto"
 
 	// DefaultKeyringBackend
-	DefaultKeyringBackend = keyring.BackendTest
+	DefaultKeyringBackend = keyring.BackendOS
 
 	// BroadcastBlock defines a tx broadcasting mode where the client waits for
 	// the tx to be committed in a block.
@@ -85,9 +85,6 @@ const (
 	// Tendermint logging flags
 	FlagLogLevel  = "log_level"
 	FlagLogFormat = "log_format"
-
-	// QGB related flags
-	FlagEVMAddress = "evm-address"
 )
 
 // LineBreak can be included in a command list to provide a blank line

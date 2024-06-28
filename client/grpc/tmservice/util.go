@@ -32,6 +32,7 @@ func convertBlock(tmblock *tmprototypes.Block) *Block {
 	b.Header = convertHeader(tmblock.Header)
 	b.LastCommit = tmblock.LastCommit
 	b.Data = tmblock.Data
+	b.Evidence = tmblock.Evidence
 
 	return b
 }
