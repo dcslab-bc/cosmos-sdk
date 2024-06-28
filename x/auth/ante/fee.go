@@ -8,6 +8,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
+// TxFeeChecker check if the provided fee is enough and returns the effective fee and tx priority,
+// the effective fee should be deducted later, and the priority should be returned in abci response.
+type TxFeeChecker func(ctx sdk.Context, tx sdk.Tx) (sdk.Coins, int64, error)
+
 // MempoolFeeDecorator will check if the transaction's fee is at least as large
 // as the local validator's minimum gasFee (defined in validator config).
 // If fee is too low, decorator returns error and tx is rejected from mempool.
@@ -59,16 +63,18 @@ func (mfd MempoolFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate b
 // Call next AnteHandler if fees successfully deducted
 // CONTRACT: Tx must implement FeeTx interface to use DeductFeeDecorator
 type DeductFeeDecorator struct {
-	ak             AccountKeeper
+	accountKeeper  AccountKeeper
 	bankKeeper     types.BankKeeper
 	feegrantKeeper FeegrantKeeper
+	txFeeChecker   TxFeeChecker
 }
 
-func NewDeductFeeDecorator(ak AccountKeeper, bk types.BankKeeper, fk FeegrantKeeper) DeductFeeDecorator {
+func NewDeductFeeDecorator(ak AccountKeeper, bk types.BankKeeper, fk FeegrantKeeper, tfc TxFeeChecker) DeductFeeDecorator {
 	return DeductFeeDecorator{
-		ak:             ak,
+		accountKeeper:  ak,
 		bankKeeper:     bk,
 		feegrantKeeper: fk,
+		txFeeChecker:   tfc,
 	}
 }
 
@@ -78,7 +84,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "Tx must be a FeeTx")
 	}
 
-	if addr := dfd.ak.GetModuleAddress(types.FeeCollectorName); addr == nil {
+	if addr := dfd.accountKeeper.GetModuleAddress(types.FeeCollectorName); addr == nil {
 		return ctx, fmt.Errorf("Fee collector module account (%s) has not been set", types.FeeCollectorName)
 	}
 
@@ -104,7 +110,7 @@ func (dfd DeductFeeDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bo
 		deductFeesFrom = feeGranter
 	}
 
-	deductFeesFromAcc := dfd.ak.GetAccount(ctx, deductFeesFrom)
+	deductFeesFromAcc := dfd.accountKeeper.GetAccount(ctx, deductFeesFrom)
 	if deductFeesFromAcc == nil {
 		return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "fee payer address: %s does not exist", deductFeesFrom)
 	}

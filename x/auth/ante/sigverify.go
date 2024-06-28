@@ -363,11 +363,11 @@ func (svd DeliverTxSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.
 			accNum = acc.GetAccountNumber()
 		}
 		signerData := authsigning.SignerData{
-			// [FIXME] Address:       acc.GetAddress().String(),
+			Address:       acc.GetAddress().String(),
 			ChainID:       chainID,
 			AccountNumber: accNum,
 			Sequence:      acc.GetSequence(),
-			// [FIXME] PubKey:        pubKey,
+			PubKey:        pubKey,
 		}
 
 		// no need to verify signatures on recheck tx
