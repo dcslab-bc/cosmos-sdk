@@ -308,6 +308,95 @@ func (svd SigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simul
 	return next(ctx, tx, simulate)
 }
 
+// updated by mssong
+type DeliverTxSigVerificationDecorator struct {
+	ak              AccountKeeper
+	signModeHandler authsigning.SignModeHandler
+}
+
+func NewDeliverTxSigVerificationDecorator(ak AccountKeeper, signModeHandler authsigning.SignModeHandler) DeliverTxSigVerificationDecorator {
+	return DeliverTxSigVerificationDecorator{
+		ak:              ak,
+		signModeHandler: signModeHandler,
+	}
+}
+
+func (svd DeliverTxSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (newCtx sdk.Context, err error) {
+	sigTx, ok := tx.(authsigning.SigVerifiableTx)
+	if !ok {
+		return ctx, sdkerrors.Wrap(sdkerrors.ErrTxDecode, "invalid transaction type")
+	}
+
+	// stdSigs contains the sequence number, account number, and signatures.
+	// When simulating, this would just be a 0-length slice.
+	sigs, err := sigTx.GetSignaturesV2()
+	if err != nil {
+		return ctx, err
+	}
+
+	signerAddrs := sigTx.GetSigners()
+
+	// check that signer length and signature length are the same
+	if len(sigs) != len(signerAddrs) {
+		return ctx, sdkerrors.Wrapf(sdkerrors.ErrUnauthorized, "invalid number of signer;  expected: %d, got %d", len(signerAddrs), len(sigs))
+	}
+
+	for i, sig := range sigs {
+		acc, err := GetSignerAcc(ctx, svd.ak, signerAddrs[i])
+		if err != nil {
+			return ctx, err
+		}
+
+		// retrieve pubkey
+		pubKey := acc.GetPubKey()
+		if !simulate && pubKey == nil {
+			return ctx, sdkerrors.Wrap(sdkerrors.ErrInvalidPubKey, "pubkey on account is not set")
+		}
+
+		// Check account sequence number.
+		if (sig.Sequence + 1) != acc.GetSequence() { //updated by mssong
+			return ctx, sdkerrors.Wrapf(
+				sdkerrors.ErrWrongSequence,
+				"account sequence mismatch, expected %d, got %d", acc.GetSequence(), sig.Sequence,
+			)
+		}
+
+		// retrieve signer data
+		genesis := ctx.BlockHeight() == 0
+		chainID := ctx.ChainID()
+		var accNum uint64
+		if !genesis {
+			accNum = acc.GetAccountNumber()
+		}
+		signerData := authsigning.SignerData{
+			Address:       acc.GetAddress().String(),
+			ChainID:       chainID,
+			AccountNumber: accNum,
+			Sequence:      acc.GetSequence(),
+			PubKey:        pubKey,
+		}
+
+		// no need to verify signatures on recheck tx
+		if !simulate && !ctx.IsReCheckTx() {
+			err := authsigning.SkipVerifySignature(pubKey, signerData, sig.Data, svd.signModeHandler, tx) //updated by mssong
+			if err != nil {
+				var errMsg string
+				if OnlyLegacyAminoSigners(sig.Data) {
+					// If all signers are using SIGN_MODE_LEGACY_AMINO, we rely on VerifySignature to check account sequence number,
+					// and therefore communicate sequence number as a potential cause of error.
+					errMsg = fmt.Sprintf("signature verification failed; please verify account number (%d), sequence (%d) and chain-id (%s)", accNum, acc.GetSequence(), chainID)
+				} else {
+					errMsg = fmt.Sprintf("signature verification failed; please verify account number (%d) and chain-id (%s)", accNum, chainID)
+				}
+				return ctx, sdkerrors.Wrap(sdkerrors.ErrUnauthorized, errMsg)
+
+			}
+		}
+	}
+
+	return next(ctx, tx, simulate)
+}
+
 // IncrementSequenceDecorator handles incrementing sequences of all signers.
 // Use the IncrementSequenceDecorator decorator to prevent replay attacks. Note,
 // there is need to execute IncrementSequenceDecorator on RecheckTx since

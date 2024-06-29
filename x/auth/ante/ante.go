@@ -52,3 +52,71 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
 }
+
+// updated by mssong
+func NewConcurrentAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
+
+	if options.AccountKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for ante builder")
+	}
+
+	if options.BankKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "bank keeper is required for ante builder")
+	}
+
+	if options.SignModeHandler == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
+	}
+
+	anteDecorators := []sdk.AnteDecorator{
+		// NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
+		// NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
+		// NewValidateBasicDecorator(),
+		// NewTxTimeoutHeightDecorator(),
+		// NewValidateMemoDecorator(options.AccountKeeper),
+		// NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
+		// NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
+		// NewSetPubKeyDecorator(options.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
+		// NewValidateSigCountDecorator(options.AccountKeeper),
+		// NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
+		NewDeliverTxSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		// NewIncrementSequenceDecorator(options.AccountKeeper),
+	}
+	// fmt.Printf("NewConcurrentAnteHandler anteDecorators:%+v\n", anteDecorators)
+	// debug.PrintStack()
+	return sdk.ChainAnteDecorators(anteDecorators...), nil
+}
+
+// updated by mssong
+func NewSequentialAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
+
+	if options.AccountKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for ante builder")
+	}
+
+	if options.BankKeeper == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "bank keeper is required for ante builder")
+	}
+
+	if options.SignModeHandler == nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
+	}
+
+	anteDecorators := []sdk.AnteDecorator{
+		NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
+		NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
+		NewValidateBasicDecorator(),
+		NewTxTimeoutHeightDecorator(),
+		NewValidateMemoDecorator(options.AccountKeeper),
+		NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
+		NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
+		NewSetPubKeyDecorator(options.AccountKeeper), // SetPubKeyDecorator must be called before all signature verification decorators
+		NewValidateSigCountDecorator(options.AccountKeeper),
+		NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
+		// NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
+		NewIncrementSequenceDecorator(options.AccountKeeper),
+	}
+	// fmt.Printf("NewSequentialAnteHandler anteDecorators:%+v\n", anteDecorators)
+	// debug.PrintStack()
+	return sdk.ChainAnteDecorators(anteDecorators...), nil
+}
