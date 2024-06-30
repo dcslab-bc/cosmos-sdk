@@ -111,6 +111,10 @@ type BaseApp struct { // nolint: maligned
 	// abciListeners for hooking into the ABCI message processing of the BaseApp
 	// and exposing the requests and responses to external consumers
 	abciListeners []ABCIListener
+
+	// chainID is the chainID of the chain that is set upon starting the chain
+	// via InitChain.
+	chainID string
 }
 
 type appStore struct {
@@ -219,6 +223,10 @@ func (app *BaseApp) Logger() log.Logger {
 // Trace returns the boolean value for logging error stack traces.
 func (app *BaseApp) Trace() bool {
 	return app.trace
+}
+
+func (app *BaseApp) GetChainID() string {
+	return app.chainID
 }
 
 // MsgServiceRouter returns the MsgServiceRouter of a BaseApp.
@@ -474,6 +482,8 @@ func (app *BaseApp) GetConsensusParams(ctx sdk.Context) *abci.ConsensusParams {
 		cp.Validator = &vp
 	}
 
+	cp.Version = &tmproto.VersionParams{AppVersion: app.appVersion}
+
 	return cp
 }
 
@@ -575,6 +585,17 @@ func (app *BaseApp) getState(mode runTxMode) *state {
 	}
 
 	return app.checkState
+}
+
+// NewProposalContext returns a context with a branched version of the state
+// that is safe to query during ProcessProposal.
+func (app *BaseApp) NewProposalContext(header tmproto.Header) sdk.Context {
+	// use custom query multistore if provided
+	ms := app.cms.CacheMultiStore()
+	ctx := sdk.NewContext(ms, header, false, app.logger).WithBlockGasMeter(storetypes.NewInfiniteGasMeter())
+	ctx = ctx.WithConsensusParams(app.GetConsensusParams(ctx))
+
+	return ctx
 }
 
 // retrieve the context for the tx w/ txBytes and other memoized values.
