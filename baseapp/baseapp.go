@@ -698,7 +698,7 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 			defer tmstate.AnteWg.Done()
 			//antehandler parallel
 			//TODO: anteCtx 바꾸는거 있는지 체크할 것
-			newCtx, err = app.concurrentAnteHandler(anteCtx, tx, mode == runTxModeSimulate)
+			// newCtx, err = app.concurrentAnteHandler(anteCtx, tx, mode == runTxModeSimulate)
 		}()
 		//antehandler sequentail
 		// fmt.Println(tmstate.TestString)
