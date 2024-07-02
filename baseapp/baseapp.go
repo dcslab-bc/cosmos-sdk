@@ -10,7 +10,6 @@ import (
 	"github.com/tendermint/tendermint/crypto/tmhash"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmState "github.com/tendermint/tendermint/state"
 	dbm "github.com/tendermint/tm-db"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -23,20 +22,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 )
 
-const (
-	runTxModeCheck      runTxMode = iota // Check a transaction
-	runTxModeReCheck                     // Recheck a (pending) transaction after a commit
-	runTxModeSimulate                    // Simulate a transaction
-	runTxModeDeliver                     // Deliver a transaction
-	runTxModeAnteVerify                  // Verify a transaction
-)
-
 var _ abci.Application = (*BaseApp)(nil)
 
 type (
-	// Enum mode for app.runTx
-	runTxMode uint8
-
 	// StoreLoader defines a customizable function to control how we load the CommitMultiStore
 	// from disk. This is useful for state migration, when loading a datastore written with
 	// an older version of the software. In particular, if a module changed the substore key name
@@ -54,9 +42,6 @@ type BaseApp struct { // nolint: maligned
 
 	anteHandler sdk.AnteHandler // ante handler for fee and auth
 	postHandler sdk.AnteHandler // post handler, optional, e.g. for tips
-
-	concurrentAnteHandler sdk.AnteHandler //updated by mssong
-	sequentialAnteHandler sdk.AnteHandler //updated by mssong
 
 	appStore
 	baseappVersions
@@ -642,7 +627,7 @@ func (app *BaseApp) checkTx(txBytes []byte, tx sdk.Tx, recheck bool) (gInfo sdk.
 	defer app.accountLock.Unlock(accKeys)
 
 	var anteCtx sdk.Context
-	anteCtx, err = app.anteTx(ctx, txBytes, tx, false, runTxModeCheck)
+	anteCtx, err = app.anteTx(ctx, txBytes, tx, false)
 	if !anteCtx.IsZero() {
 		gasCtx = &anteCtx
 	}
@@ -650,22 +635,7 @@ func (app *BaseApp) checkTx(txBytes []byte, tx sdk.Tx, recheck bool) (gInfo sdk.
 	return gInfo, err
 }
 
-func (app *BaseApp) verifyDeliverTx(txBytes []byte, tx sdk.Tx) (err error) {
-	ctx := app.getCheckContextForTx(txBytes, false)
-
-	msgs := tx.GetMsgs()
-
-	if err = validateBasicTxMsgs(msgs); err != nil {
-		// return sdk.GasInfo{}, nil, nil, 0, err
-		return err
-	}
-
-	_, err = app.anteTx(ctx, txBytes, tx, false, runTxModeAnteVerify)
-
-	return err
-}
-
-func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMode) (sdk.Context, error) {
+func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate bool) (sdk.Context, error) {
 	if app.anteHandler == nil {
 		return ctx, nil
 	}
@@ -677,42 +647,15 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 	// NOTE: Alternatively, we could require that AnteHandler ensures that
 	// writes do not happen if aborted/failed.  This may have some
 	// performance benefits, but it'll be more difficult to get right.
-	var newCtx sdk.Context
-	var err error
-	// if mode == runTxModeCheck || mode == runTxModeDeliver {
-	if mode == runTxModeCheck {
-		anteCtx, msCache := app.cacheTxContext(ctx, txBytes)
-		anteCtx = anteCtx.WithEventManager(sdk.NewEventManager())
-		// Skip the signature verification
-		newCtx, err = app.anteHandler(anteCtx, tx, simulate)
-		if err != nil {
-			return newCtx, err
-		}
-		msCache.Write()
-	} else if mode == runTxModeAnteVerify {
-		go func() {
-			defer tmState.AnteWg.Done()
-			msgs := tx.GetMsgs()
-			var err_temp error
-			if err_temp = validateBasicTxMsgs(msgs); err != nil {
-				err = err_temp
-				return
-			}
-			_, err_temp = app.concurrentAnteHandler(ctx, tx, simulate)
-			err = err_temp
-		}()
-		if err != nil {
-			return ctx, err
-		}
-	} else if mode == runTxModeDeliver {
-		anteCtx, msCache := app.cacheTxContext(ctx, txBytes)
-		anteCtx = anteCtx.WithEventManager(sdk.NewEventManager())
-		newCtx, err = app.sequentialAnteHandler(anteCtx, tx, simulate)
-		if err != nil {
-			return newCtx, err
-		}
-		msCache.Write()
+	anteCtx, msCache := app.cacheTxContext(ctx, txBytes)
+	anteCtx = anteCtx.WithEventManager(sdk.NewEventManager())
+	newCtx, err := app.anteHandler(anteCtx, tx, simulate)
+
+	if err != nil {
+		return newCtx, err
 	}
+
+	msCache.Write()
 	return newCtx, err
 }
 
@@ -723,7 +666,7 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 // Note, gas execution info is always returned. A reference to a Result is
 // returned if the tx does not run out of gas and if all the messages are valid
 // and execute successfully. An error is returned otherwise.
-func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMode) (gInfo sdk.GasInfo, result *sdk.Result, err error) {
+func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool) (gInfo sdk.GasInfo, result *sdk.Result, err error) {
 	ctx := app.getRunContextForTx(txBytes, simulate)
 	ms := ctx.MultiStore()
 
@@ -763,10 +706,13 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	}
 
 	msgs := tx.GetMsgs()
+	if err = validateBasicTxMsgs(msgs); err != nil {
+		return sdk.GasInfo{}, nil, err
+	}
 
 	var newCtx sdk.Context
-	newCtx, err = app.anteTx(ctx, txBytes, tx, simulate, runTxModeDeliver)
-	if !newCtx.IsZero() { //here
+	newCtx, err = app.anteTx(ctx, txBytes, tx, simulate)
+	if !newCtx.IsZero() {
 		// At this point, newCtx.MultiStore() is a store branch, or something else
 		// replaced by the AnteHandler. We want the original multistore.
 		//
