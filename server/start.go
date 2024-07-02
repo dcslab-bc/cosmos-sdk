@@ -250,6 +250,9 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 	home := cfg.RootDir
 	var cpuProfileCleanup func()
 
+	ctx.Config.Consensus.TimeoutPropose = 1 * time.Second
+	ctx.Config.Consensus.TimeoutCommit = 830 * time.Millisecond
+
 	if cpuProfile := ctx.Viper.GetString(flagCPUProfile); cpuProfile != "" {
 		f, err := os.Create(cpuProfile)
 		if err != nil {
