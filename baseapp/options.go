@@ -163,26 +163,6 @@ func (app *BaseApp) SetAnteHandler(ah sdk.AnteHandler) {
 	app.anteHandler = ah
 }
 
-// updated by mssong
-func (app *BaseApp) SetConcurrentAnteHandler(ah sdk.AnteHandler) {
-	// fmt.Println("hihihi", app.sealed)
-	if app.sealed {
-		panic("SetConcurrentAnteHandler() on sealed BaseApp")
-	}
-
-	app.concurrentAnteHandler = ah
-}
-
-// updated by mssong
-func (app *BaseApp) SetSequentialAnteHandler(ah sdk.AnteHandler) {
-	// fmt.Println("hihihi", app.sealed)
-	if app.sealed {
-		panic("SequentialAnteHandler() on sealed BaseApp")
-	}
-
-	app.sequentialAnteHandler = ah
-}
-
 func (app *BaseApp) SetPostHandler(ph sdk.AnteHandler) {
 	if app.sealed {
 		panic("SetPostHandler() on sealed BaseApp")
