@@ -289,7 +289,7 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 		return sdkerrors.ResponseDeliverTx(err, 0, 0, app.trace)
 	}
 
-	gInfo, result, err := app.runTx(req.Tx, tx, false)
+	gInfo, result, err := app.runTx(req.Tx, tx, false, runTxModeDeliver)
 
 	return abci.ResponseDeliverTx{
 		GasWanted: int64(gInfo.GasWanted), // TODO: Should type accept unsigned ints?
@@ -316,6 +316,23 @@ func (app *BaseApp) PrepareProposal(req abci.RequestPrepareProposal) abci.Respon
 func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) abci.ResponseProcessProposal {
 	return abci.ResponseProcessProposal{
 		Result: abci.ResponseProcessProposal_ACCEPT,
+	}
+}
+
+// mssong
+func (app *BaseApp) AnteVerifyTx(req abci.RequestAnteVerifyTx) (res abci.ResponseAnteVerifyTx) {
+	tx, _ := app.txDecoder(req.Tx)
+	// if err != nil {
+	// 	return sdkerrors.ResponseDeliverTx(err, 0, 0, app.trace)
+	// }
+
+	gInfo, result, _ := app.runTx(req.Tx, tx, false, runTxModeAnteVerify)
+	gInfo = gInfo
+	result = result
+
+	// fmt.Println("AnteVerifyTx")
+	return abci.ResponseAnteVerifyTx{
+		Log: "AnteVerifyTx~",
 	}
 }
 
