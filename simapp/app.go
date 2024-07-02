@@ -553,6 +553,42 @@ func (app *SimApp) RegisterTendermintService(clientCtx client.Context) {
 	tmservice.RegisterTendermintService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.interfaceRegistry)
 }
 
+// updated by mssong
+func (app *SimApp) setConcurrentAnteHandler(txConfig client.TxConfig) {
+	anteHandler, err := ante.NewConcurrentAnteHandler(
+		ante.HandlerOptions{
+			AccountKeeper:   app.AccountKeeper,
+			BankKeeper:      app.BankKeeper,
+			SignModeHandler: txConfig.SignModeHandler(),
+			FeegrantKeeper:  app.FeeGrantKeeper,
+			SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	app.SetConcurrentAnteHandler(anteHandler)
+}
+
+// updated by mssong
+func (app *SimApp) setSequentialAnteHandler(txConfig client.TxConfig) {
+	anteHandler, err := ante.NewSequentialAnteHandler(
+		ante.HandlerOptions{
+			AccountKeeper:   app.AccountKeeper,
+			BankKeeper:      app.BankKeeper,
+			SignModeHandler: txConfig.SignModeHandler(),
+			FeegrantKeeper:  app.FeeGrantKeeper,
+			SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	app.SetSequentialAnteHandler(anteHandler)
+}
+
 func (app *SimApp) setPostHandler() {
 	// postHandler, err := posthandler.NewPostHandler(
 	// 	posthandler.HandlerOptions{
