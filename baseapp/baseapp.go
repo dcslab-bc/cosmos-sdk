@@ -71,8 +71,9 @@ type BaseApp struct { // nolint: maligned
 	checkState   *state // for CheckTx
 	deliverState *state // for DeliverTx
 
-	checkStateMtx sync.RWMutex
-	accountLock   AccountLock
+	checkStateMtx  sync.RWMutex
+	accountLock    AccountLock
+	deliverAccLock AccountLock
 
 	// paramStore is used to query for ABCI consensus parameters from an
 	// application parameter store.
@@ -702,7 +703,10 @@ func (app *BaseApp) anteTx(ctx sdk.Context, txBytes []byte, tx sdk.Tx, simulate 
 		}()
 		//antehandler sequentail
 		// fmt.Println(tmstate.TestString)
+
+		accKeys := app.deliverAccLock.Lock(ctx, tx)
 		newCtx, err = app.sequentialAnteHandler(anteCtx, tx, mode == runTxModeSimulate)
+		app.deliverAccLock.Unlock(accKeys)
 	} else if mode == runTxModeCheck {
 		newCtx, err = app.anteHandler(anteCtx, tx, simulate)
 	}
@@ -831,6 +835,7 @@ func (app *BaseApp) runTx(txBytes []byte, tx sdk.Tx, simulate bool, mode runTxMo
 	*/
 	var newCtx sdk.Context
 	if mode == runTxModeAnteVerify {
+
 		newCtx, err = app.anteTx(ctx, txBytes, tx, simulate, runTxModeAnteVerify)
 		if !newCtx.IsZero() {
 			// At this point, newCtx.MultiStore() is a store branch, or something else
